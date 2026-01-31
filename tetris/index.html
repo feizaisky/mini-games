@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>俄罗斯方块</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            touch-action: none;
+        }
+        .game-container {
+            display: flex;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 100%;
+        }
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        h1 {
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .score-box {
+            background: #bbada0;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 120px;
+        }
+        .score-box .label {
+            font-size: 12px;
+            color: #eee4da;
+        }
+        .score-box .value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        #gameCanvas {
+            border: 4px solid #333;
+            border-radius: 10px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+            background: #111;
+        }
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .next-piece {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .next-piece h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        #nextCanvas {
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: #111;
+        }
+        .controls {
+            color: #666;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .game-over {
+            display: none;
+            color: #e74c3c;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .mobile-controls {
+            display: none;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .mobile-controls button {
+            padding: 15px 20px;
+            font-size: 20px;
+            width: 55px;
+            height: 55px;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                align-items: flex-start;
+            }
+            .game-container {
+                flex-direction: column;
+                padding: 15px;
+                gap: 15px;
+            }
+            .left-panel {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                gap: 10px;
+            }
+            .left-panel > div {
+                flex: 1;
+                min-width: 100px;
+            }
+            h1 {
+                font-size: 18px;
+                width: 100%;
+            }
+            .score-box {
+                padding: 8px 10px;
+                min-width: 70px;
+            }
+            .score-box .label {
+                font-size: 10px;
+            }
+            .score-box .value {
+                font-size: 16px;
+            }
+            .controls {
+                display: none;
+            }
+            #gameCanvas {
+                max-width: 100%;
+                height: auto;
+            }
+            .right-panel {
+                flex-direction: row;
+                justify-content: center;
+                gap: 10px;
+            }
+            .next-piece {
+                padding: 10px;
+            }
+            .next-piece h3 {
+                font-size: 12px;
+            }
+            #nextCanvas {
+                max-width: 100%;
+                height: auto;
+            }
+            button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            .mobile-controls {
+                display: grid;
+                grid-template-areas:
+                    ". up ."
+                    "left down right";
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+            }
+            .mobile-controls button {
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
+                padding: 10px 15px;
+            }
+            .mobile-controls .up { grid-area: up; }
+            .mobile-controls .down { grid-area: down; }
+            .mobile-controls .left { grid-area: left; }
+            .mobile-controls .right { grid-area: right; }
+        }
+        @media (max-width: 400px) {
+            .game-container {
+                padding: 10px;
+            }
+            .score-box {
+                min-width: 60px;
+                padding: 6px 8px;
+            }
+            .score-box .value {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="left-panel">
+            <div>
+                <h1>🎯 俄罗斯方块</h1>
+                <div class="score-box">
+                    <div class="label">得分</div>
+                    <div class="value" id="score">0</div>
+                </div>
+                <div class="score-box" style="margin-top: 10px;">
+                    <div class="label">最高分</div>
+                    <div class="value" id="highScore">0</div>
+                </div>
+                <div class="score-box" style="margin-top: 10px;">
+                    <div class="label">等级</div>
+                    <div class="value" id="level">1</div>
+                </div>
+            </div>
+            <div class="controls">
+                <strong>操作说明：</strong><br>
+                ← → 移动<br>
+                ↑ 旋转<br>
+                ↓ 加速下落<br>
+                空格 直接落到底部
+            </div>
+            <button id="startBtn">开始游戏</button>
+            <div class="game-over" id="gameOver">
+                游戏结束！
+            </div>
+        </div>
+        <canvas id="gameCanvas" width="300" height="600"></canvas>
+        <div class="right-panel">
+            <div class="next-piece">
+                <h3>下一个</h3>
+                <canvas id="nextCanvas" width="120" height="120"></canvas>
+            </div>
+        </div>
+        <!-- 移动端控制 -->
+        <div class="mobile-controls">
+            <button class="up" onclick="mobileControl('rotate')">↻</button>
+            <button class="left" onclick="mobileControl('left')">←</button>
+            <button class="down" onclick="mobileControl('down')">↓</button>
+            <button class="right" onclick="mobileControl('right')">→</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        function mobileControl(action) {
+            if (action === 'left') {
+                tetris.moveLeft();
+            } else if (action === 'right') {
+                tetris.moveRight();
+            } else if (action === 'down') {
+                tetris.moveDown();
+            } else if (action === 'rotate') {
+                tetris.rotate();
+            }
+        }
+    </script>
+</body>
+</html>

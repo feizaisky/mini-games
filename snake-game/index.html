@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇游戏</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            touch-action: none;
+        }
+        .game-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            margin-top: 0;
+        }
+        .score {
+            font-size: 20px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        #gameCanvas {
+            border: 4px solid #333;
+            border-radius: 10px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            max-width: 100%;
+        }
+        .controls {
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+        .game-over {
+            display: none;
+            color: #e74c3c;
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .mobile-controls {
+            display: none;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        .mobile-controls button {
+            padding: 15px 20px;
+            font-size: 24px;
+            width: 60px;
+            height: 60px;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                align-items: flex-start;
+            }
+            .game-container {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 20px;
+            }
+            .score {
+                font-size: 16px;
+            }
+            #gameCanvas {
+                max-width: 100%;
+                height: auto;
+            }
+            .mobile-controls {
+                display: grid;
+                grid-template-areas:
+                    ". up ."
+                    "left down right";
+                justify-content: center;
+                gap: 5px;
+            }
+            .mobile-controls .up { grid-area: up; }
+            .mobile-controls .down { grid-area: down; }
+            .mobile-controls .left { grid-area: left; }
+            .mobile-controls .right { grid-area: right; }
+            .controls {
+                display: none;
+            }
+            button {
+                padding: 10px 25px;
+                font-size: 14px;
+            }
+        }
+        @media (max-width: 400px) {
+            .game-container {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 18px;
+            }
+            .score {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🐍 贪吃蛇</h1>
+        <div class="score">
+            得分: <span id="score">0</span> |
+            最高分: <span id="highScore">0</span>
+        </div>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div class="controls">
+            使用方向键 ↑ ↓ ← → 控制蛇的移动<br>
+            点击画布或按钮也可以开始游戏
+        </div>
+        <button id="startBtn">开始游戏</button>
+        <div class="game-over" id="gameOver">
+            游戏结束！
+        </div>
+        <button id="restartBtn" style="display: none;">重新开始</button>
+
+        <!-- 移动端控制按钮 -->
+        <div class="mobile-controls">
+            <button class="up" onclick="mobileControl('up')">↑</button>
+            <button class="left" onclick="mobileControl('left')">←</button>
+            <button class="down" onclick="mobileControl('down')">↓</button>
+            <button class="right" onclick="mobileControl('right')">→</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        function mobileControl(direction) {
+            const event = new KeyboardEvent('keydown', {
+                keyCode: direction === 'up' ? 38 : direction === 'down' ? 40 : direction === 'left' ? 37 : 39
+            });
+            document.dispatchEvent(event);
+        }
+    </script>
+</body>
+</html>
