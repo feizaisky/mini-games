@@ -55,6 +55,18 @@ function resizeCanvas() {
     }
 }
 
+// 游戏状态变量（需要在 resizeCanvas 之前声明）
+let board = [];
+let currentPiece = null;
+let nextPiece = null;
+let score = 0;
+let highScore = 0;
+let level = 1;
+let lines = 0;
+let gameRunning = false;
+let gameLoopId = null;
+let dropInterval = 1000;
+
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
@@ -79,17 +91,6 @@ const COLORS = [
     '#00f000', // S - 绿色
     '#f00000'  // Z - 红色
 ];
-
-let board = [];
-let currentPiece = null;
-let nextPiece = null;
-let score = 0;
-let highScore = 0;
-let level = 1;
-let lines = 0;
-let gameRunning = false;
-let gameLoopId = null;
-let dropInterval = 1000;
 
 // 从 localStorage 读取最高分
 const savedHighScore = localStorage.getItem('tetrisHighScore');
