@@ -114,7 +114,26 @@ canvas.addEventListener('touchmove', function(e) {
     e.preventDefault();
 }, {passive: false});
 
-canvas.addEventListener('touchend', function(e) {
+// 全屏触摸控制
+document.addEventListener('touchstart', function(e) {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+        return;
+    }
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+}, {passive: false});
+
+document.addEventListener('touchmove', function(e) {
+    if (e.target.tagName === 'CANVAS' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+        return;
+    }
+    e.preventDefault();
+}, {passive: false});
+
+document.addEventListener('touchend', function(e) {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+        return;
+    }
     e.preventDefault();
     if (!gameRunning) return;
 
