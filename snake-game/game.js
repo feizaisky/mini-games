@@ -6,17 +6,26 @@ const gameOverElement = document.getElementById('gameOver');
 const restartBtn = document.getElementById('restartBtn');
 const startBtn = document.getElementById('startBtn');
 
+// 难度配置
+const difficultyConfig = {
+    easy: { speed: 150, name: '简单' },
+    medium: { speed: 100, name: '中等' },
+    hard: { speed: 60, name: '困难' }
+};
+
+let currentDifficulty = 'easy';
+
 // 响应式画布大小
 function resizeCanvas() {
     if (window.innerWidth <= 768) {
         const containerWidth = document.querySelector('.game-container').clientWidth - 30;
-        if (containerWidth < 400) {
+        if (containerWidth < 360) {
             canvas.style.width = containerWidth + 'px';
             canvas.style.height = containerWidth + 'px';
         }
     } else {
-        canvas.style.width = '400px';
-        canvas.style.height = '400px';
+        canvas.style.width = '360px';
+        canvas.style.height = '360px';
     }
 }
 
@@ -26,14 +35,14 @@ resizeCanvas();
 const gridSize = 20;
 const tileCount = canvas.width / gridSize;
 
-let snake = [{x: 10, y: 10}];
+let snake = [{x: 9, y: 9}];
 let food = {x: 15, y: 15};
 let dx = 0;
 let dy = 0;
 let score = 0;
 let gameRunning = false;
 let gameStarted = false;
-let gameSpeed = 100;
+let gameSpeed = difficultyConfig.easy.speed;
 let gameLoopId = null;
 let highScore = 0;
 
@@ -44,6 +53,26 @@ if (savedHighScore) {
 }
 highScoreElement.textContent = highScore;
 
+// 难度选择
+const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+difficultyBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+        if (gameRunning) return; // 游戏运行中不能切换难度
+
+        // 移除所有选中状态
+        difficultyBtns.forEach(b => b.classList.remove('selected'));
+        // 添加当前选中状态
+        this.classList.add('selected');
+
+        // 设置新难度
+        currentDifficulty = this.dataset.difficulty;
+        gameSpeed = difficultyConfig[currentDifficulty].speed;
+
+        // 重置游戏
+        resetGame();
+    });
+});
+
 document.addEventListener('keydown', changeDirection);
 restartBtn.addEventListener('click', resetGame);
 startBtn.addEventListener('click', startGame);
@@ -51,11 +80,10 @@ startBtn.addEventListener('click', startGame);
 // 触摸支持 - 优化微信环境
 let touchStartX = 0;
 let touchStartY = 0;
-const minSwipeDistance = 30; // 最小滑动距离
+const minSwipeDistance = 30;
 
 // 防止微信长按弹出菜单 - 但不影响画布和按钮
 document.addEventListener('contextmenu', function(e) {
-    // 允许画布和按钮的默认行为
     if (e.target.tagName === 'CANVAS' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
         return;
     }
@@ -66,7 +94,6 @@ document.addEventListener('contextmenu', function(e) {
 // 防止双击缩放 - 但不影响按钮点击
 let lastTouchEnd = 0;
 document.addEventListener('touchend', function(e) {
-    // 如果点击的是按钮，不阻止默认行为
     if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
         return;
     }
@@ -84,7 +111,7 @@ canvas.addEventListener('touchstart', function(e) {
 }, {passive: false});
 
 canvas.addEventListener('touchmove', function(e) {
-    e.preventDefault(); // 防止滑动时页面滚动
+    e.preventDefault();
 }, {passive: false});
 
 canvas.addEventListener('touchend', function(e) {
@@ -97,20 +124,17 @@ canvas.addEventListener('touchend', function(e) {
     const diffX = touchEndX - touchStartX;
     const diffY = touchEndY - touchStartY;
 
-    // 只有滑动距离超过阈值才响应
     if (Math.abs(diffX) < minSwipeDistance && Math.abs(diffY) < minSwipeDistance) {
         return;
     }
 
     if (Math.abs(diffX) > Math.abs(diffY)) {
-        // 水平滑动
         if (diffX > 0 && dx !== -1) {
             dx = 1; dy = 0;
         } else if (diffX < 0 && dx !== 1) {
             dx = -1; dy = 0;
         }
     } else {
-        // 垂直滑动
         if (diffY > 0 && dy !== -1) {
             dx = 0; dy = 1;
         } else if (diffY < 0 && dy !== 1) {
@@ -119,7 +143,6 @@ canvas.addEventListener('touchend', function(e) {
     }
 }, {passive: false});
 
-// 鼠标点击支持
 canvas.addEventListener('click', function(e) {
     if (!gameStarted) {
         startGame();
@@ -127,8 +150,10 @@ canvas.addEventListener('click', function(e) {
     }
 
     const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clickX = (e.clientX - rect.left) * scaleX;
+    const clickY = (e.clientY - rect.top) * scaleY;
     const snakeHead = snake[0];
 
     const headX = snakeHead.x * gridSize + gridSize/2;
@@ -156,7 +181,6 @@ function startGame() {
     gameStarted = true;
     gameRunning = true;
     startBtn.style.display = 'none';
-    // 设置初始移动方向
     dx = 1;
     dy = 0;
     gameLoop();
@@ -174,13 +198,11 @@ function gameLoop() {
 function update() {
     const head = {x: snake[0].x + dx, y: snake[0].y + dy};
 
-    // 检查撞墙
     if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
         endGame();
         return;
     }
 
-    // 检查撞自己
     for (let i = 0; i < snake.length; i++) {
         if (head.x === snake[i].x && head.y === snake[i].y) {
             endGame();
@@ -190,32 +212,24 @@ function update() {
 
     snake.unshift(head);
 
-    // 检查吃到食物
     if (head.x === food.x && head.y === food.y) {
         score += 10;
         scoreElement.textContent = score;
-        // 更新最高分
         if (score > highScore) {
             highScore = score;
             highScoreElement.textContent = highScore;
             localStorage.setItem('snakeHighScore', highScore);
         }
         generateFood();
-        // 加速
-        if (gameSpeed > 50) {
-            gameSpeed -= 2;
-        }
     } else {
         snake.pop();
     }
 }
 
 function draw() {
-    // 清空画布
     ctx.fillStyle = '#f0f0f0';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 画蛇
     snake.forEach((segment, index) => {
         const gradient = ctx.createRadialGradient(
             segment.x * gridSize + gridSize/2,
@@ -227,11 +241,9 @@ function draw() {
         );
 
         if (index === 0) {
-            // 蛇头
             gradient.addColorStop(0, '#27ae60');
             gradient.addColorStop(1, '#1e8449');
         } else {
-            // 蛇身
             const alpha = 1 - (index / snake.length) * 0.5;
             gradient.addColorStop(0, `rgba(46, 204, 113, ${alpha})`);
             gradient.addColorStop(1, `rgba(39, 174, 96, ${alpha})`);
@@ -257,7 +269,6 @@ function draw() {
         }
         ctx.fill();
 
-        // 画眼睛
         if (index === 0) {
             ctx.fillStyle = 'white';
             ctx.beginPath();
@@ -289,7 +300,6 @@ function draw() {
         }
     });
 
-    // 画食物
     const foodGradient = ctx.createRadialGradient(
         food.x * gridSize + gridSize/2,
         food.y * gridSize + gridSize/2,
@@ -311,7 +321,6 @@ function draw() {
     );
     ctx.fill();
 
-    // 食物高光
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.beginPath();
     ctx.arc(
@@ -329,7 +338,6 @@ function generateFood() {
         y: Math.floor(Math.random() * tileCount)
     };
 
-    // 确保食物不在蛇身上
     for (let segment of snake) {
         if (segment.x === food.x && food.y === segment.y) {
             generateFood();
@@ -385,24 +393,22 @@ function endGame() {
 }
 
 function resetGame() {
-    snake = [{x: 10, y: 10}];
+    snake = [{x: 9, y: 9}];
     food = {x: 15, y: 15};
     dx = 0;
     dy = 0;
     score = 0;
-    gameSpeed = 100;
+    gameSpeed = difficultyConfig[currentDifficulty].speed;
     scoreElement.textContent = score;
     gameRunning = true;
     gameStarted = true;
     gameOverElement.style.display = 'none';
     restartBtn.style.display = 'none';
 
-    // 自动开始移动
     dx = 1;
     dy = 0;
 
     gameLoop();
 }
 
-// 初始画面
 draw();
