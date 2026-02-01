@@ -418,9 +418,14 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// 触摸控制 - 全屏滑动
+// 触摸控制 - 全屏滑动，支持连续滑动快速移动
 let touchStartX = 0;
 let touchStartY = 0;
+let lastMoveX = 0;
+let moveThrottle = null;
+let moveDirection = null; // 'left' 或 'right'
+const MOVE_THRESHOLD = 20; // 每20像素触发一次移动
+const THROTTLE_MS = 50; // 节流时间
 
 // 阻止按钮上的触摸事件传播到滑动控制
 document.querySelectorAll('.controls button, #startBtn').forEach(btn => {
@@ -442,7 +447,56 @@ document.addEventListener('touchstart', (e) => {
 
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
+    lastMoveX = touchStartX;
+    moveDirection = null;
 }, {passive: true});
+
+document.addEventListener('touchmove', (e) => {
+    // 如果点击的是按钮，不处理
+    if (e.target.closest('button')) return;
+    if (!gameRunning || !currentPiece) return;
+
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+
+    const diffX = currentX - touchStartX;
+    const diffY = currentY - touchStartY;
+
+    // 判断是否是水平滑动
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+        // 确定滑动方向
+        const newDirection = diffX > 0 ? 'right' : 'left';
+
+        // 如果方向改变或第一次滑动
+        if (moveDirection !== newDirection) {
+            moveDirection = newDirection;
+            lastMoveX = currentX;
+        }
+
+        // 计算自上次移动的距离
+        const moveDistance = Math.abs(currentX - lastMoveX);
+
+        // 如果移动距离超过阈值
+        if (moveDistance >= MOVE_THRESHOLD) {
+            // 节流控制
+            if (!moveThrottle) {
+                if (moveDirection === 'right') {
+                    moveRight();
+                } else {
+                    moveLeft();
+                }
+
+                // 更新上次移动位置
+                lastMoveX = currentX;
+
+                // 设置节流
+                moveThrottle = setTimeout(() => {
+                    moveThrottle = null;
+                }, THROTTLE_MS);
+            }
+        }
+    }
+}, {passive: false});
 
 document.addEventListener('touchend', (e) => {
     // 如果点击的是按钮，不处理
@@ -458,23 +512,22 @@ document.addEventListener('touchend', (e) => {
 
     const minSwipe = 30;
 
-    if (Math.abs(diffX) > Math.abs(diffY)) {
-        if (Math.abs(diffX) > minSwipe) {
-            if (diffX > 0) {
-                moveRight();
-            } else {
-                moveLeft();
-            }
-        }
-    } else {
-        if (Math.abs(diffY) > minSwipe) {
-            if (diffY > 0) {
-                hardDrop();
-            } else {
-                rotate();
-            }
+    // 如果只是简单点击/小滑动，处理垂直方向的操作
+    if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > minSwipe) {
+        if (diffY > 0) {
+            hardDrop();
+        } else {
+            rotate();
         }
     }
+    // 如果是水平滑动但距离很小（可能是点击），也可以触发旋转
+    else if (Math.abs(diffX) < minSwipe && Math.abs(diffY) < minSwipe) {
+        // 小滑动时不做额外处理，touchmove 已经处理了
+    }
+
+    // 重置状态
+    moveDirection = null;
+    moveThrottle = null;
 }, {passive: false});
 
 // 点击画布开始游戏
