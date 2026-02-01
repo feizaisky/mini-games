@@ -21,8 +21,8 @@
         html, body {
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: none;
-            height: 100%;
-            overflow: hidden;
+            min-height: 100%;
+            overflow: auto;
         }
         body {
             display: flex;
@@ -108,23 +108,34 @@
         }
         .result-card {
             display: none;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .result-top {
+            margin-bottom: 15px;
+        }
+        .result-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
         }
         .result-type {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: bold;
             color: #667eea;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
         .result-name {
-            font-size: 18px;
+            font-size: 16px;
             color: #333;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
         .result-desc {
-            font-size: 14px;
+            font-size: 13px;
             color: #666;
-            line-height: 1.6;
-            margin-bottom: 15px;
+            line-height: 1.5;
+            margin-bottom: 10px;
         }
         .result-traits {
             display: flex;
@@ -155,6 +166,93 @@
         }
         .restart-btn:active {
             transform: scale(0.95);
+        }
+        .setup-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .setup-title {
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 12px;
+        }
+        .question-count-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .count-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .count-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .count-btn.selected {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+        .start-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            font-size: 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .start-btn:hover {
+            background: #764ba2;
+        }
+        .start-btn:active {
+            transform: scale(0.95);
+        }
+        .answer-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #eee;
+        }
+        .answer-section-title {
+            margin: 0 0 10px 0;
+            color: #667eea;
+            font-size: 14px;
+            text-align: left;
+        }
+        .answer-list {
+            max-height: 280px;
+            overflow-y: auto;
+            text-align: left;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .answer-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 13px;
+        }
+        .answer-item:last-child {
+            border-bottom: none;
+        }
+        .answer-question {
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .answer-choice {
+            color: #333;
+            font-weight: 500;
         }
         .home-btn {
             position: fixed;
@@ -202,22 +300,43 @@
 <body>
     <div class="container">
         <h1>🧠 MBTI 人格测试</h1>
-        <p class="subtitle">回答 12 道问题，探索你的性格类型</p>
+        <p class="subtitle" id="subtitle">选择题目数量，探索你的性格类型</p>
 
-        <div class="progress-bar">
+        <div class="setup-card" id="setupCard">
+            <div class="setup-title">选择题目数量：</div>
+            <div class="question-count-options">
+                <button class="count-btn" data-count="12">12 道</button>
+                <button class="count-btn" data-count="24">24 道</button>
+                <button class="count-btn" data-count="36">36 道</button>
+                <button class="count-btn" data-count="48">48 道</button>
+            </div>
+            <button class="start-btn" id="startBtn">开始测试</button>
+        </div>
+
+        <div class="progress-bar" id="progressBar" style="display: none;">
             <div class="progress-fill" id="progressFill"></div>
         </div>
 
-        <div class="question-card" id="questionCard">
+        <div class="question-card" id="questionCard" style="display: none;">
             <div class="question-text" id="questionText"></div>
             <div class="options" id="optionsContainer"></div>
         </div>
 
-        <div class="result-card" id="resultCard">
-            <div class="result-type" id="resultType"></div>
-            <div class="result-name" id="resultName"></div>
-            <div class="result-desc" id="resultDesc"></div>
-            <div class="result-traits" id="resultTraits"></div>
+        <div class="result-card" id="resultCard" style="display: none;">
+            <div class="result-top">
+                <div class="result-section">
+                    <div class="result-type" id="resultType"></div>
+                    <div class="result-name" id="resultName"></div>
+                    <div class="result-desc" id="resultDesc"></div>
+                    <div class="result-traits" id="resultTraits"></div>
+                </div>
+            </div>
+            <div class="answer-section">
+                <h4 class="answer-section-title">你的选择</h4>
+                <div class="answer-list" id="answerList">
+                    <!-- 答案记录 -->
+                </div>
+            </div>
         </div>
 
         <button class="restart-btn" id="restartBtn" style="display: none;">重新测试</button>
