@@ -11,13 +11,13 @@ const startBtn = document.getElementById('startBtn');
 // 响应式画布大小
 function resizeCanvas() {
     const containerWidth = document.querySelector('.game-container').clientWidth - 60;
-    if (window.innerWidth <= 768 && containerWidth < 300) {
-        const scale = containerWidth / 300;
+    if (window.innerWidth <= 768 && containerWidth < 150) {
+        const scale = containerWidth / 150;
         canvas.style.width = containerWidth + 'px';
-        canvas.style.height = (600 * scale) + 'px';
+        canvas.style.height = (300 * scale) + 'px';
     } else {
-        canvas.style.width = '300px';
-        canvas.style.height = '600px';
+        canvas.style.width = '150px';
+        canvas.style.height = '300px';
     }
 }
 
@@ -26,8 +26,8 @@ resizeCanvas();
 
 const COLS = 10;
 const ROWS = 20;
-const BLOCK_SIZE = 30;
-const NEXT_BLOCK_SIZE = 25;
+const BLOCK_SIZE = 15;
+const NEXT_BLOCK_SIZE = 12;
 
 // 方块形状
 const SHAPES = [
