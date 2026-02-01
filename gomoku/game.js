@@ -6,9 +6,9 @@ const undoBtn = document.getElementById('undoBtn');
 const restartBtn = document.getElementById('restartBtn');
 
 // 游戏配置
-const BOARD_SIZE = 15;
+const BOARD_SIZE = 13; // 减小到13x13，更适合小朋友
 const CELL_SIZE = 20;
-const PADDING = 12;
+const PADDING = 10;
 
 // 游戏状态
 let board = [];
@@ -37,11 +37,12 @@ function initBoard() {
 
 // 绘制棋盘
 function drawBoard() {
-    ctx.fillStyle = '#DEB887';
+    // 棋盘底色 - 更柔和的木色
+    ctx.fillStyle = '#F5DEB3';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.strokeStyle = '#8B4513';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.5;
 
     // 画网格线
     for (let i = 0; i < BOARD_SIZE; i++) {
@@ -59,12 +60,13 @@ function drawBoard() {
     }
 
     // 画天元和星位
-    const stars = [3, 7, 11];
-    ctx.fillStyle = '#8B4513';
+    const center = Math.floor(BOARD_SIZE / 2);
+    const stars = BOARD_SIZE === 13 ? [3, 6, 9] : [3, 7, 11];
+    ctx.fillStyle = '#CD853F';
     for (let i of stars) {
         for (let j of stars) {
             ctx.beginPath();
-            ctx.arc(PADDING + i * CELL_SIZE, PADDING + j * CELL_SIZE, 3, 0, Math.PI * 2);
+            ctx.arc(PADDING + i * CELL_SIZE, PADDING + j * CELL_SIZE, 3.5, 0, Math.PI * 2);
             ctx.fill();
         }
     }
@@ -78,18 +80,17 @@ function drawBoard() {
         }
     }
 
-    // 标记最后一步
+    // 标记最后一步 - 更明显的标记
     if (moveHistory.length > 0) {
         const lastMove = moveHistory[moveHistory.length - 1];
-        ctx.strokeStyle = '#ff0000';
-        ctx.lineWidth = 2;
+        ctx.fillStyle = '#FF6B6B';
         ctx.beginPath();
         ctx.arc(
             PADDING + lastMove.x * CELL_SIZE,
             PADDING + lastMove.y * CELL_SIZE,
-            5, 0, Math.PI * 2
+            4, 0, Math.PI * 2
         );
-        ctx.stroke();
+        ctx.fill();
     }
 }
 
@@ -97,29 +98,52 @@ function drawBoard() {
 function drawPiece(x, y, player) {
     const centerX = PADDING + x * CELL_SIZE;
     const centerY = PADDING + y * CELL_SIZE;
-    const radius = 8;
+    const radius = 8.5;
+
+    // 阴影
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.beginPath();
+    ctx.arc(centerX + 1, centerY + 1, radius, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
 
     if (player === 1) {
-        // 黑棋
-        const gradient = ctx.createRadialGradient(centerX - 2, centerY - 2, 0, centerX, centerY, radius);
-        gradient.addColorStop(0, '#555');
-        gradient.addColorStop(1, '#000');
+        // 黑棋 - 更有光泽
+        const gradient = ctx.createRadialGradient(centerX - 3, centerY - 3, 0, centerX, centerY, radius);
+        gradient.addColorStop(0, '#666');
+        gradient.addColorStop(0.3, '#444');
+        gradient.addColorStop(1, '#111');
         ctx.fillStyle = gradient;
     } else {
-        // 白棋
-        const gradient = ctx.createRadialGradient(centerX - 2, centerY - 2, 0, centerX, centerY, radius);
+        // 白棋 - 更纯净
+        const gradient = ctx.createRadialGradient(centerX - 3, centerY - 3, 0, centerX, centerY, radius);
         gradient.addColorStop(0, '#fff');
+        gradient.addColorStop(0.7, '#f0f0f0');
         gradient.addColorStop(1, '#ddd');
         ctx.fillStyle = gradient;
     }
 
     ctx.fill();
-    ctx.strokeStyle = player === 1 ? '#000' : '#999';
-    ctx.lineWidth = 1;
+
+    // 边框
+    ctx.strokeStyle = player === 1 ? '#222' : '#bbb';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
+
+    // 高光
+    if (player === 1) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.beginPath();
+        ctx.arc(centerX - 2.5, centerY - 2.5, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.beginPath();
+        ctx.arc(centerX - 2.5, centerY - 2.5, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
 }
 
 // 点击事件
@@ -295,7 +319,8 @@ function getCandidateMoves() {
 
     // 如果棋盘为空，返回中心位置
     if (candidates.length === 0) {
-        return [{x: 7, y: 7}];
+        const center = Math.floor(BOARD_SIZE / 2);
+        return [{x: center, y: center}];
     }
 
     return candidates;
@@ -312,8 +337,9 @@ function evaluateMove(x, y, config) {
     score += evaluatePosition(x, y, 1) * 1.0;
 
     // 位置加分（越靠近中心越好）
-    const centerBonus = (7 - Math.abs(x - 7)) + (7 - Math.abs(y - 7));
-    score += centerBonus * 0.1;
+    const center = Math.floor(BOARD_SIZE / 2);
+    const centerBonus = (center - Math.abs(x - center)) + (center - Math.abs(y - center));
+    score += centerBonus * 0.15;
 
     return score;
 }
