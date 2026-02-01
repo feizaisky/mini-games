@@ -6,9 +6,9 @@ const undoBtn = document.getElementById('undoBtn');
 const restartBtn = document.getElementById('restartBtn');
 
 // 游戏配置
-const BOARD_SIZE = 13; // 减小到13x13，更适合小朋友
-const CELL_SIZE = 22;
-const PADDING = 11;
+const BOARD_SIZE = 13;
+const CELL_SIZE = 26;
+const PADDING = 13;
 
 // 游戏状态
 let board = [];
