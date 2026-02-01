@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>五子棋游戏</title>
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        html, body {
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: none;
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 0;
+            padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom) 10px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Arial', sans-serif;
+            touch-action: manipulation;
+            overflow-y: auto;
+        }
+        .game-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 100%;
+            margin-top: env(safe-area-inset-top, 10px);
+        }
+        h1 {
+            color: #333;
+            margin: 0 0 8px 0;
+            font-size: 22px;
+        }
+        .status {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            min-height: 20px;
+        }
+        .status span {
+            font-weight: bold;
+        }
+        .status .black-turn { color: #333; }
+        .status .white-turn { color: #999; }
+        .difficulty-selector {
+            margin-bottom: 10px;
+        }
+        .difficulty-selector .label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .difficulty-btns {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .difficulty-btn {
+            background: #f0f0f0;
+            color: #666;
+            border: 2px solid #ddd;
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0;
+        }
+        .difficulty-btn.selected {
+            background: #f5576c;
+            color: white;
+            border-color: #f5576c;
+        }
+        #gameCanvas {
+            border: 3px solid #8B4513;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            max-width: 100%;
+            display: block;
+            margin: 0 auto;
+            background: #DEB887;
+        }
+        .game-over {
+            display: none;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .game-over.win {
+            color: #27ae60;
+        }
+        .game-over.lose {
+            color: #e74c3c;
+        }
+        .game-over.draw {
+            color: #f39c12;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #f5576c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            pointer-events: auto !important;
+            touch-action: manipulation !important;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+        .legend-dot.black {
+            background: #333;
+            border: 1px solid #000;
+        }
+        .legend-dot.white {
+            background: #fff;
+            border: 1px solid #999;
+        }
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 12px;
+            }
+            h1 {
+                font-size: 18px;
+            }
+            .status {
+                font-size: 13px;
+            }
+            .difficulty-btn {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+        }
+        @media (max-width: 400px) {
+            .game-container {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 16px;
+            }
+            button {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>⚫⚪ 五子棋</h1>
+        <div class="status">
+            当前: <span id="currentPlayer" class="black-turn">黑棋（你）</span>
+        </div>
+
+        <div class="difficulty-selector">
+            <div class="label">选择难度：</div>
+            <div class="difficulty-btns">
+                <button class="difficulty-btn selected" data-difficulty="easy">简单</button>
+                <button class="difficulty-btn" data-difficulty="medium">中等</button>
+                <button class="difficulty-btn" data-difficulty="hard">困难</button>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas" width="320" height="320"></canvas>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot black"></div>
+                <span>你（黑）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot white"></div>
+                <span>电脑（白）</span>
+            </div>
+        </div>
+
+        <div class="game-over" id="gameOver"></div>
+
+        <div class="btn-group">
+            <button id="undoBtn">悔棋</button>
+            <button id="restartBtn">重新开始</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
