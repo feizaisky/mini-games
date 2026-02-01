@@ -37,23 +37,23 @@
         .game-container {
             text-align: center;
             background: rgba(255, 255, 255, 0.95);
-            padding: 16px;
+            padding: 20px;
             border-radius: 15px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-            max-width: 340px;
+            max-width: 380px;
             width: 100%;
         }
         h1 {
             color: #333;
-            margin: 0 0 12px 0;
-            font-size: 20px;
+            margin: 0 0 16px 0;
+            font-size: 22px;
         }
         .game-wrapper {
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: 16px;
+            margin-bottom: 16px;
         }
         #gameCanvas {
             border: 3px solid #333;
@@ -65,35 +65,35 @@
         .side-panel {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
         .info-box {
             background: #f8f9fa;
-            padding: 10px 12px;
+            padding: 12px 14px;
             border-radius: 10px;
             text-align: center;
-            min-width: 70px;
+            min-width: 75px;
         }
         .info-box .label {
-            font-size: 12px;
+            font-size: 13px;
             color: #888;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
         .info-box .value {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             color: #667eea;
         }
         .next-box {
             background: #f8f9fa;
-            padding: 10px;
+            padding: 12px;
             border-radius: 10px;
             text-align: center;
         }
         .next-box .label {
-            font-size: 12px;
+            font-size: 13px;
             color: #888;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         #nextCanvas {
             border: 2px solid #ddd;
@@ -104,8 +104,8 @@
             background: #667eea;
             color: white;
             border: none;
-            padding: 12px 18px;
-            font-size: 14px;
+            padding: 14px 20px;
+            font-size: 15px;
             border-radius: 22px;
             cursor: pointer;
             transition: all 0.2s;
@@ -116,11 +116,11 @@
         }
         .game-over {
             display: none;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: bold;
             text-align: center;
-            margin: 12px 0;
-            padding: 12px;
+            margin: 14px 0;
+            padding: 14px;
             border-radius: 10px;
         }
         .game-over.show {
@@ -129,11 +129,11 @@
             color: #856404;
         }
         .swipe-hint {
-            margin: 10px 0;
-            padding: 10px;
+            margin: 12px 0;
+            padding: 12px;
             background: #f0f4ff;
             border-radius: 10px;
-            font-size: 12px;
+            font-size: 13px;
             color: #667eea;
         }
         .swipe-hint p {
@@ -145,14 +145,14 @@
                 ". up ."
                 "left down right";
             justify-content: center;
-            gap: 8px;
-            margin-top: 12px;
+            gap: 10px;
+            margin-top: 16px;
         }
         .controls button {
-            width: 55px;
-            height: 55px;
-            font-size: 20px;
-            padding: 12px;
+            width: 60px;
+            height: 60px;
+            font-size: 22px;
+            padding: 14px;
         }
         .controls .up { grid-area: up; }
         .controls .down { grid-area: down; }
@@ -164,31 +164,31 @@
                 align-items: flex-start;
             }
             .game-container {
-                padding: 12px;
+                padding: 16px;
                 margin-top: env(safe-area-inset-top, 8px);
             }
             h1 {
-                font-size: 18px;
-                margin-bottom: 10px;
+                font-size: 20px;
+                margin-bottom: 14px;
             }
             .game-wrapper {
-                gap: 10px;
-                margin-bottom: 10px;
+                gap: 14px;
+                margin-bottom: 14px;
             }
             .info-box {
-                min-width: 65px;
-                padding: 8px 10px;
+                min-width: 70px;
+                padding: 10px 12px;
             }
             .info-box .label {
-                font-size: 11px;
+                font-size: 12px;
             }
             .info-box .value {
-                font-size: 16px;
+                font-size: 18px;
             }
             .controls button {
-                width: 52px;
-                height: 52px;
-                font-size: 18px;
+                width: 56px;
+                height: 56px;
+                font-size: 20px;
             }
         }
         @media (max-width: 400px) {

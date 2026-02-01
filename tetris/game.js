@@ -388,18 +388,36 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// 触摸控制
+// 触摸控制 - 全屏滑动
 let touchStartX = 0;
 let touchStartY = 0;
 
-canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
+// 阻止按钮上的触摸事件传播到滑动控制
+document.querySelectorAll('.controls button, #startBtn').forEach(btn => {
+    btn.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+    }, {capture: true});
+    btn.addEventListener('touchend', (e) => {
+        e.stopPropagation();
+    }, {capture: true});
+    btn.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+    }, {capture: true});
+});
+
+// 全屏触摸控制
+document.addEventListener('touchstart', (e) => {
+    // 如果点击的是按钮，不处理
+    if (e.target.closest('button')) return;
+
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
-}, {passive: false});
+}, {passive: true});
 
-canvas.addEventListener('touchend', (e) => {
-    e.preventDefault();
+document.addEventListener('touchend', (e) => {
+    // 如果点击的是按钮，不处理
+    if (e.target.closest('button')) return;
+
     if (!gameRunning || !currentPiece) return;
 
     const touchEndX = e.changedTouches[0].clientX;
