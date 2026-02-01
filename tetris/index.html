@@ -37,28 +37,33 @@
         .game-container {
             text-align: center;
             background: rgba(255, 255, 255, 0.95);
-            padding: 15px;
+            padding: 12px;
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            max-width: 380px;
+            max-width: 100%;
             width: 100%;
+            max-height: 100vh;
+            overflow-y: auto;
         }
         h1 {
             color: #333;
-            margin: 0 0 10px 0;
-            font-size: 20px;
+            margin: 0 0 8px 0;
+            font-size: 18px;
         }
         .game-area {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
         }
         #gameCanvas {
             border: 3px solid #333;
             border-radius: 8px;
             box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.1);
             background: #111;
+            max-width: 100%;
+            height: auto;
         }
         .info-panel {
             display: flex;
@@ -141,52 +146,65 @@
         .mobile-controls .left { grid-area: left; }
         .mobile-controls .right { grid-area: right; }
         @media (max-width: 768px) {
+            body {
+                padding: env(safe-area-inset-top) 8px 8px 8px;
+                align-items: flex-start;
+            }
             .game-container {
-                padding: 12px;
+                padding: 10px;
+                margin-top: env(safe-area-inset-top, 8px);
             }
             h1 {
-                font-size: 18px;
-                margin-bottom: 8px;
+                font-size: 16px;
+                margin-bottom: 6px;
             }
             .game-area {
-                gap: 8px;
-                margin-bottom: 8px;
+                gap: 6px;
+                margin-bottom: 6px;
             }
-            #gameCanvas {
-                max-width: 100%;
-                height: auto;
+            .info-panel {
+                gap: 6px;
             }
             #nextCanvas {
                 max-width: 100%;
                 height: auto;
             }
             .score-box {
-                min-width: 60px;
-                padding: 6px;
+                min-width: 55px;
+                padding: 5px;
             }
             .score-box .label {
                 font-size: 9px;
             }
             .score-box .value {
-                font-size: 14px;
+                font-size: 13px;
+            }
+            button {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+            .mobile-controls {
+                margin-top: 8px;
             }
         }
         @media (max-width: 400px) {
             .game-container {
-                padding: 10px;
+                padding: 8px;
             }
             h1 {
-                font-size: 16px;
-            }
-            .info-panel {
-                gap: 6px;
+                font-size: 15px;
             }
             .score-box {
-                min-width: 55px;
-                padding: 5px;
+                min-width: 50px;
+                padding: 4px;
             }
             .score-box .value {
-                font-size: 13px;
+                font-size: 12px;
+            }
+            .mobile-controls button {
+                width: 45px;
+                height: 45px;
+                font-size: 16px;
             }
         }
     </style>
@@ -196,7 +214,7 @@
         <h1>🎯 俄罗斯方块</h1>
 
         <div class="game-area">
-            <canvas id="gameCanvas" width="200" height="400"></canvas>
+            <canvas id="gameCanvas" width="180" height="360"></canvas>
 
             <div class="info-panel">
                 <div class="score-box">
