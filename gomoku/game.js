@@ -7,8 +7,8 @@ const restartBtn = document.getElementById('restartBtn');
 
 // 游戏配置
 const BOARD_SIZE = 13; // 减小到13x13，更适合小朋友
-const CELL_SIZE = 20;
-const PADDING = 10;
+const CELL_SIZE = 22;
+const PADDING = 11;
 
 // 游戏状态
 let board = [];
