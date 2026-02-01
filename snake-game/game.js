@@ -82,19 +82,21 @@ let touchStartX = 0;
 let touchStartY = 0;
 const minSwipeDistance = 30;
 
-// 防止微信长按弹出菜单 - 但不影响画布和按钮
+// 防止微信长按弹出菜单 - 但不影响画布、按钮和链接
 document.addEventListener('contextmenu', function(e) {
-    if (e.target.tagName === 'CANVAS' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+    if (e.target.tagName === 'CANVAS' || e.target.tagName === 'BUTTON' || e.target.closest('button') ||
+        e.target.tagName === 'A' || e.target.closest('a')) {
         return;
     }
     e.preventDefault();
     return false;
 });
 
-// 防止双击缩放 - 但不影响按钮点击
+// 防止双击缩放 - 但不影响按钮和链接点击
 let lastTouchEnd = 0;
 document.addEventListener('touchend', function(e) {
-    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button') ||
+        e.target.tagName === 'A' || e.target.closest('a')) {
         return;
     }
     const now = Date.now();
@@ -116,7 +118,8 @@ canvas.addEventListener('touchmove', function(e) {
 
 // 全屏触摸控制
 document.addEventListener('touchstart', function(e) {
-    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button') ||
+        e.target.tagName === 'A' || e.target.closest('a')) {
         return;
     }
     touchStartX = e.touches[0].clientX;
@@ -124,14 +127,16 @@ document.addEventListener('touchstart', function(e) {
 }, {passive: false});
 
 document.addEventListener('touchmove', function(e) {
-    if (e.target.tagName === 'CANVAS' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+    if (e.target.tagName === 'CANVAS' || e.target.tagName === 'BUTTON' || e.target.closest('button') ||
+        e.target.tagName === 'A' || e.target.closest('a')) {
         return;
     }
     e.preventDefault();
 }, {passive: false});
 
 document.addEventListener('touchend', function(e) {
-    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button') ||
+        e.target.tagName === 'A' || e.target.closest('a')) {
         return;
     }
     e.preventDefault();

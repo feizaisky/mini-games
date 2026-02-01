@@ -44,6 +44,37 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             max-width: 100%;
         }
+        .home-btn {
+            position: fixed;
+            top: env(safe-area-inset-top, 10px);
+            left: 10px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            z-index: 1000;
+            transition: all 0.3s;
+            -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+        }
+        .home-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.1);
+        }
+        .home-btn:active {
+            transform: scale(0.95);
+        }
+        .home-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: #667eea;
+        }
         h1 {
             color: #333;
             margin: 0 0 6px 0;
@@ -204,6 +235,11 @@
         <button id="startBtn" class="action-btn">开始游戏</button>
         <div class="game-over" id="gameOver">游戏结束！</div>
         <button id="restartBtn" class="action-btn" style="display: none;">重新开始</button>
+        <a href="/" class="home-btn" aria-label="返回首页">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+        </a>
     </div>
 
     <script src="game.js"></script>

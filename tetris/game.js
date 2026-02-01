@@ -8,26 +8,55 @@ const levelElement = document.getElementById('level');
 const gameOverElement = document.getElementById('gameOver');
 const startBtn = document.getElementById('startBtn');
 
+const COLS = 10;
+const ROWS = 20;
+let BLOCK_SIZE = 20;
+let NEXT_BLOCK_SIZE = 15;
+
 // 响应式画布大小
 function resizeCanvas() {
-    const containerWidth = document.querySelector('.game-container').clientWidth - 60;
-    if (window.innerWidth <= 768 && containerWidth < 150) {
-        const scale = containerWidth / 150;
-        canvas.style.width = containerWidth + 'px';
-        canvas.style.height = (300 * scale) + 'px';
-    } else {
-        canvas.style.width = '150px';
-        canvas.style.height = '300px';
+    const container = document.querySelector('.game-container');
+    const containerWidth = container.clientWidth;
+    const sidePanelWidth = 60; // 侧边栏大约宽度
+
+    // 可用宽度（减去侧边栏和间距）
+    const availableWidth = containerWidth - sidePanelWidth - 20;
+
+    // 可用高度（减去标题、按钮等）
+    const headerHeight = 40; // 标题高度
+    const controlsHeight = 70; // 控制按钮高度
+    const hintHeight = 40; // 提示文字高度
+    const padding = 35; // 内边距
+    const availableHeight = window.innerHeight - headerHeight - controlsHeight - hintHeight - padding;
+
+    // 根据宽度和高度计算最大可能的方块大小
+    const maxBlockWidth = Math.floor(availableWidth / COLS);
+    const maxBlockHeight = Math.floor(availableHeight / ROWS);
+    BLOCK_SIZE = Math.min(maxBlockWidth, maxBlockHeight, 35); // 最大35px
+    BLOCK_SIZE = Math.max(BLOCK_SIZE, 15); // 最小15px
+
+    // 设置画布实际尺寸
+    canvas.width = COLS * BLOCK_SIZE;
+    canvas.height = ROWS * BLOCK_SIZE;
+
+    // 设置显示尺寸
+    canvas.style.width = canvas.width + 'px';
+    canvas.style.height = canvas.height + 'px';
+
+    // 更新下一个方块预览的大小
+    NEXT_BLOCK_SIZE = Math.floor(BLOCK_SIZE * 0.75);
+    nextCanvas.width = 4 * NEXT_BLOCK_SIZE;
+    nextCanvas.height = 4 * NEXT_BLOCK_SIZE;
+
+    // 如果游戏正在运行，重新绘制
+    if (board.length > 0) {
+        drawBoard();
+        drawNextPiece();
     }
 }
 
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
-
-const COLS = 10;
-const ROWS = 20;
-const BLOCK_SIZE = 15;
-const NEXT_BLOCK_SIZE = 12;
 
 // 方块形状
 const SHAPES = [
