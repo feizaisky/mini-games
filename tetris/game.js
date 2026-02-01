@@ -484,6 +484,10 @@ canvas.addEventListener('click', () => {
 });
 
 startBtn.addEventListener('click', startGame);
+startBtn.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    startGame();
+}, {passive: false});
 
 // 导出 tetris 对象供移动端控制使用
 const tetris = {
