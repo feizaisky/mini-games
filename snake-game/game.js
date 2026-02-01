@@ -8,9 +8,9 @@ const startBtn = document.getElementById('startBtn');
 
 // 难度配置
 const difficultyConfig = {
-    easy: { speed: 150, name: '简单' },
-    medium: { speed: 100, name: '中等' },
-    hard: { speed: 60, name: '困难' }
+    easy: { speed: 200, name: '简单' },
+    medium: { speed: 120, name: '中等' },
+    hard: { speed: 80, name: '困难' }
 };
 
 let currentDifficulty = 'easy';
