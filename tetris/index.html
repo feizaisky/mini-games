@@ -52,8 +52,8 @@
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            gap: 16px;
-            margin-bottom: 16px;
+            gap: 20px;
+            margin-bottom: 20px;
         }
         #gameCanvas {
             border: 3px solid #333;
@@ -65,14 +65,14 @@
         .side-panel {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
         }
         .info-box {
             background: #f8f9fa;
-            padding: 12px 14px;
+            padding: 14px 16px;
             border-radius: 10px;
             text-align: center;
-            min-width: 75px;
+            min-width: 80px;
         }
         .info-box .label {
             font-size: 13px;
@@ -129,12 +129,13 @@
             color: #856404;
         }
         .swipe-hint {
-            margin: 12px 0;
-            padding: 12px;
+            margin: 16px 0;
+            padding: 14px 16px;
             background: #f0f4ff;
-            border-radius: 10px;
-            font-size: 13px;
+            border-radius: 12px;
+            font-size: 14px;
             color: #667eea;
+            line-height: 1.6;
         }
         .swipe-hint p {
             margin: 0;
@@ -145,8 +146,8 @@
                 ". up ."
                 "left down right";
             justify-content: center;
-            gap: 10px;
-            margin-top: 16px;
+            gap: 12px;
+            margin-top: 20px;
         }
         .controls button {
             width: 60px;
@@ -164,26 +165,31 @@
                 align-items: flex-start;
             }
             .game-container {
-                padding: 16px;
+                padding: 18px;
                 margin-top: env(safe-area-inset-top, 8px);
             }
             h1 {
                 font-size: 20px;
-                margin-bottom: 14px;
+                margin-bottom: 16px;
             }
             .game-wrapper {
-                gap: 14px;
-                margin-bottom: 14px;
+                gap: 16px;
+                margin-bottom: 16px;
             }
             .info-box {
-                min-width: 70px;
-                padding: 10px 12px;
+                min-width: 75px;
+                padding: 12px 14px;
             }
             .info-box .label {
                 font-size: 12px;
             }
             .info-box .value {
                 font-size: 18px;
+            }
+            .swipe-hint {
+                font-size: 13px;
+                margin: 14px 0;
+                padding: 12px 14px;
             }
             .controls button {
                 width: 56px;
