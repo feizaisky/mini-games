@@ -27,29 +27,32 @@
         body {
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
             margin: 0;
             padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom) 10px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Arial', sans-serif;
             touch-action: manipulation;
-            overflow-y: auto;
         }
         .game-container {
-            display: flex;
-            gap: 10px;
+            text-align: center;
             background: rgba(255, 255, 255, 0.95);
-            padding: 10px;
-            border-radius: 15px;
+            padding: 15px;
+            border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            max-width: 100%;
-            margin-top: env(safe-area-inset-top, 5px);
+            max-width: 380px;
+            width: 100%;
         }
         h1 {
             color: #333;
-            margin: 0;
-            font-size: 16px;
-            width: 100%;
+            margin: 0 0 10px 0;
+            font-size: 20px;
+        }
+        .game-area {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
         }
         #gameCanvas {
             border: 3px solid #333;
@@ -57,11 +60,10 @@
             box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.1);
             background: #111;
         }
-        .side-panel {
+        .info-panel {
             display: flex;
             flex-direction: column;
             gap: 8px;
-            min-width: 80px;
         }
         .score-box {
             background: #bbada0;
@@ -69,6 +71,7 @@
             padding: 8px;
             border-radius: 8px;
             text-align: center;
+            min-width: 70px;
         }
         .score-box .label {
             font-size: 10px;
@@ -86,7 +89,7 @@
         }
         .next-piece h3 {
             margin: 0 0 5px 0;
-            font-size: 11px;
+            font-size: 10px;
             color: #666;
         }
         #nextCanvas {
@@ -94,19 +97,15 @@
             border-radius: 5px;
             background: #111;
         }
-        .controls {
-            display: none;
-        }
         button {
             background: #667eea;
             color: white;
             border: none;
-            padding: 8px 15px;
+            padding: 10px 18px;
             font-size: 13px;
             border-radius: 20px;
             cursor: pointer;
             transition: all 0.3s;
-            width: 100%;
         }
         button:active {
             transform: scale(0.95);
@@ -117,43 +116,41 @@
             font-size: 16px;
             font-weight: bold;
             text-align: center;
-            margin-top: 5px;
+            margin: 10px 0;
         }
         .mobile-controls {
             display: none;
+            margin-top: 10px;
         }
+        .mobile-controls {
+            display: grid;
+            grid-template-areas:
+                ". up ."
+                "left down right";
+            justify-content: center;
+            gap: 5px;
+        }
+        .mobile-controls button {
+            width: 50px;
+            height: 50px;
+            font-size: 18px;
+            padding: 10px;
+        }
+        .mobile-controls .up { grid-area: up; }
+        .mobile-controls .down { grid-area: down; }
+        .mobile-controls .left { grid-area: left; }
+        .mobile-controls .right { grid-area: right; }
         @media (max-width: 768px) {
             .game-container {
-                flex-direction: column;
-                padding: 8px;
-                gap: 8px;
+                padding: 12px;
             }
             h1 {
-                font-size: 14px;
-                margin-bottom: 3px;
+                font-size: 18px;
+                margin-bottom: 8px;
             }
-            .side-panel {
-                flex-direction: row;
-                justify-content: space-between;
-                gap: 5px;
-                width: 100%;
-            }
-            .score-box {
-                flex: 1;
-                padding: 5px;
-                min-width: 50px;
-            }
-            .score-box .label {
-                font-size: 9px;
-            }
-            .score-box .value {
-                font-size: 14px;
-            }
-            .next-piece {
-                padding: 5px;
-            }
-            .next-piece h3 {
-                font-size: 10px;
+            .game-area {
+                gap: 8px;
+                margin-bottom: 8px;
             }
             #gameCanvas {
                 max-width: 100%;
@@ -163,44 +160,45 @@
                 max-width: 100%;
                 height: auto;
             }
-            .mobile-controls {
-                display: grid;
-                grid-template-areas:
-                    ". up ."
-                    "left down right";
-                justify-content: center;
-                gap: 5px;
-                width: 100%;
+            .score-box {
+                min-width: 60px;
+                padding: 6px;
             }
-            .mobile-controls button {
-                width: 50px;
-                height: 50px;
-                font-size: 18px;
-                padding: 10px;
+            .score-box .label {
+                font-size: 9px;
             }
-            .mobile-controls .up { grid-area: up; }
-            .mobile-controls .down { grid-area: down; }
-            .mobile-controls .left { grid-area: left; }
-            .mobile-controls .right { grid-area: right; }
+            .score-box .value {
+                font-size: 14px;
+            }
         }
         @media (max-width: 400px) {
             .game-container {
-                padding: 6px;
+                padding: 10px;
+            }
+            h1 {
+                font-size: 16px;
+            }
+            .info-panel {
+                gap: 6px;
+            }
+            .score-box {
+                min-width: 55px;
+                padding: 5px;
             }
             .score-box .value {
-                font-size: 12px;
+                font-size: 13px;
             }
         }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <div style="display: flex; gap: 10px; width: 100%; align-items: flex-start;">
-            <div style="flex: 1;">
-                <h1>🎯 俄罗斯方块</h1>
-                <canvas id="gameCanvas" width="240" height="480"></canvas>
-            </div>
-            <div class="side-panel">
+        <h1>🎯 俄罗斯方块</h1>
+
+        <div class="game-area">
+            <canvas id="gameCanvas" width="200" height="400"></canvas>
+
+            <div class="info-panel">
                 <div class="score-box">
                     <div class="label">得分</div>
                     <div class="value" id="score">0</div>
@@ -215,12 +213,14 @@
                 </div>
                 <div class="next-piece">
                     <h3>下一个</h3>
-                    <canvas id="nextCanvas" width="80" height="80"></canvas>
+                    <canvas id="nextCanvas" width="70" height="70"></canvas>
                 </div>
                 <button id="startBtn">开始</button>
             </div>
         </div>
+
         <div class="game-over" id="gameOver"></div>
+
         <!-- 移动端控制 -->
         <div class="mobile-controls">
             <button class="up" onclick="mobileControl('rotate')">↻</button>
