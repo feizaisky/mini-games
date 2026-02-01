@@ -49,14 +49,35 @@ document.addEventListener('keydown', changeDirection);
 restartBtn.addEventListener('click', resetGame);
 startBtn.addEventListener('click', startGame);
 
-// 触摸支持
+// 触摸支持 - 优化微信环境
 let touchStartX = 0;
 let touchStartY = 0;
+const minSwipeDistance = 30; // 最小滑动距离
+
+// 防止微信长按弹出菜单
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+
+// 防止双击缩放
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function(e) {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
 
 canvas.addEventListener('touchstart', function(e) {
     e.preventDefault();
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
+}, {passive: false});
+
+canvas.addEventListener('touchmove', function(e) {
+    e.preventDefault(); // 防止滑动时页面滚动
 }, {passive: false});
 
 canvas.addEventListener('touchend', function(e) {
@@ -68,6 +89,11 @@ canvas.addEventListener('touchend', function(e) {
 
     const diffX = touchEndX - touchStartX;
     const diffY = touchEndY - touchStartY;
+
+    // 只有滑动距离超过阈值才响应
+    if (Math.abs(diffX) < minSwipeDistance && Math.abs(diffY) < minSwipeDistance) {
+        return;
+    }
 
     if (Math.abs(diffX) > Math.abs(diffY)) {
         // 水平滑动
