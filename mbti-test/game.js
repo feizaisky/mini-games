@@ -129,6 +129,14 @@ const allQuestions = [
         { text: "从一个圈子移动到另一个", scores: { E: 2, I: 0 } },
         { text: "和固定的小圈子深入交流", scores: { E: 0, I: 2 } }
     ]},
+    { text: "接到陌生电话时，你更倾向于：", options: [
+        { text: "轻松交流，乐于寒暄", scores: { E: 2, I: 0 } },
+        { text: "直奔主题，尽快结束", scores: { E: 0, I: 2 } }
+    ]},
+    { text: "参加培训时，你更喜欢：", options: [
+        { text: "小组讨论和互动环节", scores: { E: 2, I: 0 } },
+        { text: "个人阅读和独立思考", scores: { E: 0, I: 2 } }
+    ]},
 
     // S/N 维度（实感/直觉）
     { text: "面对新信息，你更关注：", options: [
@@ -557,6 +565,9 @@ function showQuestion() {
         btn.onclick = () => selectOption(option, index);
         optionsContainer.appendChild(btn);
     });
+
+    // 移除所有按钮的焦点，避免移动端焦点残留
+    document.activeElement?.blur();
 
     updateProgress();
 }
