@@ -42,7 +42,6 @@ const savedHighScore = localStorage.getItem('snakeHighScore');
 if (savedHighScore) {
     highScore = parseInt(savedHighScore);
 }
-const highScoreElement = document.getElementById('highScore');
 highScoreElement.textContent = highScore;
 
 document.addEventListener('keydown', changeDirection);
@@ -54,15 +53,23 @@ let touchStartX = 0;
 let touchStartY = 0;
 const minSwipeDistance = 30; // 最小滑动距离
 
-// 防止微信长按弹出菜单
+// 防止微信长按弹出菜单 - 但不影响画布和按钮
 document.addEventListener('contextmenu', function(e) {
+    // 允许画布和按钮的默认行为
+    if (e.target.tagName === 'CANVAS' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+        return;
+    }
     e.preventDefault();
     return false;
 });
 
-// 防止双击缩放
+// 防止双击缩放 - 但不影响按钮点击
 let lastTouchEnd = 0;
 document.addEventListener('touchend', function(e) {
+    // 如果点击的是按钮，不阻止默认行为
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+        return;
+    }
     const now = Date.now();
     if (now - lastTouchEnd <= 300) {
         e.preventDefault();
