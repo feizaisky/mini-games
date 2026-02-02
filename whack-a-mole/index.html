@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>打地鼠</title>
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        html, body {
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: none;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Arial', sans-serif;
+            overflow-x: hidden;
+        }
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 15px;
+        }
+        h1 {
+            color: #fff;
+            margin-bottom: 8px;
+            margin-top: 0;
+            font-size: 26px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .info-bar {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .info-item {
+            text-align: center;
+        }
+        .info-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        .info-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #56ab2f;
+        }
+        .best-score {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 8px 15px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #56ab2f;
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(139, 90, 43, 0.3);
+            border-radius: 15px;
+        }
+        .hole {
+            aspect-ratio: 1;
+            background: linear-gradient(145deg, #8B4513, #654321);
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            box-shadow: inset 0 5px 15px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            transition: transform 0.1s;
+        }
+        .hole:active {
+            transform: scale(0.95);
+        }
+        .mole {
+            position: absolute;
+            bottom: -100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            height: 70%;
+            background: linear-gradient(145deg, #D2691E, #8B4513);
+            border-radius: 50% 50% 40% 40%;
+            transition: bottom 0.15s ease-out;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+        .mole::before {
+            content: '';
+            position: absolute;
+            top: 25%;
+            left: 20%;
+            width: 20%;
+            height: 20%;
+            background: #000;
+            border-radius: 50%;
+            box-shadow: 25px 0 0 #000;
+        }
+        .mole::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30%;
+            height: 15%;
+            background: #FFB6C1;
+            border-radius: 50%;
+        }
+        .mole.up {
+            bottom: 15%;
+        }
+        .mole.hit {
+            background: linear-gradient(145deg, #FFD700, #FFA500);
+        }
+        .mole.hit::before {
+            content: 'X';
+            color: #000;
+            font-size: 20px;
+            font-weight: bold;
+            background: transparent;
+            box-shadow: none;
+            text-align: center;
+            line-height: 1;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .btn {
+            background: linear-gradient(145deg, #56ab2f, #a8e063);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(86, 171, 47, 0.3);
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(86, 171, 47, 0.4);
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            animation: popIn 0.3s ease;
+        }
+        @keyframes popIn {
+            from {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .modal-title {
+            font-size: 24px;
+            color: #56ab2f;
+            margin-bottom: 10px;
+        }
+        .modal-score {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .home-btn {
+            position: fixed;
+            top: env(safe-area-inset-top, 10px);
+            left: 10px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+        .home-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.1);
+        }
+        .home-btn:active {
+            transform: scale(0.95);
+        }
+        .home-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: #56ab2f;
+        }
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 22px;
+            }
+            .game-board {
+                gap: 12px;
+                padding: 12px;
+            }
+            .info-value {
+                font-size: 18px;
+            }
+            .btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔨 打地鼠</h1>
+
+        <div class="info-bar">
+            <div class="info-item">
+                <div class="info-label">得分</div>
+                <div class="info-value" id="score">0</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">时间</div>
+                <div class="info-value" id="timer">60</div>
+            </div>
+        </div>
+
+        <div class="best-score" id="bestScore"></div>
+
+        <div class="game-board" id="gameBoard"></div>
+
+        <div class="buttons">
+            <button class="btn" id="startBtn" onclick="startGame()">🎮 开始游戏</button>
+        </div>
+    </div>
+
+    <a href="/" class="home-btn" aria-label="返回首页">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+    </a>
+
+    <div class="modal" id="endModal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle">游戏结束！</div>
+            <div class="modal-score" id="finalScore"></div>
+            <button class="btn" onclick="closeModal(); initGame();">再玩一次</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

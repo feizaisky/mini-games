@@ -224,6 +224,30 @@
                 <div class="game-title">MBTI测试</div>
                 <div class="game-desc">人格性格测试</div>
             </a>
+
+            <a href="/whack-a-mole/" class="game-card">
+                <div class="game-icon">🔨</div>
+                <div class="game-title">打地鼠</div>
+                <div class="game-desc">反应速度挑战</div>
+            </a>
+
+            <a href="/sudoku/" class="game-card">
+                <div class="game-icon">🔢</div>
+                <div class="game-title">数独</div>
+                <div class="game-desc">逻辑填数游戏</div>
+            </a>
+
+            <a href="/tic-tac-toe/" class="game-card">
+                <div class="game-icon">⭕</div>
+                <div class="game-title">井字棋</div>
+                <div class="game-desc">经典策略游戏</div>
+            </a>
+
+            <a href="/puzzle/" class="game-card">
+                <div class="game-icon">🧩</div>
+                <div class="game-title">拼图游戏</div>
+                <div class="game-desc">图像拼图挑战</div>
+            </a>
         </div>
 
         <p class="coming-soon">更多精彩游戏，敬请期待...</p>
@@ -275,6 +299,67 @@
                 scoreItem.innerHTML = `
                     <div class="game-name">🧠 记忆翻牌</div>
                     <div class="score-value">${memoryMoves}步 / ${timeStr}</div>
+                `;
+                scoresGrid.appendChild(scoreItem);
+            }
+
+            // 打地鼠最高分
+            const whackMoleHighScore = localStorage.getItem('whackMoleHighScore');
+            if (whackMoleHighScore) {
+                hasScores = true;
+                const scoreItem = document.createElement('div');
+                scoreItem.className = 'score-item';
+                scoreItem.innerHTML = `
+                    <div class="game-name">🔨 打地鼠</div>
+                    <div class="score-value">${whackMoleHighScore}分</div>
+                `;
+                scoresGrid.appendChild(scoreItem);
+            }
+
+            // 数独最佳时间
+            const sudokuBestTime = localStorage.getItem('sudokuBestTime');
+            if (sudokuBestTime) {
+                hasScores = true;
+                const scoreItem = document.createElement('div');
+                scoreItem.className = 'score-item';
+                const minutes = Math.floor(parseInt(sudokuBestTime) / 60);
+                const secs = parseInt(sudokuBestTime) % 60;
+                const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
+                scoreItem.innerHTML = `
+                    <div class="game-name">🔢 数独</div>
+                    <div class="score-value">${timeStr}</div>
+                `;
+                scoresGrid.appendChild(scoreItem);
+            }
+
+            // 井字棋统计
+            const tictactoeWins = localStorage.getItem('tictactoeWins');
+            if (tictactoeWins && parseInt(tictactoeWins) > 0) {
+                hasScores = true;
+                const losses = localStorage.getItem('tictactoeLosses') || 0;
+                const draws = localStorage.getItem('tictactoeDraws') || 0;
+                const scoreItem = document.createElement('div');
+                scoreItem.className = 'score-item';
+                scoreItem.innerHTML = `
+                    <div class="game-name">⭕ 井字棋</div>
+                    <div class="score-value">${tictactoeWins}胜</div>
+                `;
+                scoresGrid.appendChild(scoreItem);
+            }
+
+            // 拼图最佳成绩（显示3x3的）
+            const puzzleBestMoves = localStorage.getItem('puzzleBestMoves_3x3');
+            const puzzleBestTime = localStorage.getItem('puzzleBestTime_3x3');
+            if (puzzleBestMoves && puzzleBestTime) {
+                hasScores = true;
+                const scoreItem = document.createElement('div');
+                scoreItem.className = 'score-item';
+                const minutes = Math.floor(parseInt(puzzleBestTime) / 60);
+                const secs = parseInt(puzzleBestTime) % 60;
+                const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
+                scoreItem.innerHTML = `
+                    <div class="game-name">🧩 拼图</div>
+                    <div class="score-value">${puzzleBestMoves}步</div>
                 `;
                 scoresGrid.appendChild(scoreItem);
             }

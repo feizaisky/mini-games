@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>拼图游戏</title>
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        html, body {
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: none;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Arial', sans-serif;
+            overflow-x: hidden;
+        }
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 15px;
+        }
+        h1 {
+            color: #fff;
+            margin-bottom: 8px;
+            margin-top: 0;
+            font-size: 26px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .size-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        .size-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid transparent;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #fcb69f;
+        }
+        .size-btn.selected {
+            background: #fcb69f;
+            color: white;
+            border-color: white;
+        }
+        .size-btn:active {
+            transform: scale(0.95);
+        }
+        .info-bar {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 10px 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .info-item {
+            text-align: center;
+        }
+        .info-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        .info-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fcb69f;
+        }
+        .best-score {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 8px 15px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #fcb69f;
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .puzzle-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 10px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        #puzzleBoard {
+            display: grid;
+            gap: 2px;
+            background: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 1;
+        }
+        .puzzle-piece {
+            position: relative;
+            background-size: 300% 300%;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        .puzzle-piece.selected {
+            box-shadow: inset 0 0 0 4px #ffd700;
+        }
+        .puzzle-piece.correct {
+            filter: brightness(1.1);
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background: linear-gradient(145deg, #fcb69f, #ffecd2);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(252, 182, 159, 0.3);
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(252, 182, 159, 0.4);
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            animation: popIn 0.3s ease;
+        }
+        @keyframes popIn {
+            from {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .modal-title {
+            font-size: 24px;
+            color: #fcb69f;
+            margin-bottom: 10px;
+        }
+        .modal-score {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .preview-modal {
+            max-width: 350px;
+        }
+        .preview-image {
+            max-width: 100%;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .home-btn {
+            position: fixed;
+            top: env(safe-area-inset-top, 10px);
+            left: 10px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+        .home-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.1);
+        }
+        .home-btn:active {
+            transform: scale(0.95);
+        }
+        .home-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: #fcb69f;
+        }
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 22px;
+            }
+            .puzzle-piece {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧩 拼图游戏</h1>
+
+        <div class="size-selector">
+            <button class="size-btn selected" data-size="3">3×3</button>
+            <button class="size-btn" data-size="4">4×4</button>
+            <button class="size-btn" data-size="5">5×5</button>
+        </div>
+
+        <div class="info-bar">
+            <div class="info-item">
+                <div class="info-label">时间</div>
+                <div class="info-value" id="timer">00:00</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">步数</div>
+                <div class="info-value" id="moves">0</div>
+            </div>
+        </div>
+
+        <div class="best-score" id="bestScore"></div>
+
+        <div class="puzzle-container">
+            <div id="puzzleBoard"></div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn" onclick="shufflePieces()">🔀 打乱</button>
+            <button class="btn" onclick="showPreview()">👁️ 预览</button>
+            <button class="btn" onclick="newGame()">🔄 新图片</button>
+        </div>
+    </div>
+
+    <a href="/" class="home-btn" aria-label="返回首页">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+    </a>
+
+    <div class="modal" id="winModal">
+        <div class="modal-content">
+            <div class="modal-title">🎉 恭喜完成！</div>
+            <div class="modal-score" id="finalScore"></div>
+            <button class="btn" onclick="closeModal(); newGame();">再玩一次</button>
+        </div>
+    </div>
+
+    <div class="modal preview-modal" id="previewModal">
+        <div class="modal-content">
+            <h3>原图预览</h3>
+            <canvas id="previewCanvas" class="preview-image"></canvas>
+            <button class="btn" onclick="closePreviewModal()">关闭</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
