@@ -6,10 +6,12 @@ let selectedCell = null;
 let gameStarted = false;
 let gameTimer = null;
 let seconds = 0;
-let currentDifficulty = 'easy';
+let currentDifficulty = 'beginner';
+const difficultyStorageKey = 'sudokuDifficulty';
 
 // 难度配置（移除的数字数量）
 const difficultyConfig = {
+    beginner: 25,
     easy: 35,
     medium: 45,
     hard: 55
@@ -18,9 +20,9 @@ const difficultyConfig = {
 // 初始化游戏
 function initGame() {
     createBoard();
-    updateBestScore();
     updateGamesWon();
     setupDifficultyButtons();
+    loadDifficultyPreference();
     newGame();
 }
 
@@ -46,8 +48,18 @@ function setupDifficultyButtons() {
             buttons.forEach(b => b.classList.remove('selected'));
             this.classList.add('selected');
             currentDifficulty = this.dataset.difficulty;
+            localStorage.setItem(difficultyStorageKey, currentDifficulty);
             newGame();
         });
+    });
+}
+
+function loadDifficultyPreference() {
+    const saved = localStorage.getItem(difficultyStorageKey);
+    currentDifficulty = saved || 'beginner';
+    const buttons = document.querySelectorAll('.difficulty-btn');
+    buttons.forEach(b => {
+        b.classList.toggle('selected', b.dataset.difficulty === currentDifficulty);
     });
 }
 
@@ -252,25 +264,23 @@ function inputNumber(num) {
         cells[index].textContent = '';
         cells[index].classList.remove('error', 'same-number');
     } else {
-        // 检查是否有效
-        const tempBoard = board.map(r => [...r]);
-        tempBoard[row][col] = num;
-
-        if (isValidMove(tempBoard, row, col, num)) {
-            board[row][col] = num;
-            cells[index].textContent = num;
-            cells[index].classList.remove('error');
-            highlightSameNumber(num);
-        } else {
-            cells[index].textContent = num;
-            cells[index].classList.add('error');
-        }
+        // 允许填写，错误由统一校验标记
+        board[row][col] = num;
+        cells[index].textContent = num;
+        cells[index].classList.remove('error');
+        // 先清掉上一轮高亮，再高亮当前数字
+        cells.forEach(c => c.classList.remove('same-number'));
+        highlightSameNumber(num);
     }
 
-    // 检查是否完成
+    const errors = markErrors();
+
+    // 填满最后一格时提示结果
     if (isBoardFull()) {
-        if (checkWin()) {
+        if (errors === 0) {
             gameWon();
+        } else {
+            alert('填完了，但还有错误，请再检查。');
         }
     }
 }
@@ -297,14 +307,10 @@ function isBoardFull() {
     return true;
 }
 
-// 检查胜利
+// 检查胜利（已填满且与答案一致）
 function checkWin() {
-    for (let i = 0; i < 9; i++) {
-        for (let j = 0; j < 9; j++) {
-            if (board[i][j] !== solution[i][j]) return false;
-        }
-    }
-    return true;
+    if (!isBoardFull()) return false;
+    return markErrors() === 0;
 }
 
 // 开始计时
@@ -327,6 +333,8 @@ function updateTimer() {
 function updateBestScore() {
     const bestTime = localStorage.getItem('sudokuBestTime');
     const bestScoreElement = document.getElementById('bestScore');
+
+    if (!bestScoreElement) return;
 
     if (bestTime) {
         const minutes = Math.floor(parseInt(bestTime) / 60);
@@ -370,9 +378,60 @@ function gameWon() {
     modal.classList.add('show');
 }
 
+// 检查当前棋盘
+function checkBoard() {
+    if (!gameStarted) {
+        gameStarted = true;
+        startTimer();
+    }
+
+    const errors = markErrors();
+    if (!isBoardFull()) {
+        alert(errors > 0 ? `还有 ${errors} 处错误，且未填完。` : '还没填完，继续加油！');
+        return;
+    }
+
+    if (errors === 0) {
+        gameWon();
+    } else {
+        alert(`还有 ${errors} 处错误，再检查一下吧。`);
+    }
+}
+
+// 标记错误格子（与答案不一致，返回错误数量）
+function markErrors() {
+    const cells = document.querySelectorAll('.cell');
+    let errorCount = 0;
+    for (let i = 0; i < 81; i++) {
+        const row = Math.floor(i / 9);
+        const col = i % 9;
+        const value = board[row][col];
+        const cell = cells[i];
+        cell.classList.remove('error');
+
+        if (value === 0) continue;
+        if (value !== solution[row][col]) {
+            cell.classList.add('error');
+            errorCount++;
+        }
+    }
+
+    return errorCount;
+}
+
+
 // 关闭模态框
 function closeModal() {
     document.getElementById('winModal').classList.remove('show');
+}
+
+// 规则说明
+function openRules() {
+    document.getElementById('rulesModal').classList.add('show');
+}
+
+function closeRules() {
+    document.getElementById('rulesModal').classList.remove('show');
 }
 
 // 页面加载时初始化

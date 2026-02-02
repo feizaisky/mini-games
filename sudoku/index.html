@@ -40,12 +40,36 @@
             max-width: 500px;
             padding: 15px;
         }
+        .title-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
         h1 {
             color: #fff;
-            margin-bottom: 8px;
-            margin-top: 0;
+            margin: 0;
             font-size: 26px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .rules-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 255, 255, 0.9);
+            background: transparent;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .rules-btn:active {
+            transform: scale(0.95);
         }
         .difficulty-selector {
             display: flex;
@@ -94,15 +118,13 @@
             font-weight: bold;
             color: #667eea;
         }
-        .best-score {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 12px;
-            padding: 8px 15px;
-            margin-bottom: 12px;
-            font-size: 12px;
-            color: #667eea;
-            font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        .rules-text {
+            text-align: left;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.6;
+            margin: 0 0 16px 0;
+            padding-left: 18px;
         }
         .sudoku-board {
             display: grid;
@@ -138,7 +160,7 @@
             color: #cc0000;
         }
         .cell.same-number {
-            background: #e6f2ff;
+            background: #cfe6ff;
         }
         .cell:nth-child(3n) {
             border-right: 2px solid #333;
@@ -292,10 +314,14 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔢 数独</h1>
+        <div class="title-row">
+            <h1>🔢 数独</h1>
+            <button class="rules-btn" aria-label="规则说明" onclick="openRules()">i</button>
+        </div>
 
         <div class="difficulty-selector">
-            <button class="difficulty-btn selected" data-difficulty="easy">简单</button>
+            <button class="difficulty-btn selected" data-difficulty="beginner">新手</button>
+            <button class="difficulty-btn" data-difficulty="easy">简单</button>
             <button class="difficulty-btn" data-difficulty="medium">中等</button>
             <button class="difficulty-btn" data-difficulty="hard">困难</button>
         </div>
@@ -310,8 +336,6 @@
                 <div class="info-value" id="gamesWon">0</div>
             </div>
         </div>
-
-        <div class="best-score" id="bestScore"></div>
 
         <div class="sudoku-board" id="sudokuBoard"></div>
 
@@ -329,6 +353,7 @@
         </div>
 
         <div class="buttons">
+            <button class="btn" onclick="checkBoard()">✅ 检查</button>
             <button class="btn" onclick="newGame()">🔄 新游戏</button>
         </div>
     </div>
@@ -344,6 +369,18 @@
             <div class="modal-title">🎉 恭喜完成！</div>
             <div class="modal-score" id="finalScore"></div>
             <button class="btn" onclick="closeModal(); newGame();">再玩一次</button>
+        </div>
+    </div>
+
+    <div class="modal" id="rulesModal">
+        <div class="modal-content">
+            <div class="modal-title">📘 规则说明</div>
+            <ul class="rules-text">
+                <li>每行、每列只能出现一次 1-9。</li>
+                <li>每个 3x3 宫内只能出现一次 1-9。</li>
+                <li>全部填对即通关。</li>
+            </ul>
+            <button class="btn" onclick="closeRules()">知道了</button>
         </div>
     </div>
 
