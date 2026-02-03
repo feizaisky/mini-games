@@ -3,13 +3,17 @@ const ctx = canvas.getContext('2d');
 const statusEl = document.getElementById('status');
 const startBtn = document.getElementById('startBtn');
 const resetBtn = document.getElementById('resetBtn');
+const undoBtn = document.getElementById('undoBtn');
 const modeBtns = document.getElementById('modeBtns');
 const difficultyBtns = document.getElementById('difficultyBtns');
 
 const COLS = 9;
 const ROWS = 10;
-const CELL_SIZE = 60;
+const CELL_SIZE = 70;
 const PADDING = 30;
+const PIECE_RADIUS = Math.round(CELL_SIZE * 0.4);
+const SELECT_RADIUS = PIECE_RADIUS + 5;
+const MOVE_DOT_RADIUS = Math.max(7, Math.round(CELL_SIZE * 0.13));
 
 const COLORS = {
     red: '#d44b3f',
@@ -49,6 +53,8 @@ let gameMode = 'ai';
 let difficulty = 'easy';
 const humanColor = 'red';
 const aiColor = 'black';
+let moveHistory = [];
+let aiTimeoutId = null;
 
 function initBoard() {
     const emptyRow = () => Array.from({ length: COLS }, () => null);
@@ -81,6 +87,7 @@ function resetGame(keepMode = true) {
     gameOver = false;
     winner = null;
     aiThinking = false;
+    moveHistory = [];
     if (gameMode === 'ai' && currentPlayer === aiColor) {
         aiThinking = true;
     }
@@ -206,12 +213,12 @@ function drawPieces() {
             ctx.fillStyle = '#fffaf0';
             ctx.strokeStyle = piece.color === 'red' ? COLORS.red : COLORS.black;
             ctx.lineWidth = 3;
-            ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+            ctx.arc(cx, cy, PIECE_RADIUS, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
             ctx.fillStyle = piece.color === 'red' ? COLORS.red : COLORS.black;
-            ctx.font = '18px "KaiTi", "STKaiti", serif';
+            ctx.font = `${Math.round(CELL_SIZE * 0.36)}px "KaiTi", "STKaiti", serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(PIECE_SYMBOLS[piece.color][piece.type], cx, cy + 1);
@@ -229,7 +236,7 @@ function drawSelection() {
     ctx.strokeStyle = '#f7b731';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(cx, cy, 26, 0, Math.PI * 2);
+    ctx.arc(cx, cy, SELECT_RADIUS, 0, Math.PI * 2);
     ctx.stroke();
 
     legalMoves.forEach(move => {
@@ -237,7 +244,7 @@ function drawSelection() {
         const my = PADDING + move.y * CELL_SIZE;
         ctx.fillStyle = 'rgba(90, 153, 122, 0.6)';
         ctx.beginPath();
-        ctx.arc(mx, my, 8, 0, Math.PI * 2);
+        ctx.arc(mx, my, MOVE_DOT_RADIUS, 0, Math.PI * 2);
         ctx.fill();
     });
 }
@@ -617,8 +624,16 @@ function chooseAIMove() {
 }
 
 function handleMove(fromX, fromY, toX, toY) {
-    const target = board[toY][toX];
-    makeMove(fromX, fromY, toX, toY);
+    const prevPlayer = currentPlayer;
+    const target = makeMove(fromX, fromY, toX, toY);
+    moveHistory.push({
+        fromX,
+        fromY,
+        toX,
+        toY,
+        captured: target,
+        prevPlayer
+    });
 
     if (target && target.type === 'G') {
         gameOver = true;
@@ -653,9 +668,13 @@ function handleMove(fromX, fromY, toX, toY) {
 function triggerAIMove() {
     aiThinking = true;
     updateStatus();
-    setTimeout(() => {
+    if (aiTimeoutId) {
+        clearTimeout(aiTimeoutId);
+    }
+    aiTimeoutId = setTimeout(() => {
         const move = chooseAIMove();
         aiThinking = false;
+        aiTimeoutId = null;
         if (!move) {
             gameOver = true;
             winner = humanColor;
@@ -665,6 +684,42 @@ function triggerAIMove() {
         }
         handleMove(move.fromX, move.fromY, move.toX, move.toY);
     }, 200);
+}
+
+function undoSingleHistoryMove() {
+    const last = moveHistory.pop();
+    if (!last) return false;
+    const moving = board[last.toY][last.toX];
+    board[last.fromY][last.fromX] = moving;
+    board[last.toY][last.toX] = last.captured || null;
+    currentPlayer = last.prevPlayer;
+    return true;
+}
+
+function undoLastAction() {
+    if (!gameRunning || moveHistory.length === 0) return;
+    if (aiTimeoutId) {
+        clearTimeout(aiTimeoutId);
+        aiTimeoutId = null;
+    }
+    aiThinking = false;
+
+    let steps = 1;
+    if (gameMode === 'ai' && currentPlayer === humanColor && moveHistory.length >= 2) {
+        steps = 2;
+    }
+
+    for (let i = 0; i < steps; i++) {
+        if (!undoSingleHistoryMove()) break;
+    }
+
+    gameOver = false;
+    winner = null;
+    selected = null;
+    legalMoves = [];
+    const check = isInCheck(currentPlayer);
+    updateStatus(check ? '（被将军）' : '');
+    draw();
 }
 
 function handleBoardClick(evt) {
@@ -715,6 +770,10 @@ startBtn.addEventListener('click', () => {
 
 resetBtn.addEventListener('click', () => {
     resetGame();
+});
+
+undoBtn.addEventListener('click', () => {
+    undoLastAction();
 });
 
 modeBtns.addEventListener('click', evt => {

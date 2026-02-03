@@ -17,7 +17,7 @@
             --ink: #2f2b2b;
             --red: #d44b3f;
             --black: #1f1c1c;
-            --accent: #8d6e63;
+            --accent: #b89a7a;
         }
         * {
             box-sizing: border-box;
@@ -39,14 +39,14 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom) 10px;
+            padding: env(safe-area-inset-top) 6px env(safe-area-inset-bottom) 6px;
         }
         .game-shell {
-            width: min(640px, 96vw);
+            width: min(720px, 98vw);
             background: rgba(255, 255, 255, 0.92);
-            border-radius: 18px;
+            border-radius: 16px;
             box-shadow: 0 20px 50px rgba(53, 30, 20, 0.25);
-            padding: 14px;
+            padding: 8px;
             text-align: center;
         }
         h1 {
@@ -55,30 +55,30 @@
             letter-spacing: 2px;
         }
         .status {
-            font-size: 13px;
+            font-size: 12px;
             background: var(--paper);
             border-radius: 12px;
-            padding: 6px 10px;
-            margin-bottom: 8px;
-            min-height: 22px;
+            padding: 5px 8px;
+            margin-bottom: 6px;
+            min-height: 20px;
         }
         .controls {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
             justify-content: center;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
         .control-group {
             background: var(--paper);
-            padding: 6px 10px;
+            padding: 5px 8px;
             border-radius: 12px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
         .control-label {
-            font-size: 11px;
+            font-size: 10px;
             color: #6b5e4b;
         }
         .btn-row {
@@ -89,8 +89,8 @@
             border: 2px solid var(--paper-dark);
             background: #fff;
             color: #6b5e4b;
-            padding: 4px 10px;
-            font-size: 12px;
+            padding: 3px 9px;
+            font-size: 11px;
             border-radius: 999px;
             cursor: pointer;
             transition: all 0.2s;
@@ -104,13 +104,13 @@
             display: flex;
             gap: 8px;
             justify-content: center;
-            margin-top: 6px;
+            margin-top: 4px;
         }
         .action-btns button {
             border: none;
             border-radius: 999px;
-            padding: 8px 18px;
-            font-size: 12px;
+            padding: 6px 16px;
+            font-size: 11px;
             cursor: pointer;
             background: var(--ink);
             color: #fff;
@@ -121,7 +121,7 @@
             transform: scale(0.96);
         }
         #gameCanvas {
-            width: min(100%, 540px);
+            width: 100%;
             height: auto;
             display: block;
             margin: 0 auto;
@@ -133,8 +133,8 @@
         .legend {
             display: flex;
             justify-content: space-between;
-            margin-top: 8px;
-            font-size: 11px;
+            margin-top: 6px;
+            font-size: 10px;
             color: #6b5e4b;
         }
         .legend span {
@@ -180,7 +180,7 @@
                 font-size: 18px;
             }
             .controls {
-                gap: 6px;
+                gap: 4px;
             }
         }
     </style>
@@ -196,14 +196,12 @@
         <div class="status" id="status">点击开始新局</div>
         <div class="controls">
             <div class="control-group">
-                <div class="control-label">对战模式</div>
                 <div class="btn-row" id="modeBtns">
                     <button class="pill-btn active" data-mode="ai">人机对战</button>
                     <button class="pill-btn" data-mode="pvp">人人对战</button>
                 </div>
             </div>
             <div class="control-group">
-                <div class="control-label">AI 难度</div>
                 <div class="btn-row" id="difficultyBtns">
                     <button class="pill-btn active" data-level="easy">入门</button>
                     <button class="pill-btn" data-level="medium">进阶</button>
@@ -211,10 +209,11 @@
                 </div>
             </div>
         </div>
-        <canvas id="gameCanvas" width="540" height="600"></canvas>
+        <canvas id="gameCanvas" width="620" height="690"></canvas>
         <div class="action-btns">
             <button id="startBtn">开始新局</button>
             <button id="resetBtn">重开本局</button>
+            <button id="undoBtn">悔棋</button>
         </div>
         <div class="legend">
             <span><span class="legend-dot red"></span>红方先行</span>
