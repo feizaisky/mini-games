@@ -15,7 +15,6 @@
         </a>
         <div class="bar-title">王国塔防</div>
         <div class="controls">
-          <button id="pause-btn" class="pill">暂停</button>
           <button id="speed-btn" class="pill">1x</button>
           <button id="sound-btn" class="pill">音效:开</button>
           <button id="menu-btn" class="pill">地图</button>
@@ -30,12 +29,17 @@
           波:<span id="wave">0</span>
         </div>
         <button id="start-wave" class="primary">开始</button>
+        <button id="pause-btn" class="pill">暂停</button>
       </div>
     </header>
 
     <main class="game-area">
       <div class="canvas-wrap">
         <canvas id="game-canvas" width="720" height="480"></canvas>
+        <div class="tower-overlay" id="tower-actions" hidden>
+          <button id="upgrade-btn" class="primary">升级</button>
+          <button id="sell-btn" class="pill">出售</button>
+        </div>
       </div>
       <div class="side-panel">
         <div class="panel-section">
@@ -70,11 +74,6 @@
             </div>
           </div>
           <div class="hint">点选卡牌后点格子建造，或拖拽到地图上放置。</div>
-        </div>
-        <div class="panel-section" id="tower-actions" hidden>
-          <div class="panel-title">防御塔</div>
-          <button id="upgrade-btn" class="primary">升级</button>
-          <button id="sell-btn" class="pill">出售</button>
         </div>
       </div>
     </main>

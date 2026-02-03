@@ -23,6 +23,7 @@ body {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+  touch-action: manipulation;
 }
 
 #app {
@@ -129,6 +130,40 @@ body {
   gap: 6px;
   white-space: nowrap;
   margin-left: auto;
+}
+
+.tower-overlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 244, 219, 0.95);
+  border: 2px solid #b9854e;
+  border-radius: 14px;
+  box-shadow: 0 4px 8px var(--shadow);
+  z-index: 5;
+  transform: translate(-50%, -120%);
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.tower-overlay[hidden] {
+  display: none;
+}
+
+.tower-overlay::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 244, 219, 0.95);
+  border-right: 2px solid #b9854e;
+  border-bottom: 2px solid #b9854e;
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .pill,

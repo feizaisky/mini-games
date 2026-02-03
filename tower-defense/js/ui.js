@@ -258,6 +258,13 @@ export function setupUI({
       upgradeBtn.textContent = `升级（${upgradeCost}）`;
       upgradeBtn.disabled = state.gold < upgradeCost;
       sellBtn.textContent = `出售（${game.getSellValue(selectedTower)}）`;
+
+      const canvasRect = canvas.getBoundingClientRect();
+      const wrapRect = canvas.parentElement.getBoundingClientRect();
+      const offsetX = canvasRect.left - wrapRect.left;
+      const offsetY = canvasRect.top - wrapRect.top;
+      towerActions.style.left = `${offsetX + selectedTower.x}px`;
+      towerActions.style.top = `${offsetY + selectedTower.y - 10}px`;
     } else {
       towerActions.hidden = true;
     }
