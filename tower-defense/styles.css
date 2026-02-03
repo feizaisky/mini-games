@@ -166,6 +166,16 @@ body {
   transform: translateX(-50%) rotate(45deg);
 }
 
+.tower-overlay.below {
+  transform: translate(-50%, 20%);
+}
+
+.tower-overlay.below::after {
+  top: -6px;
+  bottom: auto;
+  transform: translateX(-50%) rotate(225deg);
+}
+
 .pill,
 .primary {
   border: none;

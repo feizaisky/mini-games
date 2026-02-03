@@ -8,9 +8,9 @@ const startBtn = document.getElementById('startBtn');
 
 // 难度配置
 const difficultyConfig = {
-    easy: { speed: 200, name: '简单' },
-    medium: { speed: 120, name: '中等' },
-    hard: { speed: 80, name: '困难' }
+    easy: { speed: 800, name: '简单' },
+    medium: { speed: 480, name: '中等' },
+    hard: { speed: 320, name: '困难' }
 };
 
 let currentDifficulty = 'easy';
@@ -42,9 +42,12 @@ let dy = 0;
 let score = 0;
 let gameRunning = false;
 let gameStarted = false;
+let baseSpeed = difficultyConfig.easy.speed;
 let gameSpeed = difficultyConfig.easy.speed;
 let gameLoopId = null;
 let highScore = 0;
+let isBoosting = false;
+const boostFactor = 0.5;
 
 // 从 localStorage 读取最高分
 const savedHighScore = localStorage.getItem('snakeHighScore');
@@ -66,7 +69,8 @@ difficultyBtns.forEach(btn => {
 
         // 设置新难度
         currentDifficulty = this.dataset.difficulty;
-        gameSpeed = difficultyConfig[currentDifficulty].speed;
+        baseSpeed = difficultyConfig[currentDifficulty].speed;
+        applySpeed();
 
         // 重置游戏
         resetGame();
@@ -124,6 +128,7 @@ document.addEventListener('touchstart', function(e) {
     }
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
+    setBoosting(true);
 }, {passive: false});
 
 document.addEventListener('touchmove', function(e) {
@@ -140,6 +145,7 @@ document.addEventListener('touchend', function(e) {
         return;
     }
     e.preventDefault();
+    setBoosting(false);
     if (!gameRunning) return;
 
     const touchEndX = e.changedTouches[0].clientX;
@@ -201,6 +207,55 @@ canvas.addEventListener('click', function(e) {
     }
 });
 
+canvas.addEventListener('mousedown', function() {
+    setBoosting(true);
+});
+
+document.addEventListener('mouseup', function() {
+    setBoosting(false);
+});
+
+document.addEventListener('mouseleave', function() {
+    setBoosting(false);
+});
+
+document.addEventListener('copy', function(e) {
+    e.preventDefault();
+});
+
+document.addEventListener('cut', function(e) {
+    e.preventDefault();
+});
+
+document.addEventListener('paste', function(e) {
+    e.preventDefault();
+});
+
+document.addEventListener('wheel', function(e) {
+    if (e.ctrlKey) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+document.addEventListener('keydown', function(e) {
+    if (!e.ctrlKey) return;
+    if (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0') {
+        e.preventDefault();
+    }
+});
+
+document.addEventListener('gesturestart', function(e) {
+    e.preventDefault();
+});
+
+document.addEventListener('gesturechange', function(e) {
+    e.preventDefault();
+});
+
+document.addEventListener('gestureend', function(e) {
+    e.preventDefault();
+});
+
 function startGame() {
     gameStarted = true;
     gameRunning = true;
@@ -213,10 +268,14 @@ function startGame() {
 function gameLoop() {
     if (!gameRunning) return;
 
-    update();
-    draw();
+    stepGame();
 
     gameLoopId = setTimeout(gameLoop, gameSpeed);
+}
+
+function stepGame() {
+    update();
+    draw();
 }
 
 function update() {
@@ -356,6 +415,56 @@ function draw() {
     ctx.fill();
 }
 
+function applySpeed() {
+    if (isBoosting) {
+        gameSpeed = Math.max(40, Math.round(baseSpeed * boostFactor));
+    } else {
+        gameSpeed = baseSpeed;
+    }
+}
+
+function setBoosting(active) {
+    if (!gameRunning) {
+        isBoosting = false;
+        return;
+    }
+    if (isBoosting === active) return;
+    isBoosting = active;
+    applySpeed();
+}
+
+function renderGameToText() {
+    const payload = {
+        mode: gameRunning ? 'playing' : (gameOverElement.style.display === 'block' ? 'game_over' : 'idle'),
+        grid: {
+            cols: tileCount,
+            rows: tileCount,
+            cellSize: gridSize,
+            coordinateSystem: 'origin top-left, x right, y down'
+        },
+        snake: snake.map(segment => ({ x: segment.x, y: segment.y })),
+        direction: { dx, dy },
+        food: { x: food.x, y: food.y },
+        score,
+        highScore,
+        speed: gameSpeed,
+        boosting: isBoosting
+    };
+    return JSON.stringify(payload);
+}
+
+window.render_game_to_text = renderGameToText;
+
+window.advanceTime = (ms) => {
+    if (!gameRunning) return;
+    const stepMs = Math.max(1, gameSpeed);
+    const steps = Math.max(1, Math.round(ms / stepMs));
+    for (let i = 0; i < steps; i++) {
+        if (!gameRunning) break;
+        stepGame();
+    }
+};
+
 function generateFood() {
     food = {
         x: Math.floor(Math.random() * tileCount),
@@ -409,6 +518,8 @@ function changeDirection(event) {
 function endGame() {
     gameRunning = false;
     gameStarted = false;
+    isBoosting = false;
+    applySpeed();
     gameOverElement.style.display = 'block';
     restartBtn.style.display = 'inline-block';
     if (gameLoopId) {
@@ -422,7 +533,9 @@ function resetGame() {
     dx = 0;
     dy = 0;
     score = 0;
-    gameSpeed = difficultyConfig[currentDifficulty].speed;
+    baseSpeed = difficultyConfig[currentDifficulty].speed;
+    isBoosting = false;
+    applySpeed();
     scoreElement.textContent = score;
     gameRunning = true;
     gameStarted = true;

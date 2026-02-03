@@ -263,10 +263,26 @@ export function setupUI({
       const wrapRect = canvas.parentElement.getBoundingClientRect();
       const offsetX = canvasRect.left - wrapRect.left;
       const offsetY = canvasRect.top - wrapRect.top;
-      towerActions.style.left = `${offsetX + selectedTower.x}px`;
-      towerActions.style.top = `${offsetY + selectedTower.y - 10}px`;
+      const overlayWidth = towerActions.offsetWidth;
+      const overlayHeight = towerActions.offsetHeight;
+      const padding = 10;
+      const minSpace = overlayHeight + 24;
+      let anchorX = offsetX + selectedTower.x;
+      let anchorY = offsetY + selectedTower.y;
+      const halfWidth = overlayWidth / 2;
+      anchorX = Math.min(
+        wrapRect.width - padding - halfWidth,
+        Math.max(padding + halfWidth, anchorX)
+      );
+      const spaceAbove = anchorY - padding;
+      const spaceBelow = wrapRect.height - anchorY - padding;
+      const placeBelow = spaceAbove < minSpace && spaceBelow >= spaceAbove;
+      towerActions.classList.toggle("below", placeBelow);
+      towerActions.style.left = `${anchorX}px`;
+      towerActions.style.top = `${anchorY}px`;
     } else {
       towerActions.hidden = true;
+      towerActions.classList.remove("below");
     }
 
     updateBuildCardSelection();

@@ -99,7 +99,7 @@ export const towerTypes = {
   }
 };
 
-export const waves = Array.from({ length: 10 }, (_, i) => {
+export const waves = Array.from({ length: 20 }, (_, i) => {
   const index = i + 1;
   return {
     count: 6 + index * 2,
