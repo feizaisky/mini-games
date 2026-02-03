@@ -49,6 +49,14 @@
             color: #333;
             margin: 0 0 10px 0;
             font-size: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .logo-icon {
+            width: 30px;
+            height: 30px;
+            display: inline-block;
         }
         .subtitle {
             color: #666;
@@ -300,7 +308,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>🧠 MBTI 人格测试</h1>
+        <h1>
+            <svg class="logo-icon" viewBox="0 0 64 64" role="img" aria-label="MBTI 图标">
+                <rect x="10" y="14" width="44" height="36" rx="10" fill="#8e9cff"/>
+                <text x="32" y="38" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff" font-family="Arial, sans-serif">MBTI</text>
+            </svg>
+            MBTI 人格测试
+        </h1>
         <p class="subtitle" id="subtitle">选择题目数量，探索你的性格类型</p>
 
         <div class="setup-card" id="setupCard">

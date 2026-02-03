@@ -47,6 +47,14 @@
             color: #333;
             margin: 0 0 8px 0;
             font-size: 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            display: inline-block;
         }
         .game-wrapper {
             display: flex;
@@ -118,6 +126,12 @@
         #startBtn {
             width: auto;
             min-width: 50px;
+        }
+        @media (max-width: 360px) {
+            .logo-icon {
+                width: 24px;
+                height: 24px;
+            }
         }
         .game-over {
             display: none;
@@ -247,7 +261,17 @@
 </head>
 <body>
     <div class="game-container">
-        <h1>🎯 俄罗斯方块</h1>
+        <h1>
+            <svg class="logo-icon" viewBox="0 0 64 64" role="img" aria-label="俄罗斯方块 图标">
+                <rect x="8" y="8" width="16" height="16" rx="3" fill="#4facfe"/>
+                <rect x="26" y="8" width="16" height="16" rx="3" fill="#4facfe"/>
+                <rect x="44" y="8" width="16" height="16" rx="3" fill="#4facfe"/>
+                <rect x="26" y="26" width="16" height="16" rx="3" fill="#4facfe"/>
+                <rect x="44" y="26" width="16" height="16" rx="3" fill="#ff7a59"/>
+                <rect x="44" y="44" width="16" height="16" rx="3" fill="#ffcc4d"/>
+            </svg>
+            俄罗斯方块
+        </h1>
 
         <div class="game-wrapper">
             <canvas id="gameCanvas" width="240" height="480"></canvas>
