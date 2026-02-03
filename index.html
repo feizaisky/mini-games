@@ -3,7 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>小游戏中心</title>
+    <title>小游戏中心 - 精选网页小游戏</title>
+
+    <!-- Open Graph / 社交分享 -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="小游戏中心 - 精选网页小游戏">
+    <meta property="og:description" content="贪吃蛇、2048、俄罗斯方块、五子棋、记忆翻牌等精选小游戏，随时畅玩">
+    <meta property="og:image" content="https://your-domain.com/preview.png">
+    <meta property="og:url" content="https://your-domain.com/">
+
+    <!-- 微信分享卡片 -->
+    <meta itemprop="name" content="小游戏中心">
+    <meta itemprop="description" content="贪吃蛇、2048、俄罗斯方块、五子棋、记忆翻牌等精选小游戏，随时畅玩">
+    <meta itemprop="image" content="https://your-domain.com/preview.png">
+
     <!-- 微信浏览器适配 -->
     <meta name="x5-orientation" content="portrait">
     <meta name="x5-fullscreen" content="true">
@@ -79,6 +92,19 @@
         .game-icon {
             font-size: 40px;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .game-icon svg {
+            width: 40px;
+            height: 40px;
+            display: block;
+        }
+        .game-icon img {
+            width: 40px;
+            height: 40px;
+            display: block;
         }
         .game-title {
             font-size: 16px;
@@ -153,6 +179,14 @@
                 font-size: 32px;
                 margin-bottom: 8px;
             }
+            .game-icon svg {
+                width: 32px;
+                height: 32px;
+            }
+            .game-icon img {
+                width: 32px;
+                height: 32px;
+            }
             .game-title {
                 font-size: 13px;
             }
@@ -189,64 +223,151 @@
         <p class="subtitle">精选网页小游戏，随时畅玩</p>
 
         <div class="games-grid">
-            <a href="/snake-game/" class="game-card">
-                <div class="game-icon">🐍</div>
+            <a href="./snake-game/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img" aria-label="贪吃蛇">
+                        <path d="M12 20c0-6 6-10 12-10h16c8 0 12 4 12 10s-6 10-12 10H28c-6 0-10 4-10 9s4 9 10 9h20" fill="none" stroke="#4caf50" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="18" cy="20" r="3" fill="#4caf50"/>
+                    </svg>
+                </div>
                 <div class="game-title">贪吃蛇</div>
                 <div class="game-desc">经典贪吃蛇游戏</div>
             </a>
 
-            <a href="/2048/" class="game-card">
-                <div class="game-icon">🃏</div>
+            <a href="./2048/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img" aria-label="2048">
+                        <rect x="6" y="6" width="52" height="52" rx="14" fill="#f2b179"/>
+                        <rect x="12" y="12" width="40" height="40" rx="10" fill="#f5c57a"/>
+                        <text x="32" y="39" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff" font-family="Arial, sans-serif">2048</text>
+                    </svg>
+                </div>
                 <div class="game-title">2048</div>
                 <div class="game-desc">经典数字合并游戏</div>
             </a>
 
-            <a href="/tetris/" class="game-card">
-                <div class="game-icon">🎯</div>
+            <a href="./tetris/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img" aria-label="俄罗斯方块">
+                        <rect x="10" y="10" width="14" height="14" rx="3" fill="#4facfe"/>
+                        <rect x="26" y="10" width="14" height="14" rx="3" fill="#4facfe"/>
+                        <rect x="42" y="10" width="14" height="14" rx="3" fill="#4facfe"/>
+                        <rect x="26" y="26" width="14" height="14" rx="3" fill="#4facfe"/>
+                        <rect x="42" y="26" width="14" height="14" rx="3" fill="#ff7a59"/>
+                        <rect x="42" y="42" width="14" height="14" rx="3" fill="#ffcc4d"/>
+                    </svg>
+                </div>
                 <div class="game-title">俄罗斯方块</div>
                 <div class="game-desc">经典方块消除游戏</div>
             </a>
 
-            <a href="/gomoku/" class="game-card">
-                <div class="game-icon">⚫⚪</div>
+            <a href="./tower-defense/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <img src="/tower-defense/icon.svg" alt="塔防">
+                </div>
+                <div class="game-title">王国塔防</div>
+                <div class="game-desc">策略塔防守卫王国</div>
+            </a>
+
+            <a href="./gomoku/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img" aria-label="五子棋">
+                        <circle cx="24" cy="36" r="12" fill="#2f2f2f"/>
+                        <circle cx="40" cy="28" r="12" fill="#f5f5f5" stroke="#c7c7c7" stroke-width="2"/>
+                    </svg>
+                </div>
                 <div class="game-title">五子棋</div>
                 <div class="game-desc">益智棋类游戏</div>
             </a>
 
-            <a href="/memory-game/" class="game-card">
-                <div class="game-icon">🧠</div>
+            <a href="./memory-game/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img" aria-label="记忆翻牌">
+                        <rect x="10" y="16" width="26" height="34" rx="6" fill="#4facfe"/>
+                        <rect x="28" y="12" width="26" height="34" rx="6" fill="#ffcc4d"/>
+                        <circle cx="41" cy="29" r="6" fill="#ffffff"/>
+                    </svg>
+                </div>
                 <div class="game-title">记忆翻牌</div>
                 <div class="game-desc">配对记忆游戏</div>
             </a>
 
-            <a href="/mbti-test/" class="game-card">
-                <div class="game-icon">🧩</div>
+            <a href="./mbti-test/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img" aria-label="MBTI 测试">
+                        <rect x="10" y="14" width="44" height="36" rx="10" fill="#8e9cff"/>
+                        <text x="32" y="38" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff" font-family="Arial, sans-serif">MBTI</text>
+                    </svg>
+                </div>
                 <div class="game-title">MBTI测试</div>
                 <div class="game-desc">人格性格测试</div>
             </a>
 
-            <a href="/whack-a-mole/" class="game-card">
-                <div class="game-icon">🔨</div>
+            <a href="./whack-a-mole/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img" aria-label="打地鼠">
+                        <rect x="36" y="10" width="16" height="12" rx="3" fill="#ff7a59"/>
+                        <rect x="30" y="20" width="6" height="24" rx="3" fill="#ffb59b"/>
+                        <circle cx="22" cy="40" r="10" fill="#8d6e63"/>
+                        <rect x="12" y="44" width="20" height="6" rx="3" fill="#6d4c41"/>
+                    </svg>
+                </div>
                 <div class="game-title">打地鼠</div>
                 <div class="game-desc">反应速度挑战</div>
             </a>
 
-            <a href="/sudoku/" class="game-card">
-                <div class="game-icon">🔢</div>
+            <a href="./sudoku/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img" aria-label="数独">
+                        <rect x="10" y="10" width="44" height="44" rx="8" fill="#4facfe"/>
+                        <rect x="18" y="18" width="12" height="12" rx="3" fill="#ffffff"/>
+                        <rect x="34" y="18" width="12" height="12" rx="3" fill="#ffffff"/>
+                        <rect x="18" y="34" width="12" height="12" rx="3" fill="#ffffff"/>
+                        <text x="40" y="44" text-anchor="middle" font-size="12" font-weight="700" fill="#4facfe" font-family="Arial, sans-serif">5</text>
+                    </svg>
+                </div>
                 <div class="game-title">数独</div>
                 <div class="game-desc">逻辑填数游戏</div>
             </a>
 
-            <a href="/tic-tac-toe/" class="game-card">
-                <div class="game-icon">⭕</div>
+            <a href="./tic-tac-toe/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img" aria-label="井字棋">
+                        <line x1="22" y1="12" x2="22" y2="52" stroke="#1f2f55" stroke-width="4" stroke-linecap="round"/>
+                        <line x1="42" y1="12" x2="42" y2="52" stroke="#1f2f55" stroke-width="4" stroke-linecap="round"/>
+                        <line x1="12" y1="22" x2="52" y2="22" stroke="#1f2f55" stroke-width="4" stroke-linecap="round"/>
+                        <line x1="12" y1="42" x2="52" y2="42" stroke="#1f2f55" stroke-width="4" stroke-linecap="round"/>
+                        <circle cx="16" cy="16" r="6" fill="none" stroke="#ff7a59" stroke-width="3"/>
+                        <line x1="34" y1="34" x2="46" y2="46" stroke="#4facfe" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="46" y1="34" x2="34" y2="46" stroke="#4facfe" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                </div>
                 <div class="game-title">井字棋</div>
                 <div class="game-desc">经典策略游戏</div>
             </a>
 
-            <a href="/puzzle/" class="game-card">
-                <div class="game-icon">🧩</div>
+            <a href="./puzzle/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img" aria-label="拼图">
+                        <path d="M18 18h10a6 6 0 1 1 12 0h8v10a6 6 0 1 0 0 12v8H18v-8a6 6 0 1 0 0-12z" fill="#ffcc4d"/>
+                        <path d="M18 18h10a6 6 0 1 1 12 0h8v10a6 6 0 1 0 0 12v8H18v-8a6 6 0 1 0 0-12z" fill="none" stroke="#f2b179" stroke-width="3"/>
+                    </svg>
+                </div>
                 <div class="game-title">拼图游戏</div>
                 <div class="game-desc">图像拼图挑战</div>
+            </a>
+
+            <a href="./one-stroke/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img" aria-label="一笔画">
+                        <circle cx="14" cy="18" r="6" fill="#4facfe"/>
+                        <circle cx="50" cy="18" r="6" fill="#4facfe"/>
+                        <circle cx="32" cy="46" r="6" fill="#2ecc71"/>
+                        <path d="M14 18h36L32 46" fill="none" stroke="#1f2f55" stroke-width="4" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="game-title">一笔画</div>
+                <div class="game-desc">不重复连通所有点</div>
             </a>
         </div>
 
@@ -348,20 +469,52 @@
             }
 
             // 拼图最佳成绩（显示3x3的）
-            const puzzleBestMoves = localStorage.getItem('puzzleBestMoves_3x3');
-            const puzzleBestTime = localStorage.getItem('puzzleBestTime_3x3');
-            if (puzzleBestMoves && puzzleBestTime) {
+            const puzzleBestRaw = localStorage.getItem('puzzleV2Best_3');
+            if (puzzleBestRaw) {
                 hasScores = true;
                 const scoreItem = document.createElement('div');
                 scoreItem.className = 'score-item';
-                const minutes = Math.floor(parseInt(puzzleBestTime) / 60);
-                const secs = parseInt(puzzleBestTime) % 60;
+                let moves = 0;
+                let time = 0;
+                try {
+                    const best = JSON.parse(puzzleBestRaw);
+                    moves = parseInt(best.moves) || 0;
+                    time = parseInt(best.time) || 0;
+                } catch (error) {
+                    moves = 0;
+                    time = 0;
+                }
+                const minutes = Math.floor(time / 60);
+                const secs = time % 60;
                 const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
                 scoreItem.innerHTML = `
                     <div class="game-name">🧩 拼图</div>
-                    <div class="score-value">${puzzleBestMoves}步</div>
+                    <div class="score-value">${moves}步 / ${timeStr}</div>
                 `;
                 scoresGrid.appendChild(scoreItem);
+            }
+
+            // 一笔画最佳成绩
+            const oneStrokeBest = localStorage.getItem('oneStrokeBest');
+            if (oneStrokeBest) {
+                try {
+                    const best = JSON.parse(oneStrokeBest);
+                    if (best && best.time !== undefined && best.moves !== undefined) {
+                        hasScores = true;
+                        const scoreItem = document.createElement('div');
+                        scoreItem.className = 'score-item';
+                        const minutes = Math.floor(parseInt(best.time) / 60);
+                        const secs = parseInt(best.time) % 60;
+                        const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
+                        scoreItem.innerHTML = `
+                            <div class="game-name">✍️ 一笔画</div>
+                            <div class="score-value">${best.level || ''} ${timeStr} / ${best.moves}步</div>
+                        `;
+                        scoresGrid.appendChild(scoreItem);
+                    }
+                } catch (error) {
+                    // ignore invalid data
+                }
             }
 
             if (!hasScores) {
