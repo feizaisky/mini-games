@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>王国塔防 - Kingdom Trails</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="top-bar">
+      <div class="bar-row top-row">
+        <a id="home-btn" class="home-btn" href="../index.html" aria-label="返回首页">
+          <span class="home-icon">⌂</span>
+        </a>
+        <div class="bar-title">王国塔防</div>
+        <div class="controls">
+          <button id="pause-btn" class="pill">暂停</button>
+          <button id="speed-btn" class="pill">1x</button>
+          <button id="sound-btn" class="pill">音效:开</button>
+          <button id="menu-btn" class="pill">地图</button>
+        </div>
+      </div>
+      <div class="bar-row bottom-row">
+        <div class="stat-line">
+          金币:<span id="gold">0</span>
+          <span class="sep">·</span>
+          城堡:<span id="hp">0</span>
+          <span class="sep">·</span>
+          波:<span id="wave">0</span>
+        </div>
+        <button id="start-wave" class="primary">开始</button>
+      </div>
+    </header>
+
+    <main class="game-area">
+      <div class="canvas-wrap">
+        <canvas id="game-canvas" width="720" height="480"></canvas>
+      </div>
+      <div class="side-panel">
+        <div class="panel-section">
+          <div class="panel-title">建造防御塔</div>
+          <div id="build-bar" class="build-bar">
+            <div class="build-card" data-tower="gun" role="button" tabindex="0">
+              <div class="card-icon gun"></div>
+              <div class="card-info">
+                <div class="card-line">
+                  <span class="card-name">弩炮塔</span>
+                  <span class="card-meta" data-info="gun"></span>
+                </div>
+              </div>
+            </div>
+            <div class="build-card" data-tower="slow" role="button" tabindex="0">
+              <div class="card-icon slow"></div>
+              <div class="card-info">
+                <div class="card-line">
+                  <span class="card-name">寒霜塔</span>
+                  <span class="card-meta" data-info="slow"></span>
+                </div>
+              </div>
+            </div>
+            <div class="build-card" data-tower="blast" role="button" tabindex="0">
+              <div class="card-icon blast"></div>
+              <div class="card-info">
+                <div class="card-line">
+                  <span class="card-name">爆裂塔</span>
+                  <span class="card-meta" data-info="blast"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="hint">点选卡牌后点格子建造，或拖拽到地图上放置。</div>
+        </div>
+        <div class="panel-section" id="tower-actions" hidden>
+          <div class="panel-title">防御塔</div>
+          <button id="upgrade-btn" class="primary">升级</button>
+          <button id="sell-btn" class="pill">出售</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="menu-screen" class="overlay" hidden>
+    <div class="menu">
+      <h1>王国塔防</h1>
+      <p class="subtitle">选择一个地图开始守卫。</p>
+      <div id="map-list" class="map-list"></div>
+      <button id="close-menu" class="pill">关闭</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

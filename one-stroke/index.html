@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>一笔画 - 连通所有点</title>
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <style>
+        :root {
+            --bg-1: #1d2b64;
+            --bg-2: #f8cdda;
+            --card: rgba(255, 255, 255, 0.92);
+            --accent: #ff7a59;
+            --accent-2: #2f80ed;
+            --text: #2b2b2b;
+            --muted: #6b6b6b;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        html, body {
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: none;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            background: radial-gradient(circle at top, rgba(255, 255, 255, 0.35), transparent 55%),
+                linear-gradient(135deg, var(--bg-1), var(--bg-2));
+            font-family: "Rubik", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+            color: var(--text);
+        }
+        .container {
+            width: min(92vw, 520px);
+            background: var(--card);
+            border-radius: 22px;
+            padding: 12px 14px 14px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+            text-align: center;
+        }
+        h1 {
+            margin: 4px 0 6px;
+            font-size: 20px;
+            color: #1f2f55;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            display: inline-block;
+        }
+        .subtitle {
+            margin: 0 0 8px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .toolbar.bottom {
+            margin-top: 8px;
+        }
+        .level-panel {
+            background: #f8f9fb;
+            border-radius: 16px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+        .level-panel.collapsed {
+            padding-bottom: 6px;
+        }
+        .level-panel.collapsed .level-grid {
+            display: none;
+        }
+        .level-panel.collapsed .level-header {
+            margin-bottom: 0;
+        }
+        .level-panel.collapsed .level-label {
+            display: none;
+        }
+        .level-panel.collapsed .level-current::before {
+            content: "当前关卡：";
+            margin-right: 4px;
+            color: #6c7787;
+            font-weight: 600;
+        }
+        .level-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .level-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1f2f55;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .level-current {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #eef1f7;
+            font-size: 11px;
+            font-weight: 700;
+            color: #1f2f55;
+        }
+        .level-toggle {
+            border: none;
+            background: #eef1f7;
+            color: #1f2f55;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        .level-panel.collapsed .level-title {
+            margin-bottom: 0;
+        }
+        .level-panel.collapsed .level-header {
+            margin-bottom: 0;
+        }
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+        }
+        .level-btn {
+            border: none;
+            border-radius: 10px;
+            padding: 6px 0;
+            background: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            color: #1f2f55;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .level-btn.selected {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 6px 14px rgba(255, 122, 89, 0.3);
+        }
+        .level-btn.locked {
+            background: #e6e9ef;
+            color: #9aa3b2;
+            cursor: not-allowed;
+        }
+        .level-btn:active:not(.locked) {
+            transform: scale(0.96);
+        }
+        .btn {
+            border: none;
+            padding: 7px 12px;
+            border-radius: 18px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #f1f3f6;
+            color: #2b2b2b;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn.selected {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 6px 16px rgba(255, 122, 89, 0.35);
+        }
+        .btn.action {
+            background: var(--accent-2);
+            color: #fff;
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .stat {
+            background: #f8f9fb;
+            border-radius: 12px;
+            padding: 6px 6px;
+        }
+        .stat .label {
+            font-size: 10px;
+            color: var(--muted);
+        }
+        .stat .value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f2f55;
+        }
+        .board-wrap {
+            position: relative;
+            width: min(82vw, 360px);
+            aspect-ratio: 1;
+            margin: 0 auto 8px;
+            background: #f3f5f9;
+            border-radius: 18px;
+            padding: 10px;
+        }
+        svg {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        .node {
+            fill: #ffffff;
+            stroke: #1f2f55;
+            stroke-width: 2;
+        }
+        .node.start {
+            fill: var(--accent-2);
+            stroke: var(--accent-2);
+        }
+        .node.end {
+            fill: #2ecc71;
+            stroke: #2ecc71;
+        }
+        .node-label {
+            font-size: 11px;
+            font-weight: 700;
+            fill: #ffffff;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+            paint-order: stroke;
+            stroke: rgba(0, 0, 0, 0.25);
+            stroke-width: 1.5px;
+        }
+        .node-label.start {
+            fill: #ffffff;
+        }
+        .node-label.end {
+            fill: #ffffff;
+        }
+        .ring {
+            fill: none;
+            stroke-width: 3;
+            opacity: 0.7;
+        }
+        .ring.start {
+            stroke: var(--accent-2);
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+        .ring.end {
+            stroke: #2ecc71;
+        }
+        .node.visited {
+            fill: var(--accent);
+            stroke: var(--accent);
+        }
+        .node.current {
+            fill: var(--accent-2);
+            stroke: var(--accent-2);
+        }
+        .obstacle {
+            fill: #c3c7d2;
+            stroke: #9aa3b2;
+            stroke-width: 2;
+            rx: 4;
+            ry: 4;
+        }
+        .path-line {
+            fill: none;
+            stroke: #1f2f55;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .message {
+            min-height: 22px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .message.win {
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .legend {
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+        .home-btn {
+            position: fixed;
+            top: env(safe-area-inset-top, 10px);
+            left: 10px;
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+        .home-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.05);
+        }
+        .home-btn:active {
+            transform: scale(0.95);
+        }
+        .home-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: #1f2f55;
+        }
+        .legend .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            margin: 0 4px 0 6px;
+            vertical-align: middle;
+        }
+        .legend .start-dot {
+            background: var(--accent-2);
+        }
+        .legend .end-dot {
+            background: #2ecc71;
+        }
+        .legend .block-dot {
+            background: #b7beca;
+        }
+        @keyframes pulse {
+            0% {
+                r: 12;
+                opacity: 0.4;
+            }
+            60% {
+                r: 18;
+                opacity: 0.15;
+            }
+            100% {
+                r: 12;
+                opacity: 0.4;
+            }
+        }
+        @media (max-width: 420px) {
+            h1 {
+                font-size: 20px;
+            }
+            .level-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            .stats {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <svg class="logo-icon" viewBox="0 0 64 64" role="img" aria-label="一笔画 图标">
+                <circle cx="14" cy="18" r="6" fill="#4facfe"/>
+                <circle cx="50" cy="18" r="6" fill="#4facfe"/>
+                <circle cx="32" cy="46" r="6" fill="#2ecc71"/>
+                <path d="M14 18h36L32 46" fill="none" stroke="#1f2f55" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+            一笔画
+        </h1>
+        <p class="subtitle">起点终点固定，避开障碍</p>
+
+        <div class="level-panel" id="levelPanel">
+            <div class="level-header">
+                <div class="level-title">
+                    <span class="level-label">关卡选择</span>
+                    <span class="level-current" id="currentLevelLabel">1-1</span>
+                </div>
+                <button class="level-toggle" id="levelToggle">收起</button>
+            </div>
+            <div class="level-grid" id="levelGrid"></div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="label">已连通</div>
+                <div class="value" id="progressValue">0/0</div>
+            </div>
+            <div class="stat">
+                <div class="label">步数</div>
+                <div class="value" id="movesValue">0</div>
+            </div>
+            <div class="stat last">
+                <div class="label">时间</div>
+                <div class="value" id="timeValue">0:00</div>
+            </div>
+        </div>
+
+        <div class="board-wrap">
+            <svg id="board" viewBox="0 0 320 320" aria-label="一笔画棋盘"></svg>
+        </div>
+
+        <div class="legend">
+            起点<span class="dot start-dot"></span>
+            终点<span class="dot end-dot"></span>
+            障碍<span class="dot block-dot"></span>
+        </div>
+        <div class="message" id="message">请从蓝色起点开始，连通所有点并在绿色终点结束。</div>
+
+        <div class="toolbar bottom">
+            <button class="btn action" id="resetBtn">重新开始</button>
+            <button class="btn" id="undoBtn">撤销一步</button>
+        </div>
+    </div>
+
+    <a href="/" class="home-btn" aria-label="返回首页">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+    </a>
+
+    <script src="game.js"></script>
+</body>
+</html>
