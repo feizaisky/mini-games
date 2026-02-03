@@ -261,6 +261,14 @@
                 <div class="game-desc">经典方块消除游戏</div>
             </a>
 
+            <a href="./lights-out/" class="game-card">
+                <div class="game-icon" aria-hidden="true">
+                    <img src="./lights-out/icon.svg" alt="熄灯">
+                </div>
+                <div class="game-title">熄灯</div>
+                <div class="game-desc">翻转灯光解谜</div>
+            </a>
+
             <a href="./tower-defense/" class="game-card">
                 <div class="game-icon" aria-hidden="true">
                     <img src="/tower-defense/icon.svg" alt="塔防">
@@ -492,6 +500,31 @@
                     <div class="score-value">${moves}步 / ${timeStr}</div>
                 `;
                 scoresGrid.appendChild(scoreItem);
+            }
+
+            // 熄灯最佳成绩
+            const lightsOutBestRaw = localStorage.getItem('lightsOutBest');
+            if (lightsOutBestRaw) {
+                try {
+                    const best = JSON.parse(lightsOutBestRaw);
+                    if (best && best.moves !== undefined && best.time !== undefined) {
+                        hasScores = true;
+                        const scoreItem = document.createElement('div');
+                        scoreItem.className = 'score-item';
+                        const minutes = Math.floor(parseInt(best.time) / 60);
+                        const secs = parseInt(best.time) % 60;
+                        const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
+                        const diffLabelMap = { easy: '轻松', normal: '经典', hard: '进阶' };
+                        const diffLabel = diffLabelMap[best.difficulty] || '';
+                        scoreItem.innerHTML = `
+                            <div class="game-name">💡 熄灯 ${best.size || ''}x${best.size || ''} ${diffLabel}</div>
+                            <div class="score-value">${best.moves}步 / ${timeStr}</div>
+                        `;
+                        scoresGrid.appendChild(scoreItem);
+                    }
+                } catch (error) {
+                    // ignore invalid data
+                }
             }
 
             // 一笔画最佳成绩

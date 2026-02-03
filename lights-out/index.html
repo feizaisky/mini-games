@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>熄灯 - Lights Out</title>
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <style>
+        :root {
+            color-scheme: light;
+            --bg-1: #f3efe4;
+            --bg-2: #f7d9a6;
+            --bg-3: #f7b2a5;
+            --ink-1: #1f2a44;
+            --ink-2: #47516b;
+            --accent-1: #ffb347;
+            --accent-2: #f67f52;
+            --card: rgba(255, 255, 255, 0.92);
+            --shadow: rgba(24, 33, 52, 0.2);
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            overscroll-behavior: none;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            background: radial-gradient(circle at 15% 20%, var(--bg-2), transparent 55%),
+                        radial-gradient(circle at 80% 10%, #ffe7c4, transparent 45%),
+                        radial-gradient(circle at 90% 90%, var(--bg-3), transparent 50%),
+                        linear-gradient(150deg, var(--bg-1), #fff8ee 55%);
+            font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+            color: var(--ink-1);
+            touch-action: manipulation;
+        }
+        .home-btn {
+            position: fixed;
+            top: env(safe-area-inset-top, 10px);
+            left: 12px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            z-index: 5;
+        }
+        .home-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+        }
+        .home-btn:active {
+            transform: scale(0.95);
+        }
+        .home-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: #f28b3b;
+        }
+        .app {
+            width: min(92vw, 520px);
+            background: var(--card);
+            border-radius: 22px;
+            box-shadow: 0 18px 45px var(--shadow);
+            padding: 16px 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .top-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .title .icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #ffd77e, #ffa54d);
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.6);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .title .icon img {
+            width: 24px;
+            height: 24px;
+            display: block;
+        }
+        .stats {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: var(--ink-2);
+        }
+        .stat {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            padding: 6px 10px;
+            min-width: 72px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .stat strong {
+            font-size: 15px;
+            color: var(--ink-1);
+        }
+        #gameCanvas {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 16px;
+            background: #131722;
+            box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.35);
+            touch-action: none;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+        button {
+            border: none;
+            border-radius: 14px;
+            padding: 10px 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(135deg, #ffe6bf, #ffc786);
+            color: #7a3b08;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 6px 14px rgba(247, 142, 65, 0.25);
+        }
+        button:active {
+            transform: scale(0.97);
+        }
+        button.secondary {
+            background: linear-gradient(135deg, #f7f8ff, #e8ebf8);
+            color: #404a6b;
+            box-shadow: 0 6px 12px rgba(74, 84, 118, 0.18);
+        }
+        button.ghost {
+            background: rgba(255, 255, 255, 0.6);
+            color: #6c5b4a;
+            box-shadow: none;
+            border: 1px solid rgba(134, 107, 82, 0.2);
+        }
+        .selectors {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--ink-2);
+        }
+        .selector-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .selector-row span {
+            min-width: 52px;
+            font-weight: 600;
+        }
+        .chip {
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            border: 1px solid rgba(72, 55, 34, 0.15);
+            background: rgba(255, 255, 255, 0.7);
+            color: #6b4e37;
+            cursor: pointer;
+        }
+        .chip.active {
+            background: linear-gradient(135deg, #ffb55a, #ff8d4f);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 5px 12px rgba(255, 140, 79, 0.3);
+        }
+        .hint {
+            font-size: 11px;
+            color: #8a7b6e;
+            line-height: 1.4;
+        }
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(18, 22, 30, 0.58);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .overlay-card {
+            width: min(90vw, 420px);
+            background: #fff7ea;
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: 0 18px 35px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            color: #4b3a2b;
+        }
+        .overlay-card h2 {
+            margin: 0 0 8px;
+            font-size: 20px;
+        }
+        .overlay-card p {
+            margin: 6px 0;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .overlay-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        @media (max-width: 520px) {
+            .app {
+                padding: 14px 12px 16px;
+            }
+            .title {
+                font-size: 18px;
+            }
+            .stats {
+                gap: 8px;
+            }
+            .stat {
+                min-width: 64px;
+                padding: 6px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a class="home-btn" href="../index.html" aria-label="返回首页">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/>
+        </svg>
+    </a>
+
+    <div class="app">
+        <div class="top-bar">
+            <div class="title-row">
+                <div class="title">
+                    <span class="icon">
+                        <img src="./icon.svg" alt="熄灯图标">
+                    </span>
+                    熄灯
+                </div>
+                <div class="mode" id="modeText">准备开始</div>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <span>步数</span>
+                    <strong id="moves">0</strong>
+                </div>
+                <div class="stat">
+                    <span>用时</span>
+                    <strong id="time">0:00</strong>
+                </div>
+                <div class="stat">
+                    <span>最佳</span>
+                    <strong id="best">--</strong>
+                </div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas" width="480" height="480" aria-label="Lights Out 游戏棋盘"></canvas>
+
+        <div class="controls">
+            <button id="newGameBtn">新局</button>
+            <button id="shuffleBtn" class="secondary">洗牌</button>
+            <button id="undoBtn" class="ghost">撤销</button>
+        </div>
+
+        <div class="selectors">
+            <div class="selector-row" id="sizeRow">
+                <span>尺寸</span>
+                <button class="chip" data-size="3">3x3</button>
+                <button class="chip active" data-size="5">5x5</button>
+                <button class="chip" data-size="7">7x7</button>
+            </div>
+            <div class="selector-row" id="difficultyRow">
+                <span>难度</span>
+                <button class="chip" data-diff="easy">轻松</button>
+                <button class="chip active" data-diff="normal">经典</button>
+                <button class="chip" data-diff="hard">进阶</button>
+            </div>
+        </div>
+
+        <div class="hint">目标：让所有灯熄灭。点击方块会翻转它与上下左右的灯。</div>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <div class="overlay-card">
+            <h2 id="overlayTitle">熄灯挑战</h2>
+            <p id="overlayDesc">点击任意方块即可翻转灯光。把整块棋盘点成全黑即可获胜。</p>
+            <p id="overlayStats">准备好后开始闯关吧！</p>
+            <div class="overlay-actions">
+                <button id="startBtn">开始游戏</button>
+                <button id="restartBtn" class="secondary">再来一局</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
