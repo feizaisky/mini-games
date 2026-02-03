@@ -1,5 +1,7 @@
 // 游戏状态
-let board = Array(9).fill(null);
+let boardSize = 3; // 3, 4, or 5
+let winLength = 3; // 3 or 4
+let board = [];
 let currentPlayer = 'X';
 let gameMode = 'ai'; // 'ai' or 'pvp'
 let aiDifficulty = 'easy';
@@ -10,13 +12,6 @@ let moveHistory = [];
 let wins = 0;
 let losses = 0;
 let draws = 0;
-
-// 胜利组合
-const winPatterns = [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8], // 行
-    [0, 3, 6], [1, 4, 7], [2, 5, 8], // 列
-    [0, 4, 8], [2, 4, 6] // 对角线
-];
 
 // 初始化游戏
 function initGame() {
@@ -30,8 +25,10 @@ function initGame() {
 function createBoard() {
     const gameBoard = document.getElementById('gameBoard');
     gameBoard.innerHTML = '';
+    gameBoard.className = `game-board size-${boardSize}`;
 
-    for (let i = 0; i < 9; i++) {
+    const totalCells = boardSize * boardSize;
+    for (let i = 0; i < totalCells; i++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.index = i;
@@ -57,6 +54,18 @@ function setupButtons() {
         });
     });
 
+    // 棋盘大小选择
+    document.querySelectorAll('.size-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            boardSize = parseInt(this.dataset.size);
+            // 4x4 和 3x3 都是连3，5x5 是连4
+            winLength = boardSize === 5 ? 4 : 3;
+            newGame();
+        });
+    });
+
     // 难度选择
     document.querySelectorAll('.difficulty-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -70,11 +79,13 @@ function setupButtons() {
 
 // 新游戏
 function newGame() {
-    board = Array(9).fill(null);
+    const totalCells = boardSize * boardSize;
+    board = Array(totalCells).fill(null);
     currentPlayer = 'X';
     gameActive = true;
     moveHistory = [];
 
+    createBoard(); // 重新创建棋盘以适应新大小
     renderBoard();
     updateStatus();
     updateUndoButton();
@@ -140,10 +151,75 @@ function makeMove(index) {
 
 // 检查胜负
 function checkWinner() {
-    for (let pattern of winPatterns) {
-        const [a, b, c] = pattern;
-        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-            return { player: board[a], pattern };
+    const size = boardSize;
+    const winLen = winLength;
+
+    // 检查所有可能的获胜组合
+    for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
+            const idx = row * size + col;
+            const player = board[idx];
+            if (!player) continue;
+
+            // 检查水平方向
+            if (col + winLen <= size) {
+                let pattern = [idx];
+                let win = true;
+                for (let k = 1; k < winLen; k++) {
+                    const nextIdx = row * size + (col + k);
+                    if (board[nextIdx] !== player) {
+                        win = false;
+                        break;
+                    }
+                    pattern.push(nextIdx);
+                }
+                if (win) return { player, pattern };
+            }
+
+            // 检查垂直方向
+            if (row + winLen <= size) {
+                let pattern = [idx];
+                let win = true;
+                for (let k = 1; k < winLen; k++) {
+                    const nextIdx = (row + k) * size + col;
+                    if (board[nextIdx] !== player) {
+                        win = false;
+                        break;
+                    }
+                    pattern.push(nextIdx);
+                }
+                if (win) return { player, pattern };
+            }
+
+            // 检查主对角线方向（左上到右下）
+            if (row + winLen <= size && col + winLen <= size) {
+                let pattern = [idx];
+                let win = true;
+                for (let k = 1; k < winLen; k++) {
+                    const nextIdx = (row + k) * size + (col + k);
+                    if (board[nextIdx] !== player) {
+                        win = false;
+                        break;
+                    }
+                    pattern.push(nextIdx);
+                }
+                if (win) return { player, pattern };
+            }
+
+            // 检查副对角线方向（右上到左下）
+            if (row + winLen <= size && col - winLen + 1 >= 0) {
+                let pattern = [idx];
+                let win = true;
+                for (let k = 1; k < winLen; k++) {
+                    const nextIdx = (row + k) * size + (col - k);
+                    if (board[nextIdx] !== player) {
+                        win = false;
+                        break;
+                    }
+                    pattern.push(nextIdx);
+                }
+                if (win) return { player, pattern };
+            }
         }
     }
     return null;
@@ -269,7 +345,11 @@ function aiMove() {
 
 // 随机落子（简单）
 function getRandomMove() {
-    const available = board.map((cell, index) => cell === null ? index : null).filter(x => x !== null);
+    const totalCells = boardSize * boardSize;
+    const available = [];
+    for (let i = 0; i < totalCells; i++) {
+        if (board[i] === null) available.push(i);
+    }
     return available.length > 0 ? available[Math.floor(Math.random() * available.length)] : null;
 }
 
@@ -286,8 +366,9 @@ function getMediumMove() {
 function getBestMove() {
     let bestScore = -Infinity;
     let bestMove = null;
+    const totalCells = boardSize * boardSize;
 
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < totalCells; i++) {
         if (board[i] === null) {
             board[i] = 'O';
             const score = minimax(board, 0, false);
@@ -313,9 +394,10 @@ function minimax(board, depth, isMaximizing) {
         return 0;
     }
 
+    const totalCells = boardSize * boardSize;
     if (isMaximizing) {
         let bestScore = -Infinity;
-        for (let i = 0; i < 9; i++) {
+        for (let i = 0; i < totalCells; i++) {
             if (board[i] === null) {
                 board[i] = 'O';
                 const score = minimax(board, depth + 1, false);
@@ -326,7 +408,7 @@ function minimax(board, depth, isMaximizing) {
         return bestScore;
     } else {
         let bestScore = Infinity;
-        for (let i = 0; i < 9; i++) {
+        for (let i = 0; i < totalCells; i++) {
             if (board[i] === null) {
                 board[i] = 'X';
                 const score = minimax(board, depth + 1, true);

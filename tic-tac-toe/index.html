@@ -38,27 +38,27 @@
             text-align: center;
             width: 100%;
             max-width: 500px;
-            padding: 15px;
+            padding: 10px;
         }
         h1 {
             color: #fff;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             margin-top: 0;
-            font-size: 26px;
+            font-size: 20px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
         .mode-selector {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             justify-content: center;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
         }
         .mode-btn {
             background: rgba(255, 255, 255, 0.9);
             border: 2px solid transparent;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
@@ -74,16 +74,16 @@
         }
         .difficulty-selector {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             justify-content: center;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
         }
         .difficulty-btn {
             background: rgba(255, 255, 255, 0.9);
             border: 2px solid transparent;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 11px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
@@ -97,15 +97,40 @@
         .difficulty-btn:active {
             transform: scale(0.95);
         }
+        .board-size-selector {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-bottom: 6px;
+        }
+        .size-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid transparent;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #4facfe;
+        }
+        .size-btn.selected {
+            background: #4facfe;
+            color: white;
+            border-color: white;
+        }
+        .size-btn:active {
+            transform: scale(0.95);
+        }
         .status-bar {
             background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            padding: 12px 15px;
-            margin-bottom: 12px;
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
         .status-text {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #4facfe;
         }
@@ -113,41 +138,49 @@
             display: flex;
             justify-content: space-around;
             background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            padding: 10px 15px;
-            margin-bottom: 12px;
+            border-radius: 12px;
+            padding: 6px 12px;
+            margin-bottom: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
         .stat-item {
             text-align: center;
         }
         .stat-label {
-            font-size: 11px;
+            font-size: 10px;
             color: #666;
             margin-bottom: 2px;
         }
         .stat-value {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #4facfe;
         }
         .game-board {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 15px;
-            padding: 15px;
+            gap: 6px;
+            margin-bottom: 10px;
+            padding: 10px;
             background: rgba(255, 255, 255, 0.3);
-            border-radius: 15px;
+            border-radius: 12px;
+        }
+        .game-board.size-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .game-board.size-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .game-board.size-5 {
+            grid-template-columns: repeat(5, 1fr);
         }
         .cell {
             aspect-ratio: 1;
             background: white;
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 48px;
+            font-size: 52px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.2s;
@@ -169,22 +202,28 @@
             background: #ffd700;
             animation: pulse 0.5s ease infinite;
         }
+        .game-board.size-4 .cell {
+            font-size: 38px;
+        }
+        .game-board.size-5 .cell {
+            font-size: 30px;
+        }
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
         }
         .buttons {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             justify-content: center;
         }
         .btn {
             background: linear-gradient(145deg, #4facfe, #00f2fe);
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 25px;
-            font-size: 14px;
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-size: 13px;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
@@ -233,14 +272,56 @@
             fill: #4facfe;
         }
         @media (max-width: 480px) {
-            h1 {
-                font-size: 22px;
+            .container {
+                padding: 8px;
             }
-            .cell {
-                font-size: 40px;
+            h1 {
+                font-size: 18px;
+                margin-bottom: 4px;
+            }
+            .mode-btn, .size-btn {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+            .difficulty-btn {
+                padding: 4px 8px;
+                font-size: 10px;
+            }
+            .status-bar {
+                padding: 6px 10px;
+                margin-bottom: 6px;
             }
             .status-text {
-                font-size: 16px;
+                font-size: 14px;
+            }
+            .stats-bar {
+                padding: 5px 10px;
+                margin-bottom: 6px;
+            }
+            .stat-label {
+                font-size: 9px;
+            }
+            .stat-value {
+                font-size: 14px;
+            }
+            .game-board {
+                padding: 8px;
+                gap: 5px;
+                margin-bottom: 8px;
+            }
+            .cell {
+                font-size: 42px;
+                border-radius: 8px;
+            }
+            .game-board.size-4 .cell {
+                font-size: 32px;
+            }
+            .game-board.size-5 .cell {
+                font-size: 24px;
+            }
+            .btn {
+                padding: 8px 14px;
+                font-size: 12px;
             }
         }
     </style>
@@ -252,6 +333,12 @@
         <div class="mode-selector">
             <button class="mode-btn selected" data-mode="ai">人机对战</button>
             <button class="mode-btn" data-mode="pvp">双人对战</button>
+        </div>
+
+        <div class="board-size-selector">
+            <button class="size-btn selected" data-size="3">3×3连3</button>
+            <button class="size-btn" data-size="4">4×4连3</button>
+            <button class="size-btn" data-size="5">5×5连4</button>
         </div>
 
         <div class="difficulty-selector" id="difficultySelector">

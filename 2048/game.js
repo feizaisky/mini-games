@@ -4,6 +4,8 @@ const bestScoreElement = document.getElementById('bestScore');
 const gameOverElement = document.getElementById('gameOver');
 const gameWonElement = document.getElementById('gameWon');
 const newGameBtn = document.getElementById('newGameBtn');
+const normalBtn = document.getElementById('normalBtn');
+const advancedBtn = document.getElementById('advancedBtn');
 
 const SIZE = 4;
 let grid = [];
@@ -12,10 +14,36 @@ let bestScore = localStorage.getItem('bestScore2048') || 0;
 let gameOver = false;
 let gameWon = false;
 let continueAfterWin = false;
+let gameMode = localStorage.getItem('gameMode2048') || 'normal'; // 'normal' or 'advanced'
 
 bestScoreElement.textContent = bestScore;
 
 newGameBtn.addEventListener('click', newGame);
+
+// 设置游戏模式
+function setGameMode(mode) {
+    gameMode = mode;
+    localStorage.setItem('gameMode2048', mode);
+
+    // 更新按钮状态
+    if (mode === 'normal') {
+        normalBtn.classList.add('selected');
+        advancedBtn.classList.remove('selected');
+    } else {
+        normalBtn.classList.remove('selected');
+        advancedBtn.classList.add('selected');
+    }
+
+    newGame();
+}
+
+// 初始化模式按钮状态
+function initModeButtons() {
+    if (gameMode === 'advanced') {
+        normalBtn.classList.remove('selected');
+        advancedBtn.classList.add('selected');
+    }
+}
 
 // 初始化游戏
 function init() {
@@ -25,6 +53,7 @@ function init() {
         cell.className = 'grid-cell';
         gridElement.appendChild(cell);
     }
+    initModeButtons();
     newGame();
 }
 
@@ -55,7 +84,21 @@ function addRandomTile() {
     }
     if (emptyCells.length > 0) {
         const {r, c} = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+
+        if (gameMode === 'normal') {
+            // 普通模式：90%概率生成2，10%概率生成4
+            grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+        } else {
+            // 高级模式：可以生成2、4或8
+            const rand = Math.random();
+            if (rand < 0.6) {
+                grid[r][c] = 2;      // 60%概率生成2
+            } else if (rand < 0.9) {
+                grid[r][c] = 4;      // 30%概率生成4
+            } else {
+                grid[r][c] = 8;      // 10%概率生成8
+            }
+        }
     }
 }
 
