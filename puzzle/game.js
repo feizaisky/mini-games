@@ -1,339 +1,615 @@
-// 游戏状态
-let gridSize = 3;
-let pieces = [];
-let selectedPiece = null;
-let moves = 0;
-let seconds = 0;
-let gameStarted = false;
-let gameTimer = null;
-let imageData = null;
+var sizeLevels = [
+    { size: 3, name: '3×3', unlock: 0 },
+    { size: 4, name: '4×4', unlock: 1 },
+    { size: 5, name: '5×5', unlock: 2 }
+];
 
-// 初始化游戏
-function initGame() {
-    setupSizeButtons();
-    generateImage();
-    updateBestScore();
+var images = [
+    { id: 'sunset', label: '夕阳' },
+    { id: 'ocean', label: '海浪' },
+    { id: 'forest', label: '森林' },
+    { id: 'city', label: '城市' },
+    { id: 'candy', label: '糖果' },
+    { id: 'aurora', label: '极光' }
+];
+
+var sizeGrid = document.getElementById('sizeGrid');
+var imageGrid = document.getElementById('imageGrid');
+var imagePanel = document.getElementById('imagePanel');
+var imageToggle = document.getElementById('imageToggle');
+var currentImageLabel = document.getElementById('currentImageLabel');
+var sizePanel = document.getElementById('sizePanel');
+var sizeToggle = document.getElementById('sizeToggle');
+var currentSizeLabel = document.getElementById('currentSizeLabel');
+var board = document.getElementById('board');
+var movesValue = document.getElementById('movesValue');
+var timeValue = document.getElementById('timeValue');
+var bestValue = document.getElementById('bestValue');
+var message = document.getElementById('message');
+var startBtn = document.getElementById('startBtn');
+var shuffleBtn = document.getElementById('shuffleBtn');
+var resetBtn = document.getElementById('resetBtn');
+var winModal = document.getElementById('winModal');
+var winDetail = document.getElementById('winDetail');
+var closeWinBtn = document.getElementById('closeWinBtn');
+var nextLevelBtn = document.getElementById('nextLevelBtn');
+
+var unlockKey = 'puzzleV2Unlock';
+var panelKey = 'puzzleV2ImagePanel';
+var sizePanelKey = 'puzzleV2SizePanel';
+
+var currentSize = 3;
+var unlockedLevel = 0;
+var currentImage = images[0].id;
+var tiles = [];
+var moves = 0;
+var secondsElapsed = 0;
+var timerId = null;
+var hasStarted = false;
+var selectedIndex = null;
+
+var imageCache = {};
+
+function init() {
+    loadUnlocks();
+    setupImagePanel();
+    setupSizePanel();
+    renderSizeButtons();
+    renderImageCards();
+    bindEvents();
+    setMessage('选择难度与图案，点击开始后两两交换完成拼图。');
+    buildBoard();
+    updateBest();
 }
 
-// 设置尺寸按钮
-function setupSizeButtons() {
-    document.querySelectorAll('.size-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
-            this.classList.add('selected');
-            gridSize = parseInt(this.dataset.size);
-            newGame();
-        });
-    });
-}
-
-// 生成图片（使用 Canvas 生成彩色图案）
-function generateImage() {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const size = 300;
-    canvas.width = size;
-    canvas.height = size;
-
-    // 创建渐变背景
-    const gradient = ctx.createLinearGradient(0, 0, size, size);
-    gradient.addColorStop(0, getRandomColor());
-    gradient.addColorStop(0.5, getRandomColor());
-    gradient.addColorStop(1, getRandomColor());
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size, size);
-
-    // 添加随机形状
-    for (let i = 0; i < 15; i++) {
-        ctx.fillStyle = getRandomColor();
-        ctx.globalAlpha = 0.6;
-        const x = Math.random() * size;
-        const y = Math.random() * size;
-        const radius = 20 + Math.random() * 40;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    // 添加数字标记
-    ctx.globalAlpha = 1;
-    ctx.font = 'bold 120px Arial';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🧩', size / 2, size / 2);
-
-    imageData = canvas.toDataURL();
-}
-
-// 获取随机颜色
-function getRandomColor() {
-    const colors = [
-        '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
-        '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
-        '#F8B500', '#FF6F61', '#6B5B95', '#88B04B'
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-}
-
-// 新游戏
-function newGame() {
-    // 停止计时器
-    if (gameTimer) {
-        clearInterval(gameTimer);
-        gameTimer = null;
-    }
-
-    moves = 0;
-    seconds = 0;
-    gameStarted = false;
-    selectedPiece = null;
-
-    generateImage();
-    createPieces();
-    shufflePieces();
-    updateDisplay();
-    updateBestScore();
-}
-
-// 创建拼图块
-function createPieces() {
-    pieces = [];
-    const totalPieces = gridSize * gridSize;
-
-    for (let i = 0; i < totalPieces; i++) {
-        const row = Math.floor(i / gridSize);
-        const col = i % gridSize;
-        pieces.push({
-            id: i,
-            currentPos: i,
-            correctPos: i,
-            row: row,
-            col: col
-        });
-    }
-}
-
-// 打乱拼图
-function shufflePieces() {
-    // 重置状态
-    if (gameTimer) {
-        clearInterval(gameTimer);
-        gameTimer = null;
-    }
-
-    moves = 0;
-    seconds = 0;
-    gameStarted = false;
-    selectedPiece = null;
-
-    // Fisher-Yates 洗牌算法
-    const positions = pieces.map(p => p.currentPos);
-    for (let i = positions.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [positions[i], positions[j]] = [positions[j], positions[i]];
-    }
-
-    // 确保打乱后不是已完成状态
-    let isSolved = true;
-    for (let i = 0; i < pieces.length; i++) {
-        if (positions[i] !== i) {
-            isSolved = false;
-            break;
-        }
-    }
-
-    if (isSolved && pieces.length > 1) {
-        // 如果刚好完成，交换前两块
-        [positions[0], positions[1]] = [positions[1], positions[0]];
-    }
-
-    // 应用新位置
-    pieces.forEach((piece, index) => {
-        piece.currentPos = positions[index];
-    });
-
-    updateDisplay();
-    renderBoard();
-}
-
-// 渲染棋盘
-function renderBoard() {
-    const board = document.getElementById('puzzleBoard');
-    board.innerHTML = '';
-    board.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-
-    const pieceSize = 300 / gridSize;
-
-    // 按 currentPos 排序以正确显示
-    const sortedPieces = [...pieces].sort((a, b) => a.currentPos - b.currentPos);
-
-    sortedPieces.forEach(piece => {
-        const div = document.createElement('div');
-        div.className = 'puzzle-piece';
-        div.dataset.id = piece.id;
-
-        // 计算背景位置
-        const correctRow = Math.floor(piece.correctPos / gridSize);
-        const correctCol = piece.correctPos % gridSize;
-        const bgX = -(correctCol * pieceSize);
-        const bgY = -(correctRow * pieceSize);
-
-        div.style.backgroundImage = `url(${imageData})`;
-        div.style.backgroundPosition = `${bgX}px ${bgY}px`;
-        div.style.backgroundSize = `${gridSize * 100}%`;
-
-        // 显示数字帮助（可选）
-        div.textContent = piece.correctPos + 1;
-
-        // 检查是否在正确位置
-        if (piece.currentPos === piece.correctPos) {
-            div.classList.add('correct');
-        }
-
-        div.addEventListener('click', () => selectPiece(piece.id));
-        board.appendChild(div);
-    });
-}
-
-// 选择拼图块
-function selectPiece(id) {
-    const piece = pieces.find(p => p.id === id);
-
-    if (selectedPiece === null) {
-        // 第一次选择
-        selectedPiece = id;
-        document.querySelector(`[data-id="${id}"]`).classList.add('selected');
-    } else if (selectedPiece === id) {
-        // 取消选择
-        document.querySelector(`[data-id="${id}"]`).classList.remove('selected');
-        selectedPiece = null;
+function loadUnlocks() {
+    var stored = parseInt(localStorage.getItem(unlockKey), 10);
+    if (!isNaN(stored) && stored >= 0) {
+        unlockedLevel = Math.min(stored, sizeLevels.length - 1);
     } else {
-        // 交换
-        swapPieces(selectedPiece, id);
-        document.querySelector(`[data-id="${selectedPiece}"]`).classList.remove('selected');
-        selectedPiece = null;
+        unlockedLevel = 0;
     }
 }
 
-// 交换拼图块
-function swapPieces(id1, id2) {
-    const piece1 = pieces.find(p => p.id === id1);
-    const piece2 = pieces.find(p => p.id === id2);
+function bindEvents() {
+    startBtn.addEventListener('click', startGame);
+    shuffleBtn.addEventListener('click', shuffleBoard);
+    resetBtn.addEventListener('click', resetProgress);
+    closeWinBtn.addEventListener('click', hideWinModal);
+    nextLevelBtn.addEventListener('click', goNextLevel);
+}
 
-    const tempPos = piece1.currentPos;
-    piece1.currentPos = piece2.currentPos;
-    piece2.currentPos = tempPos;
+function setupImagePanel() {
+    var stored = localStorage.getItem(panelKey);
+    var collapsed = stored ? stored === 'collapsed' : true;
+    setPanelCollapsed(collapsed);
+    imageToggle.addEventListener('click', function() {
+        setPanelCollapsed(!imagePanel.classList.contains('collapsed'));
+    });
+}
 
-    moves++;
+function setupSizePanel() {
+    var stored = localStorage.getItem(sizePanelKey);
+    var collapsed = stored ? stored === 'collapsed' : false;
+    setSizePanelCollapsed(collapsed);
+    sizeToggle.addEventListener('click', function() {
+        setSizePanelCollapsed(!sizePanel.classList.contains('collapsed'));
+    });
+}
 
-    // 开始计时
-    if (!gameStarted) {
-        gameStarted = true;
+function renderSizeButtons() {
+    sizeGrid.innerHTML = '';
+    for (var i = 0; i < sizeLevels.length; i++) {
+        (function(level, index) {
+            var btn = document.createElement('button');
+            btn.className = 'size-btn';
+            btn.textContent = level.name;
+            if (index > unlockedLevel) {
+                btn.classList.add('locked');
+                btn.textContent = '🔒';
+            }
+            if (level.size === currentSize) {
+                btn.classList.add('selected');
+            }
+            btn.addEventListener('click', function() {
+                if (index > unlockedLevel) return;
+                currentSize = level.size;
+                renderSizeButtons();
+                buildBoard();
+                updateBest();
+            });
+            sizeGrid.appendChild(btn);
+        })(sizeLevels[i], i);
+    }
+    currentSizeLabel.textContent = getSizeLabel(currentSize);
+}
+
+function renderImageCards() {
+    imageGrid.innerHTML = '';
+    for (var i = 0; i < images.length; i++) {
+        (function(image) {
+            var button = document.createElement('button');
+            button.className = 'image-card';
+            if (image.id === currentImage) {
+                button.classList.add('selected');
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = 96;
+            canvas.height = 96;
+            canvas.className = 'image-thumb';
+            button.appendChild(canvas);
+            imageGrid.appendChild(button);
+            drawImageThumb(image.id, canvas);
+
+            button.addEventListener('click', function() {
+                currentImage = image.id;
+                renderImageCards();
+                buildBoard();
+                updateBest();
+            });
+        })(images[i]);
+    }
+    currentImageLabel.textContent = getImageLabel(currentImage);
+}
+
+function startGame() {
+    if (!hasStarted) {
+        hasStarted = true;
+        shuffleBoard();
+    } else {
+        shuffleBoard();
+    }
+}
+
+function buildBoard() {
+    stopTimer();
+    secondsElapsed = 0;
+    moves = 0;
+    hasStarted = false;
+    selectedIndex = null;
+    tiles = [];
+
+    var count = currentSize * currentSize;
+    for (var i = 0; i < count; i++) {
+        tiles.push(i);
+    }
+    renderBoard();
+    updateStats();
+}
+
+function shuffleBoard() {
+    if (!hasStarted) {
+        hasStarted = true;
+    }
+    stopTimer();
+    secondsElapsed = 0;
+    moves = 0;
+    selectedIndex = null;
+
+    var shuffleMoves = currentSize * currentSize * 10;
+    for (var i = 0; i < shuffleMoves; i++) {
+        var a = Math.floor(Math.random() * tiles.length);
+        var b = Math.floor(Math.random() * tiles.length);
+        if (a === b) continue;
+        swapTiles(a, b, false);
+    }
+
+    if (isSolved()) {
+        shuffleBoard();
+        return;
+    }
+
+    renderBoard();
+    updateStats();
+    setMessage('开始！点击两块进行交换。');
+}
+
+function renderBoard() {
+    board.innerHTML = '';
+    board.style.gridTemplateColumns = 'repeat(' + currentSize + ', 1fr)';
+
+    var size = 100 * currentSize;
+    var image = getImageData(currentImage, size);
+
+    for (var i = 0; i < tiles.length; i++) {
+        var value = tiles[i];
+        var tile = document.createElement('div');
+        tile.className = 'tile';
+        var row = Math.floor(value / currentSize);
+        var col = value % currentSize;
+        var bgX = (col / (currentSize - 1)) * 100;
+        var bgY = (row / (currentSize - 1)) * 100;
+        tile.style.backgroundImage = 'url(' + image + ')';
+        tile.style.backgroundSize = (currentSize * 100) + '% ' + (currentSize * 100) + '%';
+        tile.style.backgroundPosition = bgX + '% ' + bgY + '%';
+        tile.setAttribute('data-index', i);
+        if (selectedIndex === i) {
+            tile.classList.add('selected');
+        }
+        (function(index) {
+            tile.addEventListener('click', function() {
+                moveTile(index);
+            });
+        })(i);
+        board.appendChild(tile);
+    }
+}
+
+function moveTile(index) {
+    if (!hasStarted) return;
+
+    if (!timerId) {
         startTimer();
     }
 
-    updateDisplay();
-    renderBoard();
+    if (selectedIndex === null) {
+        selectedIndex = index;
+        renderBoard();
+        return;
+    }
 
-    // 检查是否完成
-    if (checkSolved()) {
-        gameWon();
+    if (selectedIndex === index) {
+        selectedIndex = null;
+        renderBoard();
+        return;
+    }
+
+    swapTiles(index, selectedIndex, true);
+    selectedIndex = null;
+    moves += 1;
+
+    renderBoard();
+    updateStats();
+
+    if (isSolved()) {
+        finishGame();
     }
 }
 
-// 检查是否完成
-function checkSolved() {
-    return pieces.every(piece => piece.currentPos === piece.correctPos);
+function swapTiles(i, j, repaint) {
+    var temp = tiles[i];
+    tiles[i] = tiles[j];
+    tiles[j] = temp;
+    if (repaint) {
+        renderBoard();
+    }
 }
 
-// 开始计时
+function isSolved() {
+    for (var i = 0; i < tiles.length; i++) {
+        if (tiles[i] !== i) return false;
+    }
+    return true;
+}
+
+function finishGame() {
+    stopTimer();
+    setMessage('太棒了！拼图完成。', true);
+    saveBest();
+    unlockNext();
+    showWinModal();
+}
+
+function unlockNext() {
+    var currentIndex = -1;
+    for (var i = 0; i < sizeLevels.length; i++) {
+        if (sizeLevels[i].size === currentSize) {
+            currentIndex = i;
+            break;
+        }
+    }
+    if (currentIndex >= 0 && currentIndex >= unlockedLevel && currentIndex < sizeLevels.length - 1) {
+        unlockedLevel = currentIndex + 1;
+        localStorage.setItem(unlockKey, String(unlockedLevel));
+        renderSizeButtons();
+    }
+}
+
+function saveBest() {
+    var key = 'puzzleV2Best_' + currentSize;
+    var bestRaw = localStorage.getItem(key);
+    var current = { moves: moves, time: secondsElapsed };
+
+    if (!bestRaw) {
+        localStorage.setItem(key, JSON.stringify(current));
+        updateBest();
+        return;
+    }
+
+    try {
+        var best = JSON.parse(bestRaw);
+        var betterMoves = current.moves < (best.moves || Infinity);
+        var sameMoves = current.moves === (best.moves || Infinity);
+        var betterTime = current.time < (best.time || Infinity);
+
+        if (betterMoves || (sameMoves && betterTime)) {
+            localStorage.setItem(key, JSON.stringify(current));
+        }
+    } catch (error) {
+        localStorage.setItem(key, JSON.stringify(current));
+    }
+    updateBest();
+}
+
+function updateBest() {
+    var key = 'puzzleV2Best_' + currentSize;
+    var bestRaw = localStorage.getItem(key);
+    if (!bestRaw) {
+        bestValue.textContent = '--';
+        return;
+    }
+
+    try {
+        var best = JSON.parse(bestRaw);
+        var minutes = Math.floor((best.time || 0) / 60);
+        var secs = (best.time || 0) % 60;
+        bestValue.textContent = (best.moves || 0) + '步 / ' + minutes + ':' + String(secs).padStart(2, '0');
+    } catch (error) {
+        bestValue.textContent = '--';
+    }
+}
+
+function resetProgress() {
+    localStorage.removeItem(unlockKey);
+    for (var i = 0; i < sizeLevels.length; i++) {
+        localStorage.removeItem('puzzleV2Best_' + sizeLevels[i].size);
+    }
+    unlockedLevel = 0;
+    currentSize = 3;
+    renderSizeButtons();
+    buildBoard();
+    updateBest();
+    setMessage('进度已重置。');
+}
+
+function updateStats() {
+    movesValue.textContent = String(moves);
+    var minutes = Math.floor(secondsElapsed / 60);
+    var secs = secondsElapsed % 60;
+    timeValue.textContent = minutes + ':' + String(secs).padStart(2, '0');
+}
+
 function startTimer() {
-    gameTimer = setInterval(() => {
-        seconds++;
-        updateDisplay();
+    stopTimer();
+    timerId = setInterval(function() {
+        secondsElapsed += 1;
+        updateStats();
     }, 1000);
 }
 
-// 更新显示
-function updateDisplay() {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    document.getElementById('timer').textContent =
-        `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    document.getElementById('moves').textContent = moves;
+function stopTimer() {
+    if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+    }
 }
 
-// 更新最佳成绩显示
-function updateBestScore() {
-    const bestMoves = localStorage.getItem(`puzzleBestMoves_${gridSize}x${gridSize}`);
-    const bestTime = localStorage.getItem(`puzzleBestTime_${gridSize}x${gridSize}`);
-    const bestScoreElement = document.getElementById('bestScore');
+function setMessage(text, isWin) {
+    if (isWin === undefined) isWin = false;
+    message.textContent = text;
+    message.classList.toggle('win', isWin);
+}
 
-    if (bestMoves && bestTime) {
-        const minutes = Math.floor(parseInt(bestTime) / 60);
-        const secs = parseInt(bestTime) % 60;
-        bestScoreElement.textContent = `🏆 最佳: ${bestMoves}步 / ${minutes}:${secs.toString().padStart(2, '0')}`;
+function showWinModal() {
+    var nextLabel = getNextLevelLabel();
+    if (nextLabel) {
+        winDetail.textContent = '继续挑战 ' + nextLabel + ' 吧！';
+        nextLevelBtn.disabled = false;
     } else {
-        bestScoreElement.textContent = '';
+        winDetail.textContent = '已经是最高难度啦！';
+        nextLevelBtn.disabled = true;
     }
+    winModal.classList.add('show');
 }
 
-// 游戏获胜
-function gameWon() {
-    clearInterval(gameTimer);
-    gameStarted = false;
-
-    // 保存最佳成绩
-    const bestMoves = localStorage.getItem(`puzzleBestMoves_${gridSize}x${gridSize}`);
-    const bestTime = localStorage.getItem(`puzzleBestTime_${gridSize}x${gridSize}`);
-
-    if (!bestMoves || moves < parseInt(bestMoves)) {
-        localStorage.setItem(`puzzleBestMoves_${gridSize}x${gridSize}`, moves);
-    }
-
-    if (!bestTime || seconds < parseInt(bestTime)) {
-        localStorage.setItem(`puzzleBestTime_${gridSize}x${gridSize}`, seconds);
-    }
-
-    updateBestScore();
-
-    // 显示模态框
-    const modal = document.getElementById('winModal');
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    document.getElementById('finalScore').textContent =
-        `用时 ${minutes}:${secs.toString().padStart(2, '0')}，用了 ${moves} 步`;
-    modal.classList.add('show');
+function hideWinModal() {
+    winModal.classList.remove('show');
 }
 
-// 显示预览
-function showPreview() {
-    const modal = document.getElementById('previewModal');
-    const canvas = document.getElementById('previewCanvas');
-    const ctx = canvas.getContext('2d');
+function getNextLevelLabel() {
+    var currentIndex = -1;
+    for (var i = 0; i < sizeLevels.length; i++) {
+        if (sizeLevels[i].size === currentSize) {
+            currentIndex = i;
+            break;
+        }
+    }
+    if (currentIndex >= 0 && currentIndex < sizeLevels.length - 1) {
+        return sizeLevels[currentIndex + 1].name;
+    }
+    return '';
+}
 
-    canvas.width = 300;
-    canvas.height = 300;
+function goNextLevel() {
+    hideWinModal();
+    var currentIndex = -1;
+    for (var i = 0; i < sizeLevels.length; i++) {
+        if (sizeLevels[i].size === currentSize) {
+            currentIndex = i;
+            break;
+        }
+    }
+    if (currentIndex < 0 || currentIndex >= sizeLevels.length - 1) return;
+    if (currentIndex + 1 > unlockedLevel) return;
+    currentSize = sizeLevels[currentIndex + 1].size;
+    renderSizeButtons();
+    buildBoard();
+    updateBest();
+    shuffleBoard();
+}
 
-    const img = new Image();
+function getImageData(id, size) {
+    var cacheKey = id + '-' + size;
+    if (imageCache[cacheKey]) {
+        return imageCache[cacheKey];
+    }
+    var canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    var ctx = canvas.getContext('2d');
+
+    if (id === 'sunset') {
+        drawGradient(ctx, size, ['#ff7a59', '#fbb040', '#7f00ff']);
+        drawSun(ctx, size, '#fff3e0');
+        drawBand(ctx, size, '#ffffff');
+        drawBadge(ctx, size, 'S', '#ffffff');
+    } else if (id === 'ocean') {
+        drawGradient(ctx, size, ['#4facfe', '#00f2fe', '#1f7ae0']);
+        drawWaves(ctx, size);
+        drawBadge(ctx, size, 'O', '#ffffff');
+    } else if (id === 'forest') {
+        drawGradient(ctx, size, ['#2ecc71', '#27ae60', '#145a32']);
+        drawTrees(ctx, size);
+        drawBadge(ctx, size, 'F', '#ffffff');
+    } else if (id === 'city') {
+        drawGradient(ctx, size, ['#bdc3c7', '#2c3e50', '#34495e']);
+        drawSkyline(ctx, size);
+        drawBadge(ctx, size, 'C', '#ffffff');
+    } else if (id === 'candy') {
+        drawGradient(ctx, size, ['#ff9a9e', '#fad0c4', '#fbc8d4']);
+        drawDots(ctx, size);
+        drawBadge(ctx, size, 'D', '#ffffff');
+    } else {
+        drawGradient(ctx, size, ['#7f7fd5', '#86a8e7', '#91eae4']);
+        drawAurora(ctx, size);
+        drawBadge(ctx, size, 'A', '#ffffff');
+    }
+
+    var dataUrl = canvas.toDataURL();
+    imageCache[cacheKey] = dataUrl;
+    return dataUrl;
+}
+
+function drawImageThumb(id, canvas) {
+    var size = canvas.width;
+    var ctx = canvas.getContext('2d');
+    var dataUrl = getImageData(id, size * 2);
+    var img = new Image();
     img.onload = function() {
-        ctx.drawImage(img, 0, 0);
+        ctx.clearRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
     };
-    img.src = imageData;
-
-    modal.classList.add('show');
+    img.src = dataUrl;
 }
 
-// 关闭预览模态框
-function closePreviewModal() {
-    document.getElementById('previewModal').classList.remove('show');
+function drawGradient(ctx, size, colors) {
+    var gradient = ctx.createLinearGradient(0, 0, size, size);
+    for (var i = 0; i < colors.length; i++) {
+        gradient.addColorStop(i / (colors.length - 1), colors[i]);
+    }
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
 }
 
-// 关闭模态框
-function closeModal() {
-    document.getElementById('winModal').classList.remove('show');
+function drawSun(ctx, size, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(size * 0.7, size * 0.3, size * 0.14, 0, Math.PI * 2);
+    ctx.fill();
 }
 
-// 页面加载时初始化
-initGame();
+function drawBand(ctx, size, color) {
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillRect(size * 0.1, size * 0.55, size * 0.8, size * 0.12);
+    ctx.fillStyle = color;
+    ctx.fillRect(size * 0.1, size * 0.68, size * 0.8, size * 0.06);
+}
+
+function drawWaves(ctx, size) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 4;
+    for (var y = size * 0.4; y < size; y += 18) {
+        ctx.beginPath();
+        ctx.moveTo(size * 0.1, y);
+        ctx.quadraticCurveTo(size * 0.3, y - 8, size * 0.5, y);
+        ctx.quadraticCurveTo(size * 0.7, y + 8, size * 0.9, y);
+        ctx.stroke();
+    }
+}
+
+function drawTrees(ctx, size) {
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    for (var i = 0; i < 6; i++) {
+        var x = size * (0.12 + i * 0.14);
+        var h = size * (0.2 + (i % 3) * 0.08);
+        ctx.beginPath();
+        ctx.moveTo(x, size * 0.75);
+        ctx.lineTo(x - size * 0.06, size * 0.75 - h);
+        ctx.lineTo(x + size * 0.06, size * 0.75 - h);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+function drawSkyline(ctx, size) {
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    for (var i = 0; i < 7; i++) {
+        var x = size * (0.08 + i * 0.13);
+        var w = size * 0.08;
+        var h = size * (0.2 + (i % 3) * 0.1);
+        ctx.fillRect(x, size * 0.7 - h, w, h);
+    }
+}
+
+function drawDots(ctx, size) {
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    for (var i = 0; i < 20; i++) {
+        var x = Math.random() * size;
+        var y = Math.random() * size;
+        var r = 4 + Math.random() * 6;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawAurora(ctx, size) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 6;
+    for (var i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(size * 0.1, size * (0.2 + i * 0.15));
+        ctx.bezierCurveTo(size * 0.3, size * (0.1 + i * 0.15), size * 0.7, size * (0.3 + i * 0.15), size * 0.9, size * (0.2 + i * 0.15));
+        ctx.stroke();
+    }
+}
+
+function drawBadge(ctx, size, text, color) {
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath();
+    ctx.arc(size * 0.5, size * 0.5, size * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.font = 'bold ' + Math.floor(size * 0.18) + 'px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, size * 0.5, size * 0.5);
+}
+
+function getImageLabel(id) {
+    for (var i = 0; i < images.length; i++) {
+        if (images[i].id === id) return images[i].label;
+    }
+    return '';
+}
+
+function setPanelCollapsed(collapsed) {
+    imagePanel.classList.toggle('collapsed', collapsed);
+    imageToggle.textContent = collapsed ? '展开' : '收起';
+    localStorage.setItem(panelKey, collapsed ? 'collapsed' : 'expanded');
+}
+
+function setSizePanelCollapsed(collapsed) {
+    sizePanel.classList.toggle('collapsed', collapsed);
+    sizeToggle.textContent = collapsed ? '展开' : '收起';
+    localStorage.setItem(sizePanelKey, collapsed ? 'collapsed' : 'expanded');
+}
+
+function getSizeLabel(size) {
+    for (var i = 0; i < sizeLevels.length; i++) {
+        if (sizeLevels[i].size === size) return sizeLevels[i].name;
+    }
+    return '';
+}
+
+init();
