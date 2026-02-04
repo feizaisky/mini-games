@@ -52,6 +52,11 @@ python3 -m http.server 8000
 - `env(safe-area-inset-*)`
 - `addEventListener(..., { passive: false })`
 
+## 交互限制
+
+- 所有游戏页面禁止复制/选择文本（`-webkit-user-select: none; user-select: none`）
+- 所有游戏页面禁止缩放（`meta viewport` 加 `maximum-scale=1.0, user-scalable=no`）
+
 ## LocalStorage 键
 
 - `snakeHighScore`
