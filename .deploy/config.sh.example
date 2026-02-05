@@ -1,37 +1,16 @@
 # Deploy Configuration
-# 部署配置文件
+# 部署配置文件（可选）
 
-# ============== 生产环境 ==============
-# 默认: web-server（与旧 deploy.sh 保持一致）
-DEPLOY_SERVER="web-server"
-DEPLOY_DIR="/usr/share/nginx/html/"
+# ============== 生产服务器配置 ==============
+# 默认值（与 deploy.sh 中的默认值相同）
+# DEPLOY_SERVER="web-server"
+# DEPLOY_DIR="/usr/share/nginx/html/"
 
-# 如果需要修改服务器，取消注释并修改：
+# 自定义配置（如果需要，取消注释并修改）
 # DEPLOY_SERVER="user@your-server.com"
 # DEPLOY_DIR="/var/www/html/mini-games"
 
-# ============== 测试环境 ==============
-DEPLOY_STAGING_SERVER="web-server"
-DEPLOY_STAGING_DIR="/usr/share/nginx/html/"
-
-# ============== GitHub Pages ==============
-DEPLOY_BRANCH="main"  # 或者 "gh-pages"
-
-# ============== 本地服务器 ==============
-DEPLOY_PORT="8000"
-DEPLOY_DIR="."
-
-# ============== 部署选项 ==============
-# 部署前是否自动提交
-AUTO_COMMIT=false
-
-# 部署前是否运行测试
-RUN_TESTS=false
-
-# 是否创建备份
-CREATE_BACKUP=true
-
-# ============== 通知配置 ==============
-# 部署成功后发送通知（可选）
-# NOTIFICATION_URL="https://hooks.slack.com/..."
-# NOTIFICATION_EMAIL="admin@example.com"
+# 说明：
+# - 如果不创建此文件，将使用默认配置
+# - 只需配置需要修改的变量
+# - 服务器地址格式: user@hostname 或 hostname
