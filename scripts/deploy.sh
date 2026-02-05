@@ -142,8 +142,13 @@ deploy_ssh() {
         --exclude ".DS_Store"         # 排除 .DS_Store
         --exclude "node_modules/"     # 排除 node_modules
         --exclude ".claude/"          # 排除 .claude
+        --exclude ".deploy/"          # 排除 .deploy 配置目录
+        --exclude "scripts/"          # 排除 scripts 脚本目录
+        --exclude "*.md"              # 排除所有 Markdown 文档
+        --exclude "*.sh"              # 排除所有 Shell 脚本
         --exclude "*.log"             # 排除日志文件
         --exclude "deploy-*.log"      # 排除部署日志
+        --exclude "output/"           # 排除输出目录
         --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r  # 设置权限
     )
 

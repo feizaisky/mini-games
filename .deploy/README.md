@@ -48,6 +48,38 @@
    ./scripts/deploy.sh production
    ```
 
+## 默认排除规则
+
+部署时自动排除以下文件和目录：
+
+| 排除项 | 说明 |
+|--------|------|
+| `.git/` | Git 仓库数据 |
+| `.DS_Store` | macOS 系统文件 |
+| `node_modules/` | Node.js 依赖 |
+| `.claude/` | Claude AI 配置 |
+| `.deploy/` | 部署配置目录 |
+| `scripts/` | 开发工具脚本 |
+| `*.md` | 所有 Markdown 文档 |
+| `*.sh` | 所有 Shell 脚本 |
+| `*.log` | 日志文件 |
+| `output/` | 输出目录 |
+
+### 部署内容
+
+只部署以下类型的内容：
+- ✅ 游戏文件（HTML、CSS、JS）
+- ✅ 静态资源（图片、图标）
+- ✅ 配置文件（除敏感配置外）
+
+### 部署排除内容
+
+以下内容**不会**被部署：
+- ❌ 开发文档（README.md 等）
+- ❌ 工具脚本（*.sh）
+- ❌ 配置目录（.claude/、.deploy/、scripts/）
+- ❌ 日志和临时文件
+
 ## 配置选项详解
 
 ### 服务器配置
