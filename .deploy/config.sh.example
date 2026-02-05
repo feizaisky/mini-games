@@ -2,12 +2,17 @@
 # 部署配置文件
 
 # ============== 生产环境 ==============
-DEPLOY_SERVER="user@your-server.com"
-DEPLOY_DIR="/var/www/html/mini-games"
+# 默认: web-server（与旧 deploy.sh 保持一致）
+DEPLOY_SERVER="web-server"
+DEPLOY_DIR="/usr/share/nginx/html/"
+
+# 如果需要修改服务器，取消注释并修改：
+# DEPLOY_SERVER="user@your-server.com"
+# DEPLOY_DIR="/var/www/html/mini-games"
 
 # ============== 测试环境 ==============
-DEPLOY_STAGING_SERVER="user@staging-server.com"
-DEPLOY_STAGING_DIR="/var/www/html/mini-games-staging"
+DEPLOY_STAGING_SERVER="web-server"
+DEPLOY_STAGING_DIR="/usr/share/nginx/html/"
 
 # ============== GitHub Pages ==============
 DEPLOY_BRANCH="main"  # 或者 "gh-pages"

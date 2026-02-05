@@ -132,9 +132,9 @@ deploy_ssh() {
     local SERVER=$1
     local DIR=$2
 
-    log "部署到 $SERVER:$DIR"
+    log "部署到 ${SERVER}:${DIR}"
 
-    # rsync 配置
+    # rsync 配置（与旧 deploy.sh 保持一致）
     local RSYNC_OPTS=(
         -avz                          # 归档模式，显示进度
         --delete                      # 删除目标中多余的文件
@@ -155,28 +155,31 @@ deploy_ssh() {
     log "开始同步文件..."
     rsync "${RSYNC_OPTS[@]}" ./ "${SERVER}:${DIR}"
 
-    success "部署到 $SERVER 完成"
+    success "部署到 ${SERVER} 完成"
 }
 
 # 生产环境部署
 deploy_production() {
     log "🚀 开始生产环境部署..."
 
+    # 默认配置（与旧 deploy.sh 保持一致）
     local SERVER=${DEPLOY_SERVER:-"web-server"}
-    local DIR=${DEPLOY_DIR:-"/usr/share/nginx/html/${PROJECT_NAME}"}
+    local DIR=${DEPLOY_DIR:-"/usr/share/nginx/html/"}
 
     pre_deploy_checks
     deploy_ssh "$SERVER" "$DIR"
 
     success "生产环境部署完成！"
+    success "服务器: $SERVER"
+    success "目录: $DIR"
 }
 
 # 测试环境部署
 deploy_staging() {
     log "🧪 开始测试环境部署..."
 
-    local SERVER=${DEPLOY_STAGING_SERVER:-"staging-server"}
-    local DIR=${DEPLOY_STAGING_DIR:-"/usr/share/nginx/html/${PROJECT_NAME}-staging"}
+    local SERVER=${DEPLOY_STAGING_SERVER:-"web-server"}
+    local DIR=${DEPLOY_STAGING_DIR:-"/usr/share/nginx/html/"}
 
     deploy_ssh "$SERVER" "$DIR"
 
@@ -217,11 +220,11 @@ deploy_preview() {
     echo ""
     echo "${BLUE}生产环境:${NC}"
     echo "  服务器: ${DEPLOY_SERVER:-web-server}"
-    echo "  目录: ${DEPLOY_DIR:-/usr/share/nginx/html/mini-games}"
+    echo "  目录: ${DEPLOY_DIR:-/usr/share/nginx/html/}"
     echo ""
     echo "${BLUE}测试环境:${NC}"
-    echo "  服务器: ${DEPLOY_STAGING_SERVER:-staging-server}"
-    echo "  目录: ${DEPLOY_STAGING_DIR:-/usr/share/nginx/html/mini-games-staging}"
+    echo "  服务器: ${DEPLOY_STAGING_SERVER:-web-server}"
+    echo "  目录: ${DEPLOY_STAGING_DIR:-/usr/share/nginx/html/}"
     echo ""
     echo "${BLUE}本地服务器:${NC}"
     echo "  端口: ${DEPLOY_PORT:-8000}"
