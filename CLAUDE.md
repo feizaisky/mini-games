@@ -20,11 +20,42 @@ python3 -m http.server 8000
 - 主页：`/opt/code/mini-games/index.html`
 - 每个游戏一个目录：`<game>/index.html` + `<game>/game.js`
 
+### 目录结构约定
+
+根据游戏复杂度选择合适的结构：
+
+**简单游戏（< 500 行代码）** — 单文件结构：
+```
+<game>/
+├── index.html
+├── game.js          # 所有逻辑在一个文件
+└── README.md
+```
+
+**复杂游戏（> 500 行代码）** — 模块化结构：
+```
+<game>/
+├── index.html
+├── styles.css       # 独立样式文件（可选）
+├── js/              # JS 模块目录
+│   ├── main.js      # 入口/初始化
+│   ├── game.js      # 核心游戏逻辑
+│   ├── ui.js        # UI 交互
+│   └── ...          # 其他功能模块
+└── README.md
+```
+
+选择原则：
+- 优先使用简单结构，保持一致性
+- 当单文件难以维护时（代码量大、功能模块多），再拆分为模块化结构
+- 参考 `tower-defense/` 作为模块化结构示例
+
 ## 新增游戏
 
-1. 新建目录（如 `new-game/`），包含 `index.html` 和 `game.js`
+1. 新建目录（如 `new-game/`），包含 `index.html` 和 `game.js`（复杂游戏可用 `js/` 子目录）
 2. 在主站 `index.html` 的 `.games-grid` 中加入口卡片
 3. 若有最高分，需加入主站的分数读取脚本
+4. 添加统一加载动画（见下方说明）
 
 示例卡片：
 ```html
@@ -33,6 +64,44 @@ python3 -m http.server 8000
   <div class="game-title">Game Name</div>
   <div class="game-desc">Description</div>
 </a>
+```
+
+## 统一加载动画
+
+所有游戏使用 `common/` 目录下的公共加载组件，确保用户在游戏完全加载前无法操作。
+
+### 添加方式
+
+在游戏 `index.html` 中添加以下内容：
+
+1. **`<head>` 末尾**添加 CSS 引用：
+```html
+<link rel="stylesheet" href="/common/loader.css">
+```
+
+2. **`<body>` 开头**添加加载遮罩 HTML：
+```html
+<div id="game-loader" class="game-loader">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">加载中</div>
+</div>
+```
+
+3. **`</body>` 前**添加 JS 引用：
+```html
+<script src="/common/loader.js"></script>
+```
+
+### 公共文件
+
+- `common/loader.css` — 加载动画样式
+- `common/loader.js` — 自动监听页面加载完成并隐藏遮罩
+
+### 手动控制（可选）
+
+如需手动隐藏加载动画（如异步资源加载完成后）：
+```javascript
+window.GameLoader.hide();
 ```
 
 ## 移动端/微信兼容

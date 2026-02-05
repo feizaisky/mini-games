@@ -219,8 +219,14 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/common/loader.css">
 </head>
 <body>
+    <!-- 加载动画 -->
+    <div id="game-loader" class="game-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">加载中</div>
+    </div>
     <div class="game-container">
         <h1>
             <svg class="logo-icon" viewBox="0 0 64 64" role="img" aria-label="贪吃蛇 图标">
@@ -258,5 +264,6 @@
     </div>
 
     <script src="game.js"></script>
+    <script src="/common/loader.js"></script>
 </body>
 </html>

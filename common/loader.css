@@ -1,0 +1,61 @@
+/* 统一加载动画样式 */
+
+/* 加载遮罩层 - 需要在 <head> 中尽早引入 */
+.game-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+    transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+}
+
+.game-loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* 旋转动画 */
+.loader-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: loader-spin 0.8s linear infinite;
+}
+
+@keyframes loader-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 加载文字 */
+.loader-text {
+    margin-top: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    letter-spacing: 2px;
+}
+
+/* 加载进度点动画（可选） */
+.loader-text::after {
+    content: '';
+    animation: loader-dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes loader-dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+}
