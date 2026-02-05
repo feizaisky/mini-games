@@ -115,7 +115,7 @@ deploy() {
         --exclude "scripts/"          # 排除 scripts 脚本目录
         --exclude "*.md"              # 排除所有 Markdown 文档
         --exclude "*.sh"              # 排除所有 Shell 脚本
-        --exclude "*.log"             # 排除日志文件
+        --exclude "logs/"             # 排除日志目录
         --exclude "output/"           # 排除输出目录
         --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r  # 设置权限
     )
