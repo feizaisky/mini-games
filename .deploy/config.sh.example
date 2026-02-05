@@ -1,0 +1,32 @@
+# Deploy Configuration
+# 部署配置文件
+
+# ============== 生产环境 ==============
+DEPLOY_SERVER="user@your-server.com"
+DEPLOY_DIR="/var/www/html/mini-games"
+
+# ============== 测试环境 ==============
+DEPLOY_STAGING_SERVER="user@staging-server.com"
+DEPLOY_STAGING_DIR="/var/www/html/mini-games-staging"
+
+# ============== GitHub Pages ==============
+DEPLOY_BRANCH="main"  # 或者 "gh-pages"
+
+# ============== 本地服务器 ==============
+DEPLOY_PORT="8000"
+DEPLOY_DIR="."
+
+# ============== 部署选项 ==============
+# 部署前是否自动提交
+AUTO_COMMIT=false
+
+# 部署前是否运行测试
+RUN_TESTS=false
+
+# 是否创建备份
+CREATE_BACKUP=true
+
+# ============== 通知配置 ==============
+# 部署成功后发送通知（可选）
+# NOTIFICATION_URL="https://hooks.slack.com/..."
+# NOTIFICATION_EMAIL="admin@example.com"
