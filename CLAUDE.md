@@ -67,3 +67,27 @@ python3 -m http.server 8000
 ## 语言
 
 界面文案以简体中文为主。
+
+## Git 提交规范
+
+### 使用 Git Push Skill
+
+在 Claude Code 中直接说 **"push 到仓库"** 即可自动：
+- 添加所有更改
+- 智能生成提交消息
+- 推送到远程仓库
+
+### 提交消息格式
+
+遵循 Conventional Commits：
+- `feat:` 新功能
+- `fix:` 修复问题
+- `style:` 样式优化
+- `refactor:` 重构代码
+- `docs:` 文档更新
+- `chore:` 其他更改
+
+所有提交自动添加：
+```
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+```
