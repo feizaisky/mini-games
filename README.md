@@ -7,7 +7,10 @@
 - [贪吃蛇](./snake-game/)：经典贪吃蛇游戏（道具系统、暂停、死亡动画）
 - [2048](./2048/)：数字合并挑战（撤销、合并动画、新纪录提示）
 - [俄罗斯方块](./tetris/)：方块消除（Hold 暂存、消行特效、连击系统）
+- [打砖块](./breakout/)：反弹清砖挑战（5关模板、硬砖连击、慢动作过关）
 - [王国塔防](./tower-defense/)：策略塔防守卫（5 种防御塔、4 张地图、成就系统）
+- [飞机大战](./airplane-shooter/)：街机空战生存（普通/精英/Boss波次、击破演出）
+- [弹球台](./pinball/)：双挡板弹球（发射蓄力、倍率连击、轨道奖励）
 - [中国象棋](./chinese-chess/)：人机对战与双人对弈（走子动画、棋谱记录）
 - [五子棋](./gomoku/)：益智棋类对战
 - [记忆翻牌](./memory-game/)：配对记忆游戏（多难度）
@@ -28,6 +31,7 @@
 - **庆祝动画** (`celebration.css` + `celebration.js`)：胜利时的彩带/粒子效果
 - **分享组件** (`share.js`)：生成成绩卡片图，支持保存图片和复制文本
 - **防长按组件** (`anti-longpress.js`)：禁用微信"搜一搜/翻译"浮层、长按选中、复制粘贴、手势缩放
+- **画布自适应组件** (`canvas-fit.js`)：根据当前可视区动态计算 `canvas` 最大高度，让主游戏区尽可能大（支持旋转和微信顶栏变化）
 
 ## 快速开始
 
@@ -55,8 +59,11 @@ mini-games/
 │   ├── celebration.css  # 庆祝动画样式
 │   ├── celebration.js   # 庆祝动画逻辑
 │   ├── share.js         # 分享组件
-│   └── anti-longpress.js # 防长按/防微信浮层
+│   ├── anti-longpress.js # 防长按/防微信浮层
+│   └── canvas-fit.js    # 画布动态高度适配
 ├── 2048/                # 2048
+├── airplane-shooter/     # 飞机大战
+├── breakout/             # 打砖块
 ├── chinese-chess/       # 中国象棋
 ├── gomoku/              # 五子棋
 ├── lights-out/          # 熄灯
@@ -68,6 +75,7 @@ mini-games/
 ├── sudoku/              # 数独
 ├── tetris/              # 俄罗斯方块
 ├── tic-tac-toe/         # 井字棋
+├── pinball/             # 弹球台
 ├── tower-defense/       # 塔防（模块化结构，js/ 子目录）
 └── whack-a-mole/        # 打地鼠
 ```
@@ -80,5 +88,30 @@ mini-games/
 - 在该目录下放置 `index.html` 与相关资源
 - 在根目录 `index.html` 的游戏列表中增加入口
 - 接入公共组件（加载动画、音效、庆祝动画、防长按）
+
+### 画布动态高度用法（推荐）
+
+1. 在 `game.js` 之前引入：
+
+```html
+<script src="/common/canvas-fit.js?v=1.0"></script>
+<script src="game.js?v=1.1"></script>
+```
+
+2. 在 `game.js` 中初始化：
+
+```javascript
+window.GameLayoutFit?.bindCanvasMaxHeight({
+  canvas: document.getElementById('gameCanvas'),
+  containerSelector: '.game-wrap',
+  minHeight: 250,
+  bottomGap: 6
+});
+```
+
+说明：
+- `minHeight`：最小画布高度（px）
+- `bottomGap`：底部预留（px）
+- 组件会自动监听 `resize`、`orientationchange` 和 `visualViewport` 变化
 
 玩得开心！

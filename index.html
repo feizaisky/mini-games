@@ -205,6 +205,11 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 12px;
+            transition: max-height 0.25s ease;
+        }
+        .scores-grid.collapsed {
+            overflow: hidden;
+            max-height: var(--collapsed-max-height, none);
         }
         .score-item {
             background: #f8f9fa;
@@ -216,15 +221,48 @@
             font-size: 13px;
             color: #666;
             margin-bottom: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .score-item .score-icon {
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 16px;
+        }
+        .score-item .score-icon svg,
+        .score-item .score-icon img {
+            width: 16px;
+            height: 16px;
+            display: block;
+        }
+        .score-item .score-icon-fallback {
+            font-size: 14px;
+            line-height: 1;
         }
         .score-item .score-value {
-            font-size: 20px;
-            font-weight: bold;
+            font-size: 13px;
+            font-weight: 400;
             color: #667eea;
         }
         .score-item .no-score {
             font-size: 14px;
             color: #999;
+        }
+        .scores-actions {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .scores-actions .more-btn {
+            color: #e74c3c;
+            border-color: #e74c3c;
         }
         @media (max-width: 768px) {
             .container {
@@ -275,7 +313,7 @@
                 padding: 10px;
             }
             .score-item .score-value {
-                font-size: 18px;
+                font-size: 13px;
             }
             .category-tabs {
                 gap: 6px;
@@ -348,6 +386,14 @@
                 <div class="game-desc">经典方块消除游戏</div>
             </a>
 
+            <a href="./breakout/" class="game-card" data-category="classic">
+                <div class="game-icon" aria-hidden="true">
+                    <img src="./common/icons/breakout.svg" alt="打砖块">
+                </div>
+                <div class="game-title">打砖块</div>
+                <div class="game-desc">反弹清砖连击挑战</div>
+            </a>
+
             <a href="./lights-out/" class="game-card" data-category="puzzle">
                 <div class="game-icon" aria-hidden="true">
                     <img src="./lights-out/icon.svg" alt="熄灯">
@@ -362,6 +408,22 @@
                 </div>
                 <div class="game-title">王国塔防</div>
                 <div class="game-desc">策略塔防守卫王国</div>
+            </a>
+
+            <a href="./airplane-shooter/" class="game-card" data-category="action">
+                <div class="game-icon" aria-hidden="true">
+                    <img src="./common/icons/airplane-shooter.svg" alt="飞机大战">
+                </div>
+                <div class="game-title">飞机大战</div>
+                <div class="game-desc">街机空战弹幕生存</div>
+            </a>
+
+            <a href="./pinball/" class="game-card" data-category="action">
+                <div class="game-icon" aria-hidden="true">
+                    <img src="./common/icons/pinball.svg" alt="弹球台">
+                </div>
+                <div class="game-title">弹球台</div>
+                <div class="game-desc">双挡板倍率冲分</div>
             </a>
 
             <a href="./gomoku/" class="game-card" data-category="board">
@@ -478,6 +540,22 @@
                 <div class="game-title">一笔画</div>
                 <div class="game-desc">不重复连通所有点</div>
             </a>
+
+            <a href="./minesweeper/" class="game-card" data-category="puzzle">
+                <div class="game-icon" aria-hidden="true">
+                    <img src="./common/icons/minesweeper.svg" alt="扫雷">
+                </div>
+                <div class="game-title">扫雷</div>
+                <div class="game-desc">排除地雷，翻开所有安全格</div>
+            </a>
+
+            <a href="./match3/" class="game-card" data-category="puzzle">
+                <div class="game-icon" aria-hidden="true">
+                    <img src="./common/icons/match3.svg" alt="三消">
+                </div>
+                <div class="game-title">三消</div>
+                <div class="game-desc">交换宝石，三连消除拿高分</div>
+            </a>
         </div>
 
         <p class="coming-soon">更多精彩游戏，敬请期待...</p>
@@ -487,10 +565,12 @@
             <div class="scores-grid" id="scoresGrid">
                 <!-- 成绩将由 JavaScript 动态加载 -->
             </div>
+            <div class="scores-actions" id="scoresActions"></div>
         </div>
     </div>
 
     <script>
+        window.__scoresExpanded = false;
         // 分类筛选
         (function() {
             var tabs = document.querySelectorAll('.category-tab');
@@ -545,9 +625,30 @@
             item.href = href;
             item.style.textDecoration = 'none';
             item.style.color = 'inherit';
-            item.innerHTML = '<div class="game-name">' + icon + ' ' + name + '</div><div class="score-value">' + value + '</div>';
+            item.innerHTML = '<div class="game-name">' + (icon || '') + '<span>' + name + '</span></div><div class="score-value">' + value + '</div>';
             grid.appendChild(item);
             return true;
+        }
+
+        function getScoreIconByHref(href, name, fallbackIcon) {
+            var selector = '.game-card[href="' + href + '"] .game-icon';
+            var iconNode = document.querySelector(selector);
+            if (iconNode) {
+                var svg = iconNode.querySelector('svg');
+                if (svg) {
+                    return '<span class="score-icon" aria-hidden="true">' + svg.outerHTML + '</span>';
+                }
+                var img = iconNode.querySelector('img');
+                if (img) {
+                    var src = img.getAttribute('src') || '';
+                    var alt = img.getAttribute('alt') || (name + '图标');
+                    return '<span class="score-icon"><img src="' + src + '" alt="' + alt + '"></span>';
+                }
+            }
+            if (fallbackIcon) {
+                return '<span class="score-icon score-icon-fallback" aria-hidden="true">' + fallbackIcon + '</span>';
+            }
+            return '';
         }
 
         function formatTime(seconds) {
@@ -595,41 +696,107 @@
         function loadScores() {
             migrateLegacyScores();
             var grid = document.getElementById('scoresGrid');
+            var actions = document.getElementById('scoresActions');
+            var wasExpanded = window.__scoresExpanded === true;
             grid.innerHTML = '';
+            grid.classList.remove('collapsed');
+            grid.style.removeProperty('--collapsed-max-height');
+            actions.innerHTML = '';
             var hasScores = false;
             var scoreAdapters = [
-                { icon: '🐍', name: '贪吃蛇', href: './snake-game/', read: function() { var v = localStorage.getItem('miniGames.v1.snake-game.best'); return v ? v + '分' : ''; } },
-                { icon: '🃏', name: '2048', href: './2048/', read: function() { var v = localStorage.getItem('miniGames.v1.2048.best'); return v ? v + '分' : ''; } },
-                { icon: '🎯', name: '俄罗斯方块', href: './tetris/', read: function() { var v = localStorage.getItem('miniGames.v1.tetris.best'); return v ? v + '分' : ''; } },
-                { icon: '💡', name: '熄灯', href: './lights-out/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.lights-out.best') || '{}'); return v.moves !== undefined ? (v.moves + '步 / ' + formatTime(v.time || 0)) : ''; } catch (e) { return ''; } } },
-                { icon: '🏰', name: '王国塔防', href: './tower-defense/', read: function() { try { var p = JSON.parse(localStorage.getItem('td_progress_v1') || '{}'); var m = Math.max.apply(null, p.bestWaves || [0]); return m > 0 ? ('最高' + m + '波') : ''; } catch (e) { return ''; } } },
-                { icon: '⚫', name: '五子棋', href: './gomoku/', read: function() { try { var s = JSON.parse(localStorage.getItem('miniGames.v1.gomoku.stats') || '{}'); return s.moveCount ? ('最近' + s.moveCount + '手') : ''; } catch (e) { return ''; } } },
-                { icon: '♟️', name: '中国象棋', href: './chinese-chess/', read: function() { try { var s = JSON.parse(localStorage.getItem('miniGames.v1.chinese-chess.stats') || '{}'); return s.moveCount ? ((s.challengeMode ? '残局 ' : '') + s.moveCount + '步') : ''; } catch (e) { return ''; } } },
-                { icon: '🧠', name: '记忆翻牌', href: './memory-game/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.memory-game.best') || '{}'); return v.moves ? (v.moves + '步 / ' + formatTime(v.seconds || 0)) : ''; } catch (e) { return ''; } } },
-                { icon: '🧭', name: 'MBTI', href: './mbti-test/', read: function() { var v = localStorage.getItem('miniGames.v1.mbti-test.best'); return v ? ('最近 ' + v) : ''; } },
-                { icon: '🔨', name: '打地鼠', href: './whack-a-mole/', read: function() { var v = localStorage.getItem('miniGames.v1.whack-a-mole.best'); return v ? v + '分' : ''; } },
-                { icon: '🔢', name: '数独', href: './sudoku/', read: function() { var v = localStorage.getItem('miniGames.v1.sudoku.best'); return v ? formatTime(v) : ''; } },
-                { icon: '⭕', name: '井字棋', href: './tic-tac-toe/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.tic-tac-toe.best') || '{}'); return v.wins ? (v.wins + '胜') : ''; } catch (e) { return ''; } } },
-                { icon: '🧩', name: '拼图', href: './puzzle/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.puzzle.best') || '{}'); return v.moves ? (v.moves + '步 / ' + formatTime(v.time || 0)) : ''; } catch (e) { return ''; } } },
-                { icon: '✍️', name: '一笔画', href: './one-stroke/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.one-stroke.best') || '{}'); return v.level ? (v.level + ' ' + formatTime(v.time || 0)) : ''; } catch (e) { return ''; } } }
+                { fallbackIcon: '🐍', name: '贪吃蛇', href: './snake-game/', read: function() { var v = localStorage.getItem('miniGames.v1.snake-game.best'); return v ? v + '分' : ''; } },
+                { fallbackIcon: '🔢', name: '2048', href: './2048/', read: function() { var v = localStorage.getItem('miniGames.v1.2048.best'); return v ? v + '分' : ''; } },
+                { fallbackIcon: '🧱', name: '俄罗斯方块', href: './tetris/', read: function() { var v = localStorage.getItem('miniGames.v1.tetris.best'); return v ? v + '分' : ''; } },
+                { fallbackIcon: '🧱', name: '打砖块', href: './breakout/', read: function() { var v = localStorage.getItem('miniGames.v1.breakout.best'); return v ? v + '分' : ''; } },
+                { fallbackIcon: '💡', name: '熄灯', href: './lights-out/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.lights-out.best') || '{}'); return v.moves !== undefined ? (v.moves + '步 / ' + formatTime(v.time || 0)) : ''; } catch (e) { return ''; } } },
+                { fallbackIcon: '🏰', name: '王国塔防', href: './tower-defense/', read: function() { try { var p = JSON.parse(localStorage.getItem('td_progress_v1') || '{}'); var m = Math.max.apply(null, p.bestWaves || [0]); return m > 0 ? ('最高' + m + '波') : ''; } catch (e) { return ''; } } },
+                { fallbackIcon: '✈️', name: '飞机大战', href: './airplane-shooter/', read: function() { var v = localStorage.getItem('miniGames.v1.airplane-shooter.best'); return v ? v + '分' : ''; } },
+                { fallbackIcon: '⚫', name: '五子棋', href: './gomoku/', read: function() { try { var s = JSON.parse(localStorage.getItem('miniGames.v1.gomoku.stats') || '{}'); return s.moveCount ? ('最近' + s.moveCount + '手') : ''; } catch (e) { return ''; } } },
+                { fallbackIcon: '♟️', name: '中国象棋', href: './chinese-chess/', read: function() { try { var s = JSON.parse(localStorage.getItem('miniGames.v1.chinese-chess.stats') || '{}'); return s.moveCount ? ((s.challengeMode ? '残局 ' : '') + s.moveCount + '步') : ''; } catch (e) { return ''; } } },
+                { fallbackIcon: '🧠', name: '记忆翻牌', href: './memory-game/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.memory-game.best') || '{}'); return v.moves ? (v.moves + '步 / ' + formatTime(v.seconds || 0)) : ''; } catch (e) { return ''; } } },
+                { fallbackIcon: '🧭', name: 'MBTI', href: './mbti-test/', read: function() { var v = localStorage.getItem('miniGames.v1.mbti-test.best'); return v ? ('最近 ' + v) : ''; } },
+                { fallbackIcon: '🔨', name: '打地鼠', href: './whack-a-mole/', read: function() { var v = localStorage.getItem('miniGames.v1.whack-a-mole.best'); return v ? v + '分' : ''; } },
+                { fallbackIcon: '🔢', name: '数独', href: './sudoku/', read: function() { var v = localStorage.getItem('miniGames.v1.sudoku.best'); return v ? formatTime(v) : ''; } },
+                { fallbackIcon: '⭕', name: '井字棋', href: './tic-tac-toe/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.tic-tac-toe.best') || '{}'); return v.wins ? (v.wins + '胜') : ''; } catch (e) { return ''; } } },
+                { fallbackIcon: '🧩', name: '拼图', href: './puzzle/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.puzzle.best') || '{}'); return v.moves ? (v.moves + '步 / ' + formatTime(v.time || 0)) : ''; } catch (e) { return ''; } } },
+                { fallbackIcon: '✍️', name: '一笔画', href: './one-stroke/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.one-stroke.best') || '{}'); return v.level ? (v.level + ' ' + formatTime(v.time || 0)) : ''; } catch (e) { return ''; } } },
+                { fallbackIcon: '🎱', name: '弹球台', href: './pinball/', read: function() { var v = localStorage.getItem('miniGames.v1.pinball.best'); return v ? v + '分' : ''; } },
+                { fallbackIcon: '🎯', name: '扫雷', href: './minesweeper/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.minesweeper.best') || '{}'); if (!v.easy && !v.medium && !v.hard) return ''; var best = Math.min(v.easy || 9999, v.medium || 9999, v.hard || 9999); if (best >= 9999) return ''; var m = Math.floor(best / 60), s = best % 60; return '最佳 ' + m + ':' + (s < 10 ? '0' : '') + s; } catch (e) { return ''; } } },
+                { fallbackIcon: '💎', name: '三消', href: './match3/', read: function() { var v = localStorage.getItem('miniGames.v1.match3.best'); return v ? v + '分' : ''; } }
             ];
 
             scoreAdapters.forEach(function(adapter) {
                 var value = adapter.read();
                 if (value) {
-                    hasScores = addScoreItem(grid, adapter.icon, adapter.name, value, adapter.href);
+                    var icon = getScoreIconByHref(adapter.href, adapter.name, adapter.fallbackIcon);
+                    hasScores = addScoreItem(grid, icon, adapter.name, value, adapter.href);
                 }
             });
 
             if (!hasScores) {
                 grid.innerHTML = '<p style="color: #999; grid-column: 1 / -1;">暂无游戏记录，快去玩游戏吧！</p>';
+                window.__scoresExpanded = false;
             } else {
-                // 添加清除按钮
-                var clearWrap = document.createElement('div');
-                clearWrap.style.cssText = 'grid-column: 1 / -1; text-align: center;';
-                clearWrap.innerHTML = '<button class="clear-scores-btn" onclick="clearAllScores()">清除所有记录</button>';
-                grid.appendChild(clearWrap);
+                var clearBtn = document.createElement('button');
+                clearBtn.className = 'clear-scores-btn';
+                clearBtn.textContent = '清除所有记录';
+                clearBtn.addEventListener('click', clearAllScores);
+                actions.appendChild(clearBtn);
+                setupScoresCollapse(grid, actions, wasExpanded);
             }
+        }
+
+        function setupScoresCollapse(grid, actions, wasExpanded) {
+            var cards = Array.prototype.slice.call(grid.querySelectorAll('.score-item'));
+            if (!cards.length) return;
+            var rowTops = [];
+            cards.forEach(function(card) {
+                if (rowTops.indexOf(card.offsetTop) === -1) rowTops.push(card.offsetTop);
+            });
+            rowTops.sort(function(a, b) { return a - b; });
+            if (rowTops.length <= 3) {
+                window.__scoresExpanded = false;
+                return;
+            }
+
+            var allowedTops = [rowTops[0], rowTops[1]];
+            var maxBottom = 0;
+            cards.forEach(function(card) {
+                if (allowedTops.indexOf(card.offsetTop) !== -1) {
+                    maxBottom = Math.max(maxBottom, card.offsetTop + card.offsetHeight);
+                }
+            });
+            var collapsedHeight = maxBottom - rowTops[0];
+            if (collapsedHeight <= 0) return;
+
+            grid.style.setProperty('--collapsed-max-height', collapsedHeight + 'px');
+            if (wasExpanded) {
+                grid.classList.remove('collapsed');
+            } else {
+                grid.classList.add('collapsed');
+            }
+
+            var moreBtn = document.createElement('button');
+            moreBtn.type = 'button';
+            moreBtn.className = 'clear-scores-btn more-btn';
+            moreBtn.textContent = wasExpanded ? '收起' : '更多';
+            moreBtn.dataset.expanded = wasExpanded ? '1' : '0';
+            window.__scoresExpanded = !!wasExpanded;
+            moreBtn.addEventListener('click', function() {
+                var expanded = moreBtn.dataset.expanded === '1';
+                if (expanded) {
+                    moreBtn.dataset.expanded = '0';
+                    moreBtn.textContent = '更多';
+                    grid.classList.add('collapsed');
+                    window.__scoresExpanded = false;
+                } else {
+                    moreBtn.dataset.expanded = '1';
+                    moreBtn.textContent = '收起';
+                    grid.classList.remove('collapsed');
+                    window.__scoresExpanded = true;
+                }
+            });
+            actions.appendChild(moreBtn);
         }
 
         function clearAllScores() {
@@ -652,6 +819,9 @@
         }
 
         loadScores();
+        window.addEventListener('resize', function() {
+            loadScores();
+        });
     </script>
 </body>
 </html>

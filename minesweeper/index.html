@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>扫雷</title>
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        html, body { margin: 0; min-height: 100%; overscroll-behavior: none; touch-action: manipulation; }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom);
+            background: linear-gradient(135deg, #2d5016 0%, #1a2f0d 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            color: #333;
+        }
+        .home-btn {
+            position: fixed;
+            top: max(10px, env(safe-area-inset-top));
+            left: 10px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.95);
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            z-index: 10;
+        }
+        .home-btn svg { width: 22px; height: 22px; fill: #2d5016; }
+        .app {
+            width: min(100%, 420px);
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 12px 14px 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            text-align: center;
+        }
+        h1 { margin: 0 0 8px; font-size: 20px; color: #1a2f0d; display: inline-flex; align-items: center; gap: 8px; justify-content: center; }
+        .title-icon { width: 24px; height: 24px; display: block; }
+        .stats {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .stat {
+            background: rgba(45,80,22,0.12);
+            border-radius: 10px;
+            padding: 6px 10px;
+            min-width: 70px;
+        }
+        .stat .k { font-size: 10px; color: #666; }
+        .stat .v { font-size: 16px; font-weight: bold; color: #1a2f0d; }
+        .difficulty-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .difficulty-row span { font-size: 12px; color: #666; }
+        .chip {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            border: 1px solid rgba(45,80,22,0.3);
+            background: rgba(255,255,255,0.8);
+            color: #2d5016;
+            cursor: pointer;
+        }
+        .chip.active {
+            background: #2d5016;
+            color: #fff;
+            border-color: #2d5016;
+        }
+        #gridWrap {
+            display: inline-block;
+            border: 2px solid #1a2f0d;
+            border-radius: 6px;
+            padding: 4px;
+            background: #b5c99a;
+            margin-bottom: 10px;
+            touch-action: none;
+        }
+        .grid-row { display: flex; }
+        .cell {
+            width: 28px;
+            height: 28px;
+            border: 1px solid #7d8c5a;
+            border-radius: 3px;
+            margin: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            background: linear-gradient(180deg, #c5d4a8, #a8b88a);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+        }
+        .cell:active { transform: scale(0.96); }
+        .cell.revealed {
+            background: #e8e8e8;
+            box-shadow: none;
+            cursor: default;
+            border-color: #ccc;
+        }
+        .cell.mine { background: #c44; color: #fff; }
+        .cell.flagged { background: #d4a84a; color: #333; }
+        .cell.num1 { color: #0000e0; }
+        .cell.num2 { color: #008000; }
+        .cell.num3 { color: #e00000; }
+        .cell.num4 { color: #000080; }
+        .cell.num5 { color: #800000; }
+        .cell.num6 { color: #008080; }
+        .cell.num7 { color: #000; }
+        .cell.num8 { color: #666; }
+        .controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        button {
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            background: linear-gradient(135deg, #4a7c23, #2d5016);
+            color: #fff;
+        }
+        button.secondary { background: linear-gradient(135deg, #8a9b6e, #6b7c52); }
+        button.flag-mode { background: linear-gradient(135deg, #c49a2a, #9a7420); }
+        button.flag-mode.active { box-shadow: 0 0 0 2px #1a2f0d; }
+        .hint { font-size: 11px; color: #666; margin-top: 8px; line-height: 1.4; }
+        @media (max-width: 380px) {
+            .cell { width: 24px; height: 24px; font-size: 12px; }
+        }
+    </style>
+    <link rel="stylesheet" href="/common/loader.css?v=1.1">
+    <link rel="stylesheet" href="/common/celebration.css?v=1.1">
+</head>
+<body>
+    <div id="game-loader" class="game-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">加载中</div>
+    </div>
+    <a href="/" class="home-btn" aria-label="返回首页">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    </a>
+    <div class="app">
+        <h1><img src="../common/icons/minesweeper.svg" class="title-icon" alt="扫雷图标">扫雷</h1>
+        <div class="stats">
+            <div class="stat"><div class="k">用时</div><div class="v" id="timer">0:00</div></div>
+            <div class="stat"><div class="k">雷数</div><div class="v" id="minesCount">10</div></div>
+            <div class="stat"><div class="k">旗数</div><div class="v" id="flagsCount">0</div></div>
+            <div class="stat"><div class="k">最佳</div><div class="v" id="bestTime">--</div></div>
+        </div>
+        <div class="difficulty-row">
+            <span>难度</span>
+            <button type="button" class="chip active" data-diff="easy">初级 9×9</button>
+            <button type="button" class="chip" data-diff="medium">中级 11×12</button>
+            <button type="button" class="chip" data-diff="hard">高级 11×18</button>
+        </div>
+        <div id="gridWrap"></div>
+        <div class="controls">
+            <button type="button" id="newGameBtn">新局</button>
+            <button type="button" id="flagBtn" class="flag-mode">标记</button>
+        </div>
+        <p class="hint">点击翻开格子，长按或标记模式下点击插旗。翻开所有非雷格即胜利。</p>
+    </div>
+    <script src="game.js?v=1.1"></script>
+    <script src="/common/audio.js?v=1.1"></script>
+    <script src="/common/celebration.js?v=1.1"></script>
+    <script src="/common/share.js?v=1.1"></script>
+    <script src="/common/anti-longpress.js?v=1.1"></script>
+    <script src="/common/loader.js?v=1.1"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="打砖块图标">
+  <defs>
+    <linearGradient id="boBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffe8d2"/>
+      <stop offset="100%" stop-color="#ffc28f"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#boBg)"/>
+  <rect x="10" y="14" width="44" height="10" rx="3" fill="#ffaf78"/>
+  <rect x="11" y="29" width="11" height="8" rx="2" fill="#ffd697"/>
+  <rect x="24" y="29" width="11" height="8" rx="2" fill="#ffc886"/>
+  <rect x="37" y="29" width="11" height="8" rx="2" fill="#ff9f69"/>
+  <rect x="22" y="46" width="20" height="4.5" rx="2.25" fill="#7b4d37"/>
+  <circle cx="32" cy="42" r="4.5" fill="#fff4ce"/>
+</svg>

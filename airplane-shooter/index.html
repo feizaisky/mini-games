@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>飞机大战</title>
+    <style>
+        :root {
+            --bg0: #d6ecff;
+            --bg1: #b5dcff;
+            --panel: rgba(255, 255, 255, 0.92);
+            --ink: #1f3b5d;
+            --muted: #56779b;
+            --accent: #4f8dff;
+            --danger: #ff6778;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        html, body { margin: 0; height: 100%; overflow: hidden; font-family: "Trebuchet MS", "Segoe UI", sans-serif; }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100svh;
+            padding: max(4px, env(safe-area-inset-top)) 8px max(4px, env(safe-area-inset-bottom));
+            background: radial-gradient(circle at 10% 10%, rgba(255,255,255,.55), transparent 38%), linear-gradient(160deg, var(--bg0), var(--bg1));
+        }
+        .home-btn {
+            position: fixed;
+            top: max(10px, env(safe-area-inset-top));
+            left: 10px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            text-decoration: none;
+            background: rgba(255,255,255,.95);
+            border: 1px solid rgba(90,130,175,.35);
+            box-shadow: 0 8px 18px rgba(54, 92, 137, .22);
+            z-index: 10;
+        }
+        .home-btn svg { width: 22px; height: 22px; fill: #4f8dff; }
+        .game-wrap {
+            width: min(100%, 540px);
+            max-height: 100%;
+            background: var(--panel);
+            border: 1px solid rgba(95, 128, 169, .3);
+            border-radius: 18px;
+            box-shadow: 0 16px 30px rgba(74, 108, 150, .22);
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+        h1 { margin: 0 0 4px; font-size: 22px; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .title-icon { width: 26px; height: 26px; display: block; }
+        .sub { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .stat {
+            border-radius: 10px;
+            background: rgba(79, 141, 255, .1);
+            border: 1px solid rgba(79, 141, 255, .18);
+            padding: 5px;
+        }
+        .stat .k { font-size: 10px; color: var(--muted); }
+        .stat .v { font-size: 16px; font-weight: 700; color: var(--ink); }
+        .status-line {
+            margin: 0 0 6px;
+            font-size: 11px;
+            color: #3d6189;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: rgba(79, 141, 255, .09);
+            border: 1px solid rgba(79, 141, 255, .2);
+            display: grid;
+            gap: 2px;
+        }
+        #gameCanvas {
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 5 / 7;
+            height: auto;
+            background: #0f1f3a;
+            border-radius: 14px;
+            border: 2px solid rgba(104, 152, 213, .38);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.2), 0 10px 24px rgba(40, 64, 91, .26);
+            display: block;
+            margin: 0 auto 8px;
+        }
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: #fff;
+            font-weight: 700;
+            background: linear-gradient(135deg, #5a95ff, #6db0ff);
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button.secondary { background: linear-gradient(135deg, #5f7ea3, #7690b0); }
+        .touch-controls {
+            display: none;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .touch-btn {
+            padding: 12px 0;
+            border-radius: 14px;
+            border: 1px solid rgba(79, 141, 255, .3);
+            background: rgba(91, 147, 230, .15);
+            color: #2f537b;
+            font-weight: 700;
+            font-size: 17px;
+        }
+        @media (max-width: 768px) {
+            .touch-controls { display: grid; }
+            h1 { font-size: 20px; }
+            .title-icon { width: 24px; height: 24px; }
+        }
+        @media (max-height: 860px) {
+            body { padding: max(3px, env(safe-area-inset-top)) 8px max(3px, env(safe-area-inset-bottom)); }
+            .game-wrap { padding: 8px; border-radius: 14px; }
+            h1 { font-size: 18px; margin-bottom: 2px; }
+            .sub { margin-bottom: 6px; font-size: 11px; }
+            .stats { gap: 4px; margin-bottom: 6px; }
+            .status-line { margin-bottom: 4px; font-size: 10px; padding: 3px 6px; }
+            .stat { padding: 4px; }
+            .stat .v { font-size: 14px; }
+            #gameCanvas { margin-bottom: 6px; max-height: 48vh; width: auto; max-width: 100%; }
+            .buttons { margin-bottom: 6px; }
+            button { padding: 8px 10px; font-size: 13px; }
+            .touch-btn { padding: 10px 0; font-size: 15px; }
+        }
+        @media (max-height: 700px) {
+            #gameCanvas { max-height: 42vh; }
+            .stat .v { font-size: 13px; }
+            button { padding: 7px 8px; font-size: 12px; }
+        }
+    </style>
+    <link rel="stylesheet" href="/common/loader.css?v=1.1">
+    <link rel="stylesheet" href="/common/celebration.css?v=1.1">
+</head>
+<body>
+    <div id="game-loader" class="game-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">加载中</div>
+    </div>
+    <a href="/" class="home-btn" aria-label="返回首页">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    </a>
+    <main class="game-wrap">
+        <h1><img src="../common/icons/airplane-shooter.svg" class="title-icon" alt="飞机大战图标">飞机大战</h1>
+        <p class="sub">左右移动自动射击，撑住敌机浪潮</p>
+        <section class="stats">
+            <div class="stat"><div class="k">得分</div><div class="v" id="score">0</div></div>
+            <div class="stat"><div class="k">最高分</div><div class="v" id="bestScore">0</div></div>
+            <div class="stat"><div class="k">血量</div><div class="v" id="health">5</div></div>
+            <div class="stat"><div class="k">难度</div><div class="v" id="stage">1</div></div>
+        </section>
+        <div class="status-line">
+            <div id="modeDetail">常规波次</div>
+            <div id="objectiveText">编队:0/3 补给:0/2 P2:未达成</div>
+        </div>
+        <canvas id="gameCanvas" width="500" height="700"></canvas>
+        <div class="buttons">
+            <button id="startBtn">开始游戏</button>
+            <button id="restartBtn" class="secondary">重新开始</button>
+        </div>
+        <div class="touch-controls">
+            <button class="touch-btn" id="leftBtn">◀ 左移</button>
+            <button class="touch-btn" id="rightBtn">右移 ▶</button>
+        </div>
+    </main>
+    <script src="/common/canvas-fit.js?v=1.0"></script>
+    <script src="game.js?v=1.1"></script>
+    <script src="/common/audio.js?v=1.1"></script>
+    <script src="/common/celebration.js?v=1.1"></script>
+    <script src="/common/share.js?v=1.1"></script>
+    <script src="/common/anti-longpress.js?v=1.1"></script>
+    <script src="/common/loader.js?v=1.1"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="飞机大战图标">
+  <defs>
+    <linearGradient id="airBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#d7ecff"/>
+      <stop offset="100%" stop-color="#9fcbff"/>
+    </linearGradient>
+    <linearGradient id="airBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7fb7ff"/>
+      <stop offset="100%" stop-color="#3f86d8"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#airBg)"/>
+  <path d="M32 13l8 16h-5l2 15-5-4-5 4 2-15h-5z" fill="url(#airBody)"/>
+  <rect x="29" y="12" width="6" height="10" rx="2.5" fill="#2f66ab"/>
+  <circle cx="32" cy="49" r="5.5" fill="#ff8ea0"/>
+</svg>

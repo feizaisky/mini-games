@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>打砖块</title>
+    <style>
+        :root {
+            --bg0: #fff0d1;
+            --bg1: #ffd0a8;
+            --panel: rgba(255, 252, 245, .94);
+            --ink: #5a3b26;
+            --muted: #8c6950;
+            --accent: #ff9256;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        html, body { margin: 0; height: 100%; overflow: hidden; font-family: "Trebuchet MS", "Segoe UI", sans-serif; }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100svh;
+            padding: max(4px, env(safe-area-inset-top)) 8px max(4px, env(safe-area-inset-bottom));
+            background: radial-gradient(circle at 16% 10%, rgba(255,255,255,.5), transparent 36%), linear-gradient(160deg, var(--bg0), var(--bg1));
+        }
+        .home-btn {
+            position: fixed;
+            top: max(10px, env(safe-area-inset-top));
+            left: 10px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.95);
+            border: 1px solid rgba(163, 114, 74, .35);
+            display: grid;
+            place-items: center;
+            box-shadow: 0 8px 18px rgba(126, 87, 60, .2);
+            text-decoration: none;
+            z-index: 10;
+        }
+        .home-btn svg { width: 22px; height: 22px; fill: #ff9256; }
+        .game-wrap {
+            width: min(100%, 560px);
+            max-height: 100%;
+            margin-top: 0;
+            text-align: center;
+            background: var(--panel);
+            border-radius: 18px;
+            border: 1px solid rgba(163, 114, 74, .34);
+            box-shadow: 0 16px 30px rgba(145, 92, 56, .2);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        h1 { margin: 0 0 4px; font-size: 22px; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .title-icon { width: 26px; height: 26px; display: block; }
+        .sub { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .stat {
+            border-radius: 10px;
+            background: rgba(255, 146, 86, .12);
+            border: 1px solid rgba(255, 146, 86, .24);
+            padding: 5px;
+        }
+        .stat .k { font-size: 10px; color: var(--muted); }
+        .stat .v { font-size: 15px; font-weight: 700; color: var(--ink); }
+        .status-line {
+            margin: 0 0 6px;
+            font-size: 11px;
+            color: #7b543b;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: rgba(255, 146, 86, .12);
+            border: 1px solid rgba(255, 146, 86, .24);
+            display: grid;
+            gap: 2px;
+        }
+        #gameCanvas {
+            width: 100%;
+            max-width: 520px;
+            aspect-ratio: 13 / 18;
+            height: auto;
+            background: #1f1626;
+            border-radius: 14px;
+            border: 2px solid rgba(255, 176, 125, .35);
+            display: block;
+            margin: 0 auto 8px;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 10px 24px rgba(74, 49, 35, .28);
+        }
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: #fff;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff9559, #ffb670);
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button.secondary { background: linear-gradient(135deg, #8b6f62, #a38d81); }
+        .touch-controls {
+            display: none;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .touch-btn {
+            padding: 12px 0;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 146, 86, .35);
+            background: rgba(255, 188, 132, .2);
+            color: #6f4b33;
+            font-weight: 700;
+            font-size: 17px;
+        }
+        @media (max-width: 768px) {
+            .touch-controls { display: grid; }
+            .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .title-icon { width: 24px; height: 24px; }
+        }
+        @media (max-height: 860px) {
+            body { padding: max(3px, env(safe-area-inset-top)) 8px max(3px, env(safe-area-inset-bottom)); }
+            .game-wrap { padding: 8px; border-radius: 14px; }
+            h1 { font-size: 18px; margin-bottom: 2px; }
+            .sub { margin-bottom: 6px; font-size: 11px; }
+            .stats {
+                gap: 3px;
+                margin-bottom: 4px;
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+            .status-line { margin-bottom: 4px; font-size: 10px; padding: 3px 6px; }
+            .stat { padding: 4px; }
+            .stat .k { font-size: 9px; }
+            .stat .v { font-size: 12px; }
+            #gameCanvas { margin-bottom: 6px; max-height: 58vh; width: auto; max-width: 100%; }
+            .buttons { margin-bottom: 6px; }
+            button { padding: 8px 10px; font-size: 13px; }
+            .touch-btn { padding: 10px 0; font-size: 15px; }
+        }
+        @media (max-height: 700px) {
+            .sub { display: none; }
+            .stats { margin-bottom: 3px; }
+            .status-line { font-size: 9px; padding: 2px 5px; margin-bottom: 3px; }
+            #gameCanvas { max-height: 54vh; }
+            .stat .k { font-size: 8px; }
+            .stat .v { font-size: 11px; }
+            button { padding: 7px 8px; font-size: 12px; }
+            .touch-btn { padding: 9px 0; font-size: 14px; }
+        }
+    </style>
+    <link rel="stylesheet" href="/common/loader.css?v=1.1">
+    <link rel="stylesheet" href="/common/celebration.css?v=1.1">
+</head>
+<body>
+    <div id="game-loader" class="game-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">加载中</div>
+    </div>
+    <a href="/" class="home-btn" aria-label="返回首页">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    </a>
+    <main class="game-wrap">
+        <h1><img src="../common/icons/breakout.svg" class="title-icon" alt="打砖块图标">打砖块</h1>
+        <p class="sub">挡板反弹，清空砖阵，5 关冲刺</p>
+        <section class="stats">
+            <div class="stat"><div class="k">得分</div><div class="v" id="score">0</div></div>
+            <div class="stat"><div class="k">最高分</div><div class="v" id="bestScore">0</div></div>
+            <div class="stat"><div class="k">生命</div><div class="v" id="lives">3</div></div>
+            <div class="stat"><div class="k">关卡</div><div class="v" id="level">1/8</div></div>
+            <div class="stat"><div class="k">连击</div><div class="v" id="combo">x1.0</div></div>
+        </section>
+        <div class="status-line">
+            <div id="modeDetail">第1章节</div>
+            <div id="objectiveText">移动砖:0 奖励砖:0 章节:1/4</div>
+        </div>
+        <canvas id="gameCanvas" width="520" height="720"></canvas>
+        <div class="buttons">
+            <button id="startBtn">开始游戏</button>
+            <button id="restartBtn" class="secondary">重新开始</button>
+        </div>
+        <div class="touch-controls">
+            <button class="touch-btn" id="leftBtn">◀ 左移</button>
+            <button class="touch-btn" id="rightBtn">右移 ▶</button>
+        </div>
+    </main>
+    <script src="/common/canvas-fit.js?v=1.0"></script>
+    <script src="game.js?v=1.1"></script>
+    <script src="/common/audio.js?v=1.1"></script>
+    <script src="/common/celebration.js?v=1.1"></script>
+    <script src="/common/share.js?v=1.1"></script>
+    <script src="/common/anti-longpress.js?v=1.1"></script>
+    <script src="/common/loader.js?v=1.1"></script>
+</body>
+</html>

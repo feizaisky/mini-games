@@ -185,15 +185,44 @@ GameShare.toDataURL(opts); // 获取卡片图 dataURL
 功能说明：
 - 阻止 `contextmenu`、`selectstart`、`dragstart`、`copy`、`cut`、`paste` 默认行为
 - 阻止 iOS `gesture` 系列事件（捏合缩放）
-- 全局 `touchstart` `preventDefault` — 彻底禁用微信长按弹出"搜一搜/翻译"
-- 自动为 `.home-btn` 链接添加 `touchend` 导航（因全局 `touchstart` 被拦截，`click` 可能不触发）
+- 不拦截全局 `touchstart`/`touchmove`，保留页面原生滚动能力
 
-注意：按钮的 `onclick` / `touchend` 不受影响，正常工作。
+### 画布动态高度适配
+
+让主游戏区域（`canvas`）在当前设备上尽可能大，同时保持页面一屏布局。
+
+1. 在 `game.js` 前引入：
+```html
+<script src="/common/canvas-fit.js?v=1.0"></script>
+<script src="game.js?v=1.1"></script>
+```
+
+2. 在 `game.js` 初始化：
+```javascript
+window.GameLayoutFit?.bindCanvasMaxHeight({
+  canvas: document.getElementById('gameCanvas'),
+  containerSelector: '.game-wrap',
+  minHeight: 250,
+  bottomGap: 6
+});
+```
+
+参数说明：
+- `canvas`: 目标画布元素
+- `containerSelector`: 外层容器选择器（默认 `.game-wrap`）
+- `minHeight`: 最小画布高度（px）
+- `bottomGap`: 底部保留间距（px）
+
+组件自动监听：
+- `window.resize`
+- `window.orientationchange`
+- `visualViewport.resize/scroll`（兼容微信顶部栏变化）
 
 ### 脚本加载顺序
 
 在 `</body>` 前按以下顺序引入：
 ```html
+<script src="/common/canvas-fit.js?v=1.0"></script>
 <script src="game.js"></script>
 <script src="/common/audio.js"></script>
 <script src="/common/celebration.js"></script>
@@ -224,7 +253,7 @@ GameShare.toDataURL(opts); // 获取卡片图 dataURL
 - 所有游戏页面禁止复制/选择文本（`-webkit-user-select: none; user-select: none`）
 - 所有游戏页面禁止缩放（`meta viewport` 加 `maximum-scale=1.0, user-scalable=no`）
 - 所有游戏页面禁止长按弹出菜单 — 通过 `common/anti-longpress.js` 统一处理
-- 微信浏览器"搜一搜/翻译"浮层 — 通过全局 `touchstart` `preventDefault` 禁用
+- 微信浏览器"搜一搜/翻译"浮层 — 通过禁用长按菜单与系统手势事件降低触发
 
 ## LocalStorage 键
 
@@ -241,6 +270,8 @@ GameShare.toDataURL(opts); // 获取卡片图 dataURL
 - `oneStrokeBest` — 一笔画最佳成绩
 - `td_progress_v1` — 塔防进度（解锁地图、最佳波数）
 - `td_achievements_v1` — 塔防成就
+- `miniGames.v1.minesweeper.best` — 扫雷各难度最佳用时（JSON：`{ easy, medium, hard }` 秒数）
+- `miniGames.v1.match3.best` — 三消最高分
 
 ### 游戏设置
 - `gameMode2048` — 2048 游戏模式
