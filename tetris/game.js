@@ -292,9 +292,19 @@ function clearLines() {
 
     if (rowsToClear.length > 0) {
         combo++;
-
-        // ---- 核心路径：先删行、更新分数、生成新方块 ----
         var linesCleared = rowsToClear.length;
+
+        // ---- 1. 先从 board 中删除满行（必须分两步，不能 splice+unshift 交替） ----
+        rowsToClear.sort((a, b) => b - a); // 从底部往上删，保证索引不错位
+        for (var i = 0; i < rowsToClear.length; i++) {
+            board.splice(rowsToClear[i], 1);
+        }
+        // 删完后统一在顶部补空行
+        for (var i = 0; i < linesCleared; i++) {
+            board.unshift(Array(COLS).fill(0));
+        }
+
+        // ---- 2. 计分 ----
         var points = [0, 100, 300, 500, 1200];
         if (linesCleared >= 4) {
             backToBack += 1;
@@ -324,23 +334,20 @@ function clearLines() {
             localStorage.setItem(STORAGE_KEYS.best, String(highScore));
         }
 
-        // 同步删行
-        rowsToClear.sort((a, b) => b - a);
-        for (var i = 0; i < rowsToClear.length; i++) {
-            board.splice(rowsToClear[i], 1);
-            board.unshift(Array(COLS).fill(0));
+        // ---- 3. 连击提示（同步显示，不延迟） ----
+        if (combo >= 2) {
+            showComboToast(combo, linesCleared);
         }
 
-        // 立即生成新方块（核心路径结束）
+        // ---- 4. 生成新方块 ----
         spawnPiece();
 
-        // ---- 非核心：音效和 UI 提示延迟到下一帧，不阻塞消行 ----
+        // ---- 5. 音效延迟到下一帧（不阻塞画面更新） ----
         var _combo = combo;
         var _linesCleared = linesCleared;
         var _leveledUp = leveledUp;
         setTimeout(function() {
             if (typeof GameAudio !== 'undefined') {
-                // 连击时只播放 combo 音效，不叠加 merge/clear
                 if (_combo >= 2) {
                     GameAudio.play('combo');
                 } else if (_linesCleared >= 4) {
@@ -350,15 +357,11 @@ function clearLines() {
                 }
                 if (_leveledUp) GameAudio.play('upgrade');
             }
-            if (_combo >= 2) {
-                showComboToast(_combo, _linesCleared);
-            }
         }, 0);
 
         persistStatsAsync();
     } else {
         combo = 0;
-        // 没有消行，播放落地音
         if (typeof GameAudio !== 'undefined') {
             setTimeout(function() { GameAudio.play('drop'); }, 0);
         }
