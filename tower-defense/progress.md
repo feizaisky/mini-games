@@ -141,3 +141,15 @@
 - `node --check /opt/code/mini-games/tower-defense/js/ui.js`
 - Playwright 端到端：打开地图面板并触发开始，结果进入 playing。
 - 截图：`/opt/code/mini-games/output/tower-defense-map-start-fix/shot-0.png`
+
+更新：
+- 重写 `ui.js` 交互层，统一关键按钮为 `touchend + click` 双通道 tap 绑定，消除 iOS WebView 下 click 丢失导致的无响应问题。
+- 地图卡片保持显式“开始游戏”按钮并沿用统一 tap 绑定。
+- 炮塔卡片与画布操作补齐 touch 事件链（touchstart/move/end/cancel），不再仅依赖 pointer。
+- 修复一次由交互重构引入的前端崩溃（此前页面报 `SyntaxError: Unexpected token ')'`，导致全局无响应/黑屏）。
+- 顶部栏提升层级（`z-index:30`）并显式 `pointer-events:auto`，防止被其他层遮挡后按钮不可点击。
+
+测试：
+- `node --check /opt/code/mini-games/tower-defense/js/ui.js`
+- `node --check /opt/code/mini-games/tower-defense/js/main.js`
+- Playwright 回归（地图/开始/控制链路）通过，输出：`/opt/code/mini-games/output/tower-defense-controls-fix-2/shot-0.png`
