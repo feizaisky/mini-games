@@ -153,3 +153,13 @@
 - `node --check /opt/code/mini-games/tower-defense/js/ui.js`
 - `node --check /opt/code/mini-games/tower-defense/js/main.js`
 - Playwright 回归（地图/开始/控制链路）通过，输出：`/opt/code/mini-games/output/tower-defense-controls-fix-2/shot-0.png`
+
+更新：
+- 修复地图浮层层级：`.overlay` 提升到 `z-index: 200`，保证覆盖顶部控制条。
+- 修复地图浮层无法滑动：`overlay` 和 `menu` 均启用 `overflow-y:auto`、`-webkit-overflow-scrolling: touch`、`touch-action: pan-y`。
+- 地图列表固定两列：`.map-list` 统一 `grid-template-columns: repeat(2, minmax(0, 1fr))`。
+- 移动端优化：菜单最大高度基于视口并可滚动，减少遮挡与触控冲突。
+
+测试：
+- `node --check /opt/code/mini-games/tower-defense/js/ui.js`
+- Playwright 截图校验命令执行通过（语法与运行无报错）。

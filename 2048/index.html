@@ -10,186 +10,210 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>2048 游戏</title>
     <style>
+        :root {
+            --bg-top: #f3efe6;
+            --bg-bottom: #e7ddcd;
+            --panel: rgba(255, 252, 247, 0.95);
+            --panel-border: #d4c7b5;
+            --text-main: #5f5548;
+            --text-muted: #8f8375;
+            --chip-bg: #bbada0;
+            --chip-text: #f9f6f2;
+            --btn-main: #6a88f7;
+            --btn-main-hover: #5675ea;
+            --btn-sub: #8f7a66;
+            --btn-sub-hover: #7c6856;
+            --tile-bg: #cdc1b4;
+        }
+
         * {
             box-sizing: border-box;
             -webkit-user-select: none;
-    user-select: none;
-}
+            user-select: none;
+        }
+
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+            font-family: "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif;
+            color: var(--text-main);
+        }
+
         body {
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Arial', sans-serif;
-            touch-action: none;
+            padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+            background:
+                radial-gradient(circle at 12% 10%, rgba(255, 255, 255, 0.5), transparent 36%),
+                radial-gradient(circle at 85% 82%, rgba(255, 246, 226, 0.55), transparent 30%),
+                linear-gradient(165deg, var(--bg-top), var(--bg-bottom));
         }
-        .game-container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            max-width: 100%;
-        }
+
         .home-btn {
             position: fixed;
-            top: 10px;
+            top: max(10px, env(safe-area-inset-top));
             left: 10px;
-            width: 44px;
-            height: 44px;
-            background: rgba(255, 255, 255, 0.95);
-            border: none;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            cursor: pointer;
+            border: 1px solid #d8cfc4;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 8px 16px rgba(97, 81, 62, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
             text-decoration: none;
             z-index: 1000;
-            transition: all 0.3s;
         }
-        .home-btn:hover {
-            background: rgba(255, 255, 255, 1);
-            transform: scale(1.1);
-        }
-        .home-btn:active {
-            transform: scale(0.95);
-        }
+
         .home-btn svg {
-            width: 24px;
-            height: 24px;
-            fill: #667eea;
+            width: 22px;
+            height: 22px;
+            fill: #6a88f7;
         }
-        @media (max-width: 600px) {
-            .game-container {
-                padding: 15px;
-                margin: 10px;
-            }
-            h1 {
-                font-size: 20px;
-            }
-            .logo-icon {
-                width: 28px;
-                height: 28px;
-            }
-            .scores {
-                gap: 10px;
-            }
-            .score-box {
-                padding: 8px 15px;
-                min-width: 80px;
-            }
-            .score-box .label {
-                font-size: 10px;
-            }
-            .score-box .value {
-                font-size: 18px;
-            }
-            .options {
-                gap: 10px;
-            }
-            .option-btn {
-                padding: 6px 12px;
-                font-size: 11px;
-            }
-            .game-board {
-                padding: 8px;
-            }
-            .controls {
-                font-size: 12px;
-            }
-            button {
-                padding: 10px 25px;
-                font-size: 14px;
-            }
+
+        .game-container {
+            width: min(100%, 520px);
+            text-align: center;
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            border-radius: 18px;
+            box-shadow: 0 16px 28px rgba(120, 102, 82, 0.2);
+            padding: 10px;
         }
+
+        .head {
+            margin-bottom: 6px;
+        }
+
         h1 {
-            color: #333;
-            margin-bottom: 10px;
-            margin-top: 0;
+            margin: 0;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            font-size: 24px;
+            line-height: 1;
+            color: #5d5244;
         }
+
         .logo-icon {
             width: 34px;
             height: 34px;
             display: inline-block;
         }
-        .scores {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 15px;
-        }
-        .score-box {
-            background: #bbada0;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 10px;
-            min-width: 100px;
-        }
-        .score-box .label {
+
+        .sub {
+            margin-top: 4px;
             font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .scores {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .score-box {
+            background: var(--chip-bg);
+            color: var(--chip-text);
+            padding: 6px 8px;
+            border-radius: 10px;
+        }
+
+        .score-box .label {
+            font-size: 11px;
             color: #eee4da;
         }
+
         .score-box .value {
-            font-size: 24px;
-            font-weight: bold;
+            font-size: 20px;
+            font-weight: 700;
         }
-        .options {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        .option-btn {
-            background: #8f7a66;
-            color: white;
-            border: 2px solid transparent;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .option-btn.selected {
-            background: #667eea;
-            border-color: white;
-        }
-        .option-btn:hover {
-            transform: scale(1.05);
-        }
-        .option-btn:active {
-            transform: scale(0.95);
-        }
-        .game-board {
-            background: #bbada0;
+
+        .mode-box {
+            background: var(--chip-bg);
+            color: var(--chip-text);
             border-radius: 10px;
-            padding: 10px;
-            display: inline-block;
-            margin-bottom: 20px;
+            padding: 6px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+
+        .mode-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #f9f6f2;
+            cursor: pointer;
+        }
+
+        #spawn8Toggle {
+            appearance: none;
+            width: 34px;
+            height: 20px;
+            border-radius: 999px;
+            background: rgba(239, 231, 219, 0.42);
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        #spawn8Toggle::after {
+            content: "";
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #fff;
+            transition: transform 0.2s ease;
+        }
+
+        #spawn8Toggle:checked {
+            background: var(--btn-main);
+        }
+
+        #spawn8Toggle:checked::after {
+            transform: translateX(14px);
+        }
+
+        .game-board {
+            background: var(--chip-bg);
+            border-radius: 12px;
+            padding: 8px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(4, 80px);
-            grid-template-rows: repeat(4, 80px);
-            gap: 10px;
+            grid-template-columns: repeat(4, 72px);
+            grid-template-rows: repeat(4, 72px);
+            gap: 8px;
         }
+
         .grid-cell {
-            background: #cdc1b4;
-            border-radius: 5px;
+            background: var(--tile-bg);
+            border-radius: 8px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 32px;
-            font-weight: bold;
+            font-size: 30px;
+            font-weight: 700;
             color: #776e65;
             transition: all 0.15s;
         }
+
         .grid-cell.tile-2 { background: #eee4da; color: #776e65; }
         .grid-cell.tile-4 { background: #ede0c8; color: #776e65; }
         .grid-cell.tile-8 { background: #f2b179; color: #f9f6f2; }
@@ -202,21 +226,84 @@
         .grid-cell.tile-1024 { background: #edc53f; color: #f9f6f2; font-size: 24px; }
         .grid-cell.tile-2048 { background: #edc22e; color: #f9f6f2; font-size: 24px; }
         .grid-cell.tile-super { background: #3c3a32; color: #f9f6f2; font-size: 20px; }
-        .grid-cell.tile-merged {
-            animation: mergePop 0.25s ease;
-        }
-        .grid-cell.tile-new {
-            animation: tileAppear 0.2s ease;
-        }
+        .grid-cell.tile-merged { animation: mergePop 0.25s ease; }
+        .grid-cell.tile-new { animation: tileAppear 0.2s ease; }
+
         @keyframes mergePop {
             0% { transform: scale(1); }
             50% { transform: scale(1.2); }
             100% { transform: scale(1); }
         }
+
         @keyframes tileAppear {
             0% { transform: scale(0); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
+
+        .controls {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        button {
+            border: none;
+            color: #fff;
+            padding: 8px 10px;
+            font-size: 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: filter 0.15s ease, transform 0.15s ease;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        #newGameBtn,
+        #reviveBtn {
+            background: var(--btn-main);
+        }
+
+        #newGameBtn:hover,
+        #reviveBtn:hover {
+            background: var(--btn-main-hover);
+        }
+
+        #undoBtn {
+            background: var(--btn-sub);
+        }
+
+        #undoBtn:hover {
+            background: var(--btn-sub-hover);
+        }
+
+        .status-line {
+            min-height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-over,
+        .game-won {
+            display: none;
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .game-over { color: #e74c3c; }
+        .game-won { color: #27ae60; }
+
         .new-record-toast {
             position: fixed;
             top: 50%;
@@ -233,6 +320,7 @@
             animation: recordToast 1.5s ease forwards;
             box-shadow: 0 5px 20px rgba(0,0,0,0.3);
         }
+
         @keyframes recordToast {
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
             20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
@@ -240,94 +328,107 @@
             80% { opacity: 1; }
             100% { opacity: 0; transform: translate(-50%, -60%) scale(0.9); }
         }
-        .controls {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 15px;
-        }
-        .game-over {
-            display: none;
-            color: #e74c3c;
-            font-size: 24px;
-            font-weight: bold;
-            margin: 15px 0;
-        }
-        .game-won {
-            display: none;
-            color: #27ae60;
-            font-size: 24px;
-            font-weight: bold;
-            margin: 15px 0;
-        }
-        button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 16px;
-            border-radius: 25px;
-            cursor: pointer;
-            margin: 5px;
-            transition: all 0.3s;
-        }
-        button:hover {
-            background: #764ba2;
-            transform: scale(1.05);
-        }
-        button:active {
-            transform: scale(0.95);
-        }
-        @media (max-width: 500px) {
-            .grid-container {
-                grid-template-columns: repeat(4, 60px);
-                grid-template-rows: repeat(4, 60px);
-                gap: 8px;
+
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 8px;
+                border-radius: 14px;
             }
+
+            h1 {
+                font-size: 21px;
+            }
+
+            .grid-container {
+                grid-template-columns: repeat(4, 62px);
+                grid-template-rows: repeat(4, 62px);
+                gap: 7px;
+            }
+
             .grid-cell {
                 font-size: 24px;
             }
-            .grid-cell.tile-128, .grid-cell.tile-256, .grid-cell.tile-512 {
-                font-size: 20px;
+
+            .grid-cell.tile-128,
+            .grid-cell.tile-256,
+            .grid-cell.tile-512 {
+                font-size: 22px;
             }
-            .grid-cell.tile-1024, .grid-cell.tile-2048 {
-                font-size: 16px;
+
+            .grid-cell.tile-1024,
+            .grid-cell.tile-2048 {
+                font-size: 18px;
+            }
+
+            .controls {
+                font-size: 12px;
+            }
+
+            button {
+                font-size: 13px;
+                padding: 7px 8px;
             }
         }
-        @media (max-width: 350px) {
+
+        @media (max-width: 360px) {
             .grid-container {
-                grid-template-columns: repeat(4, 50px);
-                grid-template-rows: repeat(4, 50px);
+                grid-template-columns: repeat(4, 52px);
+                grid-template-rows: repeat(4, 52px);
                 gap: 6px;
             }
+
             .grid-cell {
-                font-size: 20px;
+                font-size: 22px;
             }
-            .grid-cell.tile-128, .grid-cell.tile-256, .grid-cell.tile-512 {
-                font-size: 16px;
+
+            .grid-cell.tile-128,
+            .grid-cell.tile-256,
+            .grid-cell.tile-512 {
+                font-size: 18px;
             }
-            .grid-cell.tile-1024, .grid-cell.tile-2048 {
+
+            .grid-cell.tile-1024,
+            .grid-cell.tile-2048 {
                 font-size: 14px;
+            }
+
+            .scores {
+                gap: 4px;
+            }
+
+            .score-box .value {
+                font-size: 17px;
             }
         }
     </style>
-    <link rel="stylesheet" href="/common/loader.css">
-    <link rel="stylesheet" href="/common/celebration.css">
+    <link rel="stylesheet" href="/common/loader.css?v=1.1">
+    <link rel="stylesheet" href="/common/celebration.css?v=1.1">
 </head>
 <body>
-    <!-- 加载动画 -->
     <div id="game-loader" class="game-loader">
         <div class="loader-spinner"></div>
         <div class="loader-text">加载中</div>
     </div>
+
+    <a href="/" class="home-btn" aria-label="返回首页">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+    </a>
+
     <div class="game-container">
-        <h1>
-            <svg class="logo-icon" viewBox="0 0 64 64" role="img" aria-label="2048 图标">
-                <rect x="6" y="6" width="52" height="52" rx="14" fill="#f2b179"/>
-                <rect x="12" y="12" width="40" height="40" rx="10" fill="#f5c57a"/>
-                <text x="32" y="39" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff" font-family="Arial, sans-serif">2048</text>
-            </svg>
-            2048
-        </h1>
+        <div class="head">
+            <h1>
+                <svg class="logo-icon" viewBox="0 0 64 64" role="img" aria-label="2048 图标">
+                    <rect x="6" y="6" width="52" height="52" rx="14" fill="#f2b179"/>
+                    <rect x="12" y="12" width="40" height="40" rx="10" fill="#f5c57a"/>
+                    <text x="32" y="39" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff" font-family="Arial, sans-serif">2048</text>
+                </svg>
+                2048
+            </h1>
+            <div class="sub">滑动合并，冲击更高分</div>
+        </div>
+
         <div class="scores">
             <div class="score-box">
                 <div class="label">得分</div>
@@ -337,41 +438,39 @@
                 <div class="label">最高分</div>
                 <div class="value" id="bestScore">0</div>
             </div>
-        </div>
-        <div class="options">
-            <button class="option-btn selected" id="normalBtn" onclick="setGameMode('normal')">普通模式</button>
-            <button class="option-btn" id="advancedBtn" onclick="setGameMode('advanced')">打开4和8</button>
-        </div>
-        <div class="game-board">
-            <div class="grid-container" id="grid">
+            <div class="mode-box">
+                <label class="mode-toggle" for="spawn8Toggle">
+                    <input id="spawn8Toggle" type="checkbox">
+                    <span>打开8</span>
+                </label>
             </div>
         </div>
+
+        <div class="game-board">
+            <div class="grid-container" id="grid"></div>
+        </div>
+
         <div class="controls">
-            使用方向键 ↑ ↓ ← → 或滑动屏幕来移动方块<br>
-            相同的数字碰撞时会合并
+            使用方向键 ↑ ↓ ← → 或滑动屏幕移动方块<br>
+            相同数字碰撞会自动合并
         </div>
-        <button id="newGameBtn">新游戏</button>
-        <button id="undoBtn" style="background: #8f7a66;">撤销 (<span id="undoCount">3</span>)</button>
-        <div class="game-over" id="gameOver">
-            游戏结束！
+
+        <div class="actions">
+            <button id="newGameBtn">新游戏</button>
+            <button id="undoBtn">撤销 (<span id="undoCount">3</span>)</button>
+        </div>
+
+        <div class="status-line">
+            <div class="game-over" id="gameOver">游戏结束！</div>
+            <div class="game-won" id="gameWon">恭喜你达成 2048！🎉</div>
         </div>
     </div>
 
-    <a href="/" class="home-btn" aria-label="返回首页">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-        </svg>
-    </a>
-        <div class="game-won" id="gameWon">
-            恭喜你达成 2048！🎉
-        </div>
-    </div>
-
-    <script src="game.js"></script>
-    <script src="/common/audio.js"></script>
-    <script src="/common/celebration.js"></script>
-    <script src="/common/share.js"></script>
-    <script src="/common/anti-longpress.js"></script>
-    <script src="/common/loader.js"></script>
+    <script src="game.js?v=1.1"></script>
+    <script src="/common/audio.js?v=1.1"></script>
+    <script src="/common/celebration.js?v=1.1"></script>
+    <script src="/common/share.js?v=1.1"></script>
+    <script src="/common/anti-longpress.js?v=1.1"></script>
+    <script src="/common/loader.js?v=1.1"></script>
 </body>
 </html>

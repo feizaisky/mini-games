@@ -67,8 +67,8 @@ function setupButtons() {
             document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
             this.classList.add('selected');
             boardSize = parseInt(this.dataset.size);
-            // 4x4 与 5x5 采用连4模式
-            winLength = boardSize >= 4 ? 4 : 3;
+            // 3x3 和 4x4 连3胜，5x5 连4胜
+            winLength = boardSize >= 5 ? 4 : 3;
             newGame();
         });
     });
@@ -401,16 +401,20 @@ function getMediumMove() {
     return getBestMove();
 }
 
-// 最佳落子（使用 Minimax）
+// 最佳落子（使用 Minimax + Alpha-Beta 剪枝）
 function getBestMove() {
     let bestScore = -Infinity;
     let bestMove = null;
     const totalCells = boardSize * boardSize;
 
+    // 优先检查：能赢就赢，能堵就堵
+    const immediateMove = getImmediateMove();
+    if (immediateMove !== null) return immediateMove;
+
     for (let i = 0; i < totalCells; i++) {
         if (board[i] === null) {
             board[i] = 'O';
-            const score = minimax(board, 0, false);
+            const score = minimax(board, 0, false, -Infinity, Infinity);
             board[i] = null;
 
             if (score > bestScore) {
@@ -420,17 +424,45 @@ function getBestMove() {
         }
     }
 
-    return bestMove;
+    return bestMove !== null ? bestMove : getRandomMove();
 }
 
-// Minimax 算法
-function minimax(board, depth, isMaximizing) {
+// 快速检查：AI 能否立即获胜，或需要堵住玩家
+function getImmediateMove() {
+    const totalCells = boardSize * boardSize;
+    // 1. AI 能赢就赢
+    for (let i = 0; i < totalCells; i++) {
+        if (board[i] === null) {
+            board[i] = 'O';
+            if (checkWinner()) { board[i] = null; return i; }
+            board[i] = null;
+        }
+    }
+    // 2. 堵住玩家
+    for (let i = 0; i < totalCells; i++) {
+        if (board[i] === null) {
+            board[i] = 'X';
+            if (checkWinner()) { board[i] = null; return i; }
+            board[i] = null;
+        }
+    }
+    return null;
+}
+
+// Minimax + Alpha-Beta 剪枝
+function minimax(board, depth, isMaximizing, alpha, beta) {
     const winner = checkWinner();
     if (winner) {
-        return winner.player === 'O' ? 10 - depth : depth - 10;
+        return winner.player === 'O' ? 100 - depth : depth - 100;
     }
     if (board.every(cell => cell)) {
         return 0;
+    }
+
+    // 深度限制：3×3 不限制，4×4 限 6 层，5×5 限 4 层
+    const maxDepth = boardSize <= 3 ? 20 : (boardSize <= 4 ? 6 : 4);
+    if (depth >= maxDepth) {
+        return evaluateBoard();
     }
 
     const totalCells = boardSize * boardSize;
@@ -439,9 +471,11 @@ function minimax(board, depth, isMaximizing) {
         for (let i = 0; i < totalCells; i++) {
             if (board[i] === null) {
                 board[i] = 'O';
-                const score = minimax(board, depth + 1, false);
+                const score = minimax(board, depth + 1, false, alpha, beta);
                 board[i] = null;
                 bestScore = Math.max(score, bestScore);
+                alpha = Math.max(alpha, score);
+                if (beta <= alpha) break; // 剪枝
             }
         }
         return bestScore;
@@ -450,13 +484,50 @@ function minimax(board, depth, isMaximizing) {
         for (let i = 0; i < totalCells; i++) {
             if (board[i] === null) {
                 board[i] = 'X';
-                const score = minimax(board, depth + 1, true);
+                const score = minimax(board, depth + 1, true, alpha, beta);
                 board[i] = null;
                 bestScore = Math.min(score, bestScore);
+                beta = Math.min(beta, score);
+                if (beta <= alpha) break; // 剪枝
             }
         }
         return bestScore;
     }
+}
+
+// 启发式评估函数（深度截断时使用）
+function evaluateBoard() {
+    const size = boardSize;
+    const winLen = winLength;
+    let score = 0;
+
+    // 遍历所有可能的连线
+    for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
+            // 四个方向：水平、垂直、主对角线、副对角线
+            const directions = [];
+            if (col + winLen <= size) directions.push([0, 1]);
+            if (row + winLen <= size) directions.push([1, 0]);
+            if (row + winLen <= size && col + winLen <= size) directions.push([1, 1]);
+            if (row + winLen <= size && col - winLen + 1 >= 0) directions.push([1, -1]);
+
+            for (const [dr, dc] of directions) {
+                let oCount = 0, xCount = 0;
+                for (let k = 0; k < winLen; k++) {
+                    const idx = (row + k * dr) * size + (col + k * dc);
+                    if (board[idx] === 'O') oCount++;
+                    else if (board[idx] === 'X') xCount++;
+                }
+                // 只有一方占据的线才有价值
+                if (oCount > 0 && xCount === 0) {
+                    score += oCount * oCount; // O 的线越满分越高
+                } else if (xCount > 0 && oCount === 0) {
+                    score -= xCount * xCount; // X 的线扣分
+                }
+            }
+        }
+    }
+    return score;
 }
 
 // 加载统计

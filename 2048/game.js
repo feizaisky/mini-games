@@ -4,8 +4,7 @@ const bestScoreElement = document.getElementById('bestScore');
 const gameOverElement = document.getElementById('gameOver');
 const gameWonElement = document.getElementById('gameWon');
 const newGameBtn = document.getElementById('newGameBtn');
-const normalBtn = document.getElementById('normalBtn');
-const advancedBtn = document.getElementById('advancedBtn');
+const spawn8Toggle = document.getElementById('spawn8Toggle');
 const undoBtn = document.getElementById('undoBtn');
 const undoCountElement = document.getElementById('undoCount');
 const GAME_ID = '2048';
@@ -51,14 +50,7 @@ function setGameMode(mode) {
     gameMode = mode;
     localStorage.setItem('gameMode2048', mode);
     localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({ mode, updatedAt: Date.now() }));
-
-    if (mode === 'normal') {
-        normalBtn.classList.add('selected');
-        advancedBtn.classList.remove('selected');
-    } else {
-        normalBtn.classList.remove('selected');
-        advancedBtn.classList.add('selected');
-    }
+    syncModeToggle();
     if (typeof GameAudio !== 'undefined') GameAudio.play('click');
     newGame();
 }
@@ -67,10 +59,12 @@ function setGameMode(mode) {
 window.setGameMode = setGameMode;
 
 function initModeButtons() {
-    if (gameMode === 'advanced') {
-        normalBtn.classList.remove('selected');
-        advancedBtn.classList.add('selected');
-    }
+    syncModeToggle();
+}
+
+function syncModeToggle() {
+    if (!spawn8Toggle) return;
+    spawn8Toggle.checked = gameMode === 'advanced';
 }
 
 function init() {
@@ -81,6 +75,11 @@ function init() {
         gridElement.appendChild(cell);
     }
     initModeButtons();
+    if (spawn8Toggle) {
+        spawn8Toggle.addEventListener('change', function() {
+            setGameMode(this.checked ? 'advanced' : 'normal');
+        });
+    }
     ensureReviveButton();
     migrateLegacyStorage();
     newGame();
@@ -140,9 +139,7 @@ function ensureReviveButton() {
     if (document.getElementById('reviveBtn')) return;
     const btn = document.createElement('button');
     btn.id = 'reviveBtn';
-    btn.className = 'btn';
     btn.textContent = '🛟 保底复活(1次)';
-    btn.style.marginLeft = '8px';
     btn.addEventListener('click', reviveOnce);
     newGameBtn.parentNode.insertBefore(btn, newGameBtn.nextSibling);
 }

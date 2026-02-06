@@ -455,10 +455,13 @@ body {
   inset: 0;
   background: rgba(9, 15, 9, 0.85);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 20px;
-  z-index: 10;
+  padding: 12px;
+  z-index: 200;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .overlay[hidden] {
@@ -473,6 +476,11 @@ body {
   padding: 20px;
   max-width: 520px;
   width: 100%;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  margin: 0 auto;
   text-align: center;
   box-shadow: 0 8px 16px var(--shadow);
 }
@@ -490,7 +498,7 @@ body {
 
 .map-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 16px 0;
 }
@@ -588,5 +596,20 @@ body {
 
   .build-bar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .menu {
+    border-radius: 16px;
+    padding: 14px;
+    max-height: calc(100dvh - 16px);
+  }
+
+  .map-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .map-card {
+    padding: 10px;
   }
 }

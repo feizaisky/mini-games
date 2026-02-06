@@ -63,9 +63,23 @@ const obstacleMaps = {
     classic: [],
     canyon: Array.from({ length: 12 }, (_, i) => ({ x: 4, y: i + 3 }))
         .concat(Array.from({ length: 12 }, (_, i) => ({ x: 13, y: i + 3 }))),
-    cross: Array.from({ length: 20 }, (_, i) => ({ x: i, y: 10 }))
-        .concat(Array.from({ length: 20 }, (_, i) => ({ x: 10, y: i })))
-        .filter(p => !(p.x === 9 && p.y === 9))
+    cross: (() => {
+        const points = [];
+        const rowGaps = new Set([2, 8, 9, 10, 15]);
+        const colGaps = new Set([2, 8, 9, 10, 15]);
+        for (let x = 0; x < 18; x++) {
+            if (!rowGaps.has(x)) points.push({ x, y: 9 });
+        }
+        for (let y = 0; y < 18; y++) {
+            if (!colGaps.has(y)) points.push({ x: 9, y });
+        }
+        return points;
+    })()
+};
+const mapStartConfig = {
+    classic: { x: 9, y: 9, dx: 1, dy: 0 },
+    canyon: { x: 9, y: 15, dx: 0, dy: -1 },
+    cross: { x: 8, y: 8, dx: 0, dy: -1 }
 };
 
 // 道具系统
@@ -97,7 +111,7 @@ highScoreElement.textContent = highScore;
 const difficultyBtns = document.querySelectorAll('.difficulty-btn');
 difficultyBtns.forEach(btn => {
     btn.addEventListener('click', function() {
-        if (gameRunning) return;
+        if (gameRunning || gameStarted) return;
 
         difficultyBtns.forEach(b => b.classList.remove('selected'));
         this.classList.add('selected');
@@ -107,13 +121,18 @@ difficultyBtns.forEach(btn => {
         applySpeed();
 
         if (typeof GameAudio !== 'undefined') GameAudio.play('click');
-        resetGame();
+        resetToIdleState();
     });
 });
 
 function setMapMode(mode) {
+    if (gameRunning || gameStarted) return;
     mapMode = mode;
     obstacles = (obstacleMaps[mode] || []).slice();
+    const mapBtns = document.querySelectorAll('.map-btn');
+    mapBtns.forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.map === mode);
+    });
     localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
         difficulty: currentDifficulty,
         mapMode,
@@ -122,13 +141,23 @@ function setMapMode(mode) {
     if (gameRunning) {
         resetGame();
     } else {
-        draw();
+        resetToIdleState();
     }
+}
+
+function updateModeControlsLock() {
+    const locked = gameRunning || gameStarted;
+    difficultyBtns.forEach(btn => {
+        btn.disabled = locked;
+    });
+    document.querySelectorAll('.map-btn').forEach(btn => {
+        btn.disabled = locked;
+    });
 }
 
 function ensureMapButtons() {
     if (document.getElementById('map-classic')) return;
-    const wrap = document.querySelector('.difficulty-selector') || document.querySelector('.controls') || document.body;
+    const wrap = document.querySelector('.map-selector .map-btns') || document.querySelector('.difficulty-selector') || document.querySelector('.controls') || document.body;
     const modes = [
         { id: 'classic', label: '经典图' },
         { id: 'canyon', label: '峡谷图' },
@@ -137,7 +166,9 @@ function ensureMapButtons() {
     modes.forEach(item => {
         const btn = document.createElement('button');
         btn.id = `map-${item.id}`;
-        btn.className = 'difficulty-btn';
+        btn.className = 'map-btn';
+        btn.dataset.map = item.id;
+        if (item.id === mapMode) btn.classList.add('selected');
         btn.textContent = item.label;
         btn.addEventListener('click', () => setMapMode(item.id));
         wrap.appendChild(btn);
@@ -171,13 +202,13 @@ function togglePause() {
 }
 
 function drawPauseOverlay() {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillStyle = 'rgba(232, 238, 248, 0.82)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 28px Arial';
+    ctx.fillStyle = '#344e6c';
+    ctx.font = 'bold 28px Trebuchet MS';
     ctx.textAlign = 'center';
     ctx.fillText('暂停中', canvas.width / 2, canvas.height / 2);
-    ctx.font = '14px Arial';
+    ctx.font = '14px Trebuchet MS';
     ctx.fillText('点击继续按钮恢复', canvas.width / 2, canvas.height / 2 + 30);
 }
 
@@ -290,9 +321,14 @@ function startGame() {
     gamePaused = false;
     startBtn.style.display = 'none';
     pauseBtn.style.display = 'inline-block';
+    restartBtn.style.display = 'inline-block';
     pauseBtn.textContent = '暂停';
-    dx = 1;
-    dy = 0;
+    if (dx === 0 && dy === 0) {
+        const spawn = mapStartConfig[mapMode] || mapStartConfig.classic;
+        dx = spawn.dx;
+        dy = spawn.dy;
+    }
+    updateModeControlsLock();
     if (typeof GameAudio !== 'undefined') GameAudio.play('click');
     gameLoop();
 }
@@ -420,13 +456,19 @@ function deactivatePowerUp() {
 }
 
 function draw() {
-    ctx.fillStyle = '#f0f0f0';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawBoardBackground();
 
     if (obstacles.length > 0) {
-        ctx.fillStyle = '#7f8c8d';
         obstacles.forEach((o) => {
+            const ox = o.x * gridSize;
+            const oy = o.y * gridSize;
+            const obstacleGradient = ctx.createLinearGradient(ox, oy, ox + gridSize, oy + gridSize);
+            obstacleGradient.addColorStop(0, '#5e7389');
+            obstacleGradient.addColorStop(1, '#344a61');
+            ctx.fillStyle = obstacleGradient;
             ctx.fillRect(o.x * gridSize + 2, o.y * gridSize + 2, gridSize - 4, gridSize - 4);
+            ctx.strokeStyle = 'rgba(171, 217, 249, 0.35)';
+            ctx.strokeRect(o.x * gridSize + 2.5, o.y * gridSize + 2.5, gridSize - 5, gridSize - 5);
         });
     }
 
@@ -622,8 +664,7 @@ function startDeathAnimation() {
 }
 
 function animateDeathParticles() {
-    ctx.fillStyle = '#f0f0f0';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawBoardBackground();
 
     // 绘制食物（保持可见）
     const foodGradient = ctx.createRadialGradient(
@@ -666,10 +707,73 @@ function animateDeathParticles() {
     }
 }
 
+function drawBoardBackground() {
+    const bg = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    bg.addColorStop(0, '#f4f7fc');
+    bg.addColorStop(1, '#e6edf7');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = 'rgba(132, 154, 185, 0.22)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < tileCount; i++) {
+        const p = i * gridSize + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(p, 0);
+        ctx.lineTo(p, canvas.height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, p);
+        ctx.lineTo(canvas.width, p);
+        ctx.stroke();
+    }
+}
+
 function showGameOver() {
     gameOverElement.style.display = 'block';
     restartBtn.style.display = 'inline-block';
     pauseBtn.style.display = 'none';
+}
+
+function resetToIdleState() {
+    if (gameLoopId) {
+        clearTimeout(gameLoopId);
+        gameLoopId = null;
+    }
+    if (deathAnimFrame) {
+        cancelAnimationFrame(deathAnimFrame);
+        deathAnimFrame = null;
+    }
+    deathAnimating = false;
+    deathParticles = [];
+
+    const spawn = mapStartConfig[mapMode] || mapStartConfig.classic;
+    obstacles = (obstacleMaps[mapMode] || []).slice();
+    snake = [{ x: spawn.x, y: spawn.y }];
+    food = { x: 15, y: 15 };
+    if (obstacles.some(o => o.x === food.x && o.y === food.y)) {
+        generateFood();
+    }
+    dx = 0;
+    dy = 0;
+    score = 0;
+    powerUp = null;
+    activePowerUp = null;
+    powerUpTimer = 0;
+    baseSpeed = difficultyConfig[currentDifficulty].speed;
+    isBoosting = false;
+    gamePaused = false;
+    gameRunning = false;
+    gameStarted = false;
+    applySpeed();
+
+    scoreElement.textContent = score;
+    gameOverElement.style.display = 'none';
+    startBtn.style.display = 'inline-block';
+    pauseBtn.style.display = 'none';
+    restartBtn.style.display = 'none';
+    updateModeControlsLock();
+    draw();
 }
 
 function renderGameToText() {
@@ -758,6 +862,7 @@ function endGame() {
     }
 
     if (typeof GameAudio !== 'undefined') GameAudio.play('lose');
+    updateModeControlsLock();
 
     // 启动死亡动画
     startDeathAnimation();
@@ -772,10 +877,11 @@ function resetGame() {
     deathAnimating = false;
     deathParticles = [];
 
-    snake = [{x: 9, y: 9}];
+    const spawn = mapStartConfig[mapMode] || mapStartConfig.classic;
+    snake = [{x: spawn.x, y: spawn.y}];
     food = {x: 15, y: 15};
-    dx = 0;
-    dy = 0;
+    dx = spawn.dx;
+    dy = spawn.dy;
     score = 0;
     powerUp = null;
     activePowerUp = null;
@@ -793,8 +899,11 @@ function resetGame() {
     pauseBtn.style.display = 'inline-block';
     pauseBtn.textContent = '暂停';
 
-    dx = 1;
-    dy = 0;
+    if (obstacles.some(o => o.x === food.x && o.y === food.y)) {
+        generateFood();
+    }
+    restartBtn.style.display = 'inline-block';
+    updateModeControlsLock();
 
     if (typeof GameAudio !== 'undefined') GameAudio.play('click');
     localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
@@ -814,4 +923,5 @@ window.get_game_meta = () => JSON.stringify({
 });
 
 ensureMapButtons();
+updateModeControlsLock();
 draw();
