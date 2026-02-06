@@ -276,11 +276,9 @@ function lockPiece() {
         });
     });
 
-    if (typeof GameAudio !== 'undefined') GameAudio.play('drop');
     canHold = true;
     clearLines();
-    // 注意：spawnPiece 在 clearLines 内部调用（消行回调完成后）
-    // 如果没有需要消除的行，clearLines 会直接调用 spawnPiece
+    // 注意：spawnPiece 在 clearLines 内部调用
 }
 
 function clearLines() {
@@ -295,22 +293,7 @@ function clearLines() {
     if (rowsToClear.length > 0) {
         combo++;
 
-        // 播放消行音效
-        if (typeof GameAudio !== 'undefined') {
-            if (rowsToClear.length >= 4) {
-                GameAudio.play('clear');
-            } else {
-                GameAudio.play('merge');
-            }
-        }
-
-        // 显示连击提示
-        if (combo >= 2) {
-            showComboToast(combo, rowsToClear.length);
-            if (typeof GameAudio !== 'undefined') GameAudio.play('combo');
-        }
-
-        // 先计分（立即更新，不等动画）
+        // ---- 核心路径：先删行、更新分数、生成新方块 ----
         var linesCleared = rowsToClear.length;
         var points = [0, 100, 300, 500, 1200];
         if (linesCleared >= 4) {
@@ -324,10 +307,11 @@ function clearLines() {
         lines += linesCleared;
 
         var newLevel = Math.floor(lines / 10) + 1;
+        var leveledUp = false;
         if (newLevel > level) {
             level = newLevel;
             dropInterval = Math.max(100, 1000 - (level - 1) * 100);
-            if (typeof GameAudio !== 'undefined') GameAudio.play('upgrade');
+            leveledUp = true;
         }
 
         scoreElement.textContent = score;
@@ -339,18 +323,45 @@ function clearLines() {
             localStorage.setItem('tetrisHighScore', highScore);
             localStorage.setItem(STORAGE_KEYS.best, String(highScore));
         }
-        persistStatsAsync();
 
-        // 同步清行：不做异步动画，避免连击时调度抖动
+        // 同步删行
         rowsToClear.sort((a, b) => b - a);
         for (var i = 0; i < rowsToClear.length; i++) {
             board.splice(rowsToClear[i], 1);
             board.unshift(Array(COLS).fill(0));
         }
+
+        // 立即生成新方块（核心路径结束）
         spawnPiece();
+
+        // ---- 非核心：音效和 UI 提示延迟到下一帧，不阻塞消行 ----
+        var _combo = combo;
+        var _linesCleared = linesCleared;
+        var _leveledUp = leveledUp;
+        setTimeout(function() {
+            if (typeof GameAudio !== 'undefined') {
+                // 连击时只播放 combo 音效，不叠加 merge/clear
+                if (_combo >= 2) {
+                    GameAudio.play('combo');
+                } else if (_linesCleared >= 4) {
+                    GameAudio.play('clear');
+                } else {
+                    GameAudio.play('merge');
+                }
+                if (_leveledUp) GameAudio.play('upgrade');
+            }
+            if (_combo >= 2) {
+                showComboToast(_combo, _linesCleared);
+            }
+        }, 0);
+
+        persistStatsAsync();
     } else {
         combo = 0;
-        // 没有消行时直接生成新方块
+        // 没有消行，播放落地音
+        if (typeof GameAudio !== 'undefined') {
+            setTimeout(function() { GameAudio.play('drop'); }, 0);
+        }
         spawnPiece();
     }
 }
