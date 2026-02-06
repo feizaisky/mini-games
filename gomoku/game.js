@@ -171,6 +171,9 @@ canvas.addEventListener('click', function(e) {
 function makeMove(x, y, player) {
     board[x][y] = player;
     moveHistory.push({x, y, player});
+    if (player === 1) {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('move');
+    }
     drawBoard();
 
     // 检查胜负
@@ -180,9 +183,12 @@ function makeMove(x, y, player) {
         if (player === 1) {
             gameOverElement.textContent = '🎉 你赢了！';
             gameOverElement.className = 'game-over win';
+            if (typeof GameAudio !== 'undefined') GameAudio.play('win');
+            if (typeof GameCelebration !== 'undefined') GameCelebration.show();
         } else {
             gameOverElement.textContent = '😢 电脑赢了！';
             gameOverElement.className = 'game-over lose';
+            if (typeof GameAudio !== 'undefined') GameAudio.play('lose');
         }
         gameOverElement.style.display = 'block';
         return;
@@ -417,6 +423,8 @@ function evaluateLine(x, y, dx, dy, player) {
 function undo() {
     if (moveHistory.length < 2 || gameOver) return;
 
+    if (typeof GameAudio !== 'undefined') GameAudio.play('undo');
+
     // 撤销电脑和玩家的各一步
     for (let i = 0; i < 2 && moveHistory.length > 0; i++) {
         const move = moveHistory.pop();
@@ -445,6 +453,7 @@ function restart() {
 const difficultyBtns = document.querySelectorAll('.difficulty-btn');
 difficultyBtns.forEach(btn => {
     btn.addEventListener('click', function() {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
         difficultyBtns.forEach(b => b.classList.remove('selected'));
         this.classList.add('selected');
         currentDifficulty = this.dataset.difficulty;

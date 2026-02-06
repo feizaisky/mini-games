@@ -160,6 +160,32 @@
             text-align: center;
             line-height: 1;
         }
+        .mole.golden {
+            background: linear-gradient(145deg, #FFD700, #FFA500) !important;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        }
+        .mole.golden::after {
+            background: transparent !important;
+            content: '⭐' !important;
+            font-size: 14px;
+            width: auto !important;
+            height: auto !important;
+            border-radius: 0 !important;
+        }
+        .mole.bomb {
+            background: linear-gradient(145deg, #FF4444, #CC0000) !important;
+        }
+        .mole.bomb::before {
+            content: '✕' !important;
+            color: #fff !important;
+            font-size: 18px;
+            font-weight: bold;
+            background: transparent !important;
+            box-shadow: none !important;
+            text-align: center;
+            width: auto !important;
+            height: auto !important;
+        }
         .buttons {
             display: flex;
             gap: 10px;
@@ -281,6 +307,7 @@
         }
     </style>
     <link rel="stylesheet" href="/common/loader.css">
+    <link rel="stylesheet" href="/common/celebration.css">
 </head>
 <body>
     <!-- 加载动画 -->
@@ -334,6 +361,9 @@
     </div>
 
     <script src="game.js"></script>
+    <script src="/common/audio.js"></script>
+    <script src="/common/celebration.js"></script>
+    <script src="/common/share.js"></script>
     <script src="/common/loader.js"></script>
 </body>
 </html>

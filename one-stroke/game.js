@@ -234,6 +234,7 @@ function handlePointerDown(event) {
         if (isStartNode(targetNode)) {
             startPath(targetNode);
         } else {
+            if (typeof GameAudio !== 'undefined') GameAudio.play('error');
             setMessage('请从蓝色起点开始。');
         }
     } else {
@@ -292,6 +293,7 @@ function startPath(startNode) {
 
 function addStep(node) {
     path.push(node.index);
+    if (typeof GameAudio !== 'undefined') GameAudio.play('move');
     updatePathVisual();
     updateStats();
 
@@ -299,6 +301,7 @@ function addStep(node) {
         if (isEndNode(node)) {
             finishLevel();
         } else {
+            if (typeof GameAudio !== 'undefined') GameAudio.play('error');
             setMessage('还差一步：必须在绿色终点结束。');
         }
     }
@@ -307,6 +310,7 @@ function addStep(node) {
 function undoStep() {
     if (path.length <= 1) return;
     path.pop();
+    if (typeof GameAudio !== 'undefined') GameAudio.play('undo');
     updatePathVisual();
     updateStats();
 }
@@ -350,6 +354,8 @@ function updateTime() {
 function finishLevel() {
     clearTimer();
     isDrawing = false;
+    if (typeof GameAudio !== 'undefined') GameAudio.play('win');
+    if (typeof GameCelebration !== 'undefined') GameCelebration.show();
     setMessage('太棒了！完美一笔画！', true);
     saveBestScore();
     unlockNextLevel();

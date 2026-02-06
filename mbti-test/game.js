@@ -574,6 +574,8 @@ function showQuestion() {
 
 // 选择选项
 function selectOption(option, index) {
+    if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+
     // 记录答案
     userAnswers.push({
         question: selectedQuestions[currentQuestion],
@@ -613,6 +615,9 @@ function showResult() {
     resultCard.style.display = 'block';
     restartBtn.style.display = 'inline-block';
 
+    if (typeof GameAudio !== 'undefined') GameAudio.play('win');
+    if (typeof GameCelebration !== 'undefined') GameCelebration.show();
+
     const type = calculateResult();
     const result = personalityTypes[type];
 
@@ -624,8 +629,67 @@ function showResult() {
         `<span class="trait-tag">${trait}</span>`
     ).join('');
 
+    // 保存结果到历史记录
+    saveToHistory(type);
+
+    // 显示历次结果
+    displayHistory();
+
     // 显示用户选择的答案
     displayAnswers();
+}
+
+// 保存测试结果到 localStorage
+function saveToHistory(type) {
+    try {
+        let history = JSON.parse(localStorage.getItem('mbtiHistory') || '[]');
+        history.push({
+            type: type,
+            date: new Date().toLocaleDateString('zh-CN')
+        });
+        // 最多保留 20 条记录
+        if (history.length > 20) history = history.slice(-20);
+        localStorage.setItem('mbtiHistory', JSON.stringify(history));
+    } catch (e) {
+        // 忽略存储错误
+    }
+}
+
+// 显示历次结果
+function displayHistory() {
+    // 移除旧的历史区域（如果有）
+    const oldSection = document.getElementById('historySection');
+    if (oldSection) oldSection.remove();
+
+    try {
+        const history = JSON.parse(localStorage.getItem('mbtiHistory') || '[]');
+        if (history.length <= 1) return; // 只有当前这一条，不显示
+
+        const section = document.createElement('div');
+        section.id = 'historySection';
+        section.className = 'answer-section';
+        section.innerHTML = `
+            <h4 class="answer-section-title">历次结果</h4>
+            <div class="answer-list" style="max-height:160px;">
+                ${history.slice().reverse().map((item, i) =>
+                    `<div class="answer-item" style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:600;color:#667eea;">${item.type}</span>
+                        <span style="color:#999;font-size:12px;">${item.date}</span>
+                    </div>`
+                ).join('')}
+            </div>
+        `;
+
+        // 插入到结果区域的答案区之前
+        const answerSection = resultCard.querySelector('.answer-section');
+        if (answerSection) {
+            resultCard.insertBefore(section, answerSection);
+        } else {
+            resultCard.appendChild(section);
+        }
+    } catch (e) {
+        // 忽略解析错误
+    }
 }
 
 // 显示答案列表

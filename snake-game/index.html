@@ -220,6 +220,7 @@
         }
     </style>
     <link rel="stylesheet" href="/common/loader.css">
+    <link rel="stylesheet" href="/common/celebration.css">
 </head>
 <body>
     <!-- 加载动画 -->
@@ -254,6 +255,7 @@
             滑动屏幕控制蛇的移动
         </div>
         <button id="startBtn" class="action-btn">开始游戏</button>
+        <button id="pauseBtn" class="action-btn" style="display: none;">暂停</button>
         <div class="game-over" id="gameOver">游戏结束！</div>
         <button id="restartBtn" class="action-btn" style="display: none;">重新开始</button>
         <a href="/" class="home-btn" aria-label="返回首页">
@@ -264,6 +266,9 @@
     </div>
 
     <script src="game.js"></script>
+    <script src="/common/audio.js"></script>
+    <script src="/common/celebration.js"></script>
+    <script src="/common/share.js"></script>
     <script src="/common/loader.js"></script>
 </body>
 </html>

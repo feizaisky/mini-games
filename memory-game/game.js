@@ -1,10 +1,19 @@
-// 游戏卡片图标
-const cardEmojis = ['🐶', '🐱', '🐼', '🐨', '🦁', '🐯', '🐸', '🐙'];
+// 游戏卡片图标（最多12种用于困难模式）
+const allEmojis = ['🐶', '🐱', '🐼', '🐨', '🦁', '🐯', '🐸', '🐙', '🦊', '🐰', '🐵', '🦄'];
+
+// 难度配置
+const difficultyConfig = {
+    easy:   { pairs: 6,  cols: 3, label: '简单 3×4' },
+    normal: { pairs: 8,  cols: 4, label: '普通 4×4' },
+    hard:   { pairs: 12, cols: 4, label: '困难 4×6' }
+};
+let currentDifficulty = 'normal';
 
 // 游戏状态
 let cards = [];
 let flippedCards = [];
 let matchedPairs = 0;
+let totalPairs = 8;
 let moves = 0;
 let gameTimer = null;
 let seconds = 0;
@@ -13,6 +22,10 @@ let gameStarted = false;
 
 // 初始化游戏
 function initGame() {
+    const config = difficultyConfig[currentDifficulty];
+    totalPairs = config.pairs;
+    const cardEmojis = allEmojis.slice(0, totalPairs);
+
     // 创建配对的卡片
     const cardPairs = [...cardEmojis, ...cardEmojis];
     // 洗牌
@@ -43,6 +56,14 @@ function initGame() {
         gameTimer = null;
     }
 
+    // 更新配对总数显示
+    const matchesTotal = document.getElementById('matchesTotal');
+    if (matchesTotal) matchesTotal.textContent = totalPairs;
+
+    // 更新时间显示
+    const timeEl = document.getElementById('time');
+    if (timeEl) timeEl.textContent = '00:00';
+
     // 更新显示
     updateDisplay();
     updateBestScore();
@@ -53,6 +74,10 @@ function initGame() {
 function renderBoard() {
     const board = document.getElementById('gameBoard');
     board.innerHTML = '';
+
+    // 根据难度设置列数
+    const config = difficultyConfig[currentDifficulty];
+    board.style.gridTemplateColumns = `repeat(${config.cols}, 1fr)`;
 
     cards.forEach(card => {
         const cardElement = document.createElement('div');
@@ -98,6 +123,7 @@ function flipCard(cardId) {
     // 翻转卡片
     card.isFlipped = true;
     flippedCards.push(card);
+    if (typeof GameAudio !== 'undefined') GameAudio.play('flip');
 
     // 更新卡片显示
     const cardElement = document.querySelector(`[data-id="${cardId}"]`);
@@ -119,6 +145,7 @@ function checkMatch() {
 
     if (card1.emoji === card2.emoji) {
         // 匹配成功
+        if (typeof GameAudio !== 'undefined') GameAudio.play('merge');
         setTimeout(() => {
             card1.isMatched = true;
             card2.isMatched = true;
@@ -134,12 +161,13 @@ function checkMatch() {
             updateDisplay();
 
             // 检查是否获胜
-            if (matchedPairs === cardEmojis.length) {
+            if (matchedPairs === totalPairs) {
                 gameWon();
             }
         }, 300);
     } else {
         // 不匹配，翻回去
+        if (typeof GameAudio !== 'undefined') GameAudio.play('error');
         setTimeout(() => {
             card1.isFlipped = false;
             card2.isFlipped = false;
@@ -190,13 +218,17 @@ function startTimer() {
 // 游戏获胜
 function gameWon() {
     clearInterval(gameTimer);
+    if (typeof GameAudio !== 'undefined') GameAudio.play('win');
+    if (typeof GameCelebration !== 'undefined') GameCelebration.show();
 
-    // 计算星级
+    // 计算星级（根据配对数调整阈值）
+    const threshold2 = totalPairs * 2;
+    const threshold1 = totalPairs * 3;
     let stars = '⭐⭐⭐';
-    if (moves > 16) {
+    if (moves > threshold2) {
         stars = '⭐⭐';
     }
-    if (moves > 24) {
+    if (moves > threshold1) {
         stars = '⭐';
     }
 
@@ -239,6 +271,23 @@ function closeModal() {
 function restartGame() {
     initGame();
 }
+
+// 切换难度
+function setDifficulty(difficulty) {
+    if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+    currentDifficulty = difficulty;
+    document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('selected'));
+    const activeBtn = document.querySelector(`.difficulty-btn[data-difficulty="${difficulty}"]`);
+    if (activeBtn) activeBtn.classList.add('selected');
+    initGame();
+}
+
+// 初始化难度按钮事件
+document.querySelectorAll('.difficulty-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        setDifficulty(this.dataset.difficulty);
+    });
+});
 
 // 页面加载时初始化游戏
 initGame();

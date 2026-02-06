@@ -3,9 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="x5-orientation" content="portrait">
+  <meta name="x5-fullscreen" content="true">
+  <meta name="x5-page-mode" content="app">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>王国塔防 - Kingdom Trails</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="/common/loader.css">
+  <link rel="stylesheet" href="/common/celebration.css">
 </head>
 <body>
   <!-- 加载动画 -->
@@ -78,6 +84,24 @@
                 </div>
               </div>
             </div>
+            <div class="build-card" data-tower="lightning" role="button" tabindex="0">
+              <div class="card-icon lightning"></div>
+              <div class="card-info">
+                <div class="card-line">
+                  <span class="card-name">闪电塔</span>
+                  <span class="card-meta" data-info="lightning"></span>
+                </div>
+              </div>
+            </div>
+            <div class="build-card" data-tower="poison" role="button" tabindex="0">
+              <div class="card-icon poison"></div>
+              <div class="card-info">
+                <div class="card-line">
+                  <span class="card-name">瘴毒塔</span>
+                  <span class="card-meta" data-info="poison"></span>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="hint">点选卡牌后点格子建造，或拖拽到地图上放置。</div>
         </div>
@@ -96,6 +120,9 @@
 
   <div id="toast" class="toast" hidden></div>
 
+  <script src="/common/audio.js"></script>
+  <script src="/common/celebration.js"></script>
+  <script src="/common/share.js"></script>
   <script type="module" src="js/main.js"></script>
   <script src="/common/loader.js"></script>
 </body>

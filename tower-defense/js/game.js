@@ -300,6 +300,15 @@ export class Game {
         enemy.slowFactor = 1;
       }
     }
+    // 中毒持续伤害
+    if (enemy.poisonTimer > 0) {
+      enemy.poisonTimer -= dt;
+      enemy.hp -= (enemy.poisonDamage || 0) * dt;
+      if (enemy.poisonTimer <= 0) {
+        enemy.poisonTimer = 0;
+        enemy.poisonDamage = 0;
+      }
+    }
     let speed = enemy.speed * enemy.slowFactor;
     let remaining = speed * dt;
     while (remaining > 0) {
@@ -335,7 +344,11 @@ export class Game {
       projectileSpeed: base.projectileSpeed * this.dimensions.tileSize,
       slowFactor: base.slowFactor,
       slowDuration: base.slowDuration,
-      splashRadius: base.splashRadius ? base.splashRadius * this.dimensions.tileSize : 0
+      splashRadius: base.splashRadius ? base.splashRadius * this.dimensions.tileSize : 0,
+      chainCount: base.chainCount ? base.chainCount + Math.floor((tower.level - 1) / 2) : 0,
+      chainRange: base.chainRange,
+      poisonDamage: base.poisonDamage ? Math.round(base.poisonDamage * levelBonus) : 0,
+      poisonDuration: base.poisonDuration || 0
     };
   }
 
@@ -377,6 +390,10 @@ export class Game {
       slowFactor: stats.slowFactor,
       slowDuration: stats.slowDuration,
       splashRadius: stats.splashRadius,
+      chainCount: stats.chainCount,
+      chainRange: stats.chainRange,
+      poisonDamage: stats.poisonDamage,
+      poisonDuration: stats.poisonDuration,
       type: tower.type
     });
     this.audio.beep({ frequency: 780, duration: 0.05, gain: 0.04 });
@@ -404,22 +421,48 @@ export class Game {
 
   applyProjectileHit(proj, target) {
     const splashRadius = proj.splashRadius || 0;
-    if (splashRadius > 0) {
+
+    // 闪电链击
+    if (proj.type === 'lightning' && proj.chainCount) {
+      this.damageEnemy(target, proj);
+      this.state.effects.push({ x: target.x, y: target.y, radius: this.dimensions.tileSize * 0.2, ttl: 0.3, type: 'lightning' });
+
+      const chainRange = (proj.chainRange || 1.5) * this.dimensions.tileSize;
+      let lastEnemy = target;
+      let chainedIds = new Set([target.id]);
+      for (let c = 0; c < proj.chainCount; c++) {
+        let nearest = null;
+        let bestDist = Infinity;
+        for (const enemy of this.state.enemies) {
+          if (chainedIds.has(enemy.id) || enemy.hp <= 0) continue;
+          const dist = Math.hypot(enemy.x - lastEnemy.x, enemy.y - lastEnemy.y);
+          if (dist <= chainRange && dist < bestDist) {
+            bestDist = dist;
+            nearest = enemy;
+          }
+        }
+        if (!nearest) break;
+        chainedIds.add(nearest.id);
+        const chainDmg = Math.round(proj.damage * 0.7);
+        nearest.hp -= chainDmg;
+        this.state.effects.push({
+          x: nearest.x, y: nearest.y, radius: this.dimensions.tileSize * 0.15, ttl: 0.2, type: 'lightning',
+          lineFrom: { x: lastEnemy.x, y: lastEnemy.y }
+        });
+        lastEnemy = nearest;
+      }
+    } else if (splashRadius > 0) {
       for (const enemy of this.state.enemies) {
         const dist = Math.hypot(enemy.x - target.x, enemy.y - target.y);
         if (dist <= splashRadius) {
           this.damageEnemy(enemy, proj);
         }
       }
+      this.state.effects.push({ x: target.x, y: target.y, radius: splashRadius, ttl: 0.25 });
     } else {
       this.damageEnemy(target, proj);
+      this.state.effects.push({ x: target.x, y: target.y, radius: this.dimensions.tileSize * 0.15, ttl: 0.25 });
     }
-    this.state.effects.push({
-      x: target.x,
-      y: target.y,
-      radius: splashRadius || this.dimensions.tileSize * 0.15,
-      ttl: 0.25
-    });
   }
 
   damageEnemy(enemy, proj) {
@@ -427,6 +470,11 @@ export class Game {
     if (proj.slowFactor && proj.slowDuration) {
       enemy.slowFactor = Math.min(enemy.slowFactor, proj.slowFactor);
       enemy.slowTimer = Math.max(enemy.slowTimer, proj.slowDuration);
+    }
+    // 中毒效果
+    if (proj.poisonDamage && proj.poisonDuration) {
+      enemy.poisonDamage = proj.poisonDamage;
+      enemy.poisonTimer = proj.poisonDuration;
     }
   }
 

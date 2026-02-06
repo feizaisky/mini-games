@@ -5,6 +5,7 @@ const highScoreElement = document.getElementById('highScore');
 const gameOverElement = document.getElementById('gameOver');
 const restartBtn = document.getElementById('restartBtn');
 const startBtn = document.getElementById('startBtn');
+const pauseBtn = document.getElementById('pauseBtn');
 
 // 难度配置
 const difficultyConfig = {
@@ -42,12 +43,31 @@ let dy = 0;
 let score = 0;
 let gameRunning = false;
 let gameStarted = false;
+let gamePaused = false;
 let baseSpeed = difficultyConfig.easy.speed;
 let gameSpeed = difficultyConfig.easy.speed;
 let gameLoopId = null;
 let highScore = 0;
 let isBoosting = false;
 const boostFactor = 0.5;
+
+// 道具系统
+let powerUp = null;       // 当前地图上的道具
+let activePowerUp = null;  // 当前激活的道具效果
+let powerUpTimer = 0;      // 道具持续时间计时
+const POWERUP_DURATION = 50; // 道具效果持续步数
+const POWERUP_SPAWN_CHANCE = 0.15; // 吃到食物后生成道具的概率
+
+const powerUpTypes = {
+    speed: { color: '#f39c12', symbol: '⚡', name: '加速', effect: 0.6 },
+    slow: { color: '#3498db', symbol: '❄', name: '减速', effect: 1.5 },
+    double: { color: '#e74c3c', symbol: '×2', name: '双倍', effect: 2 }
+};
+
+// 死亡动画
+let deathParticles = [];
+let deathAnimating = false;
+let deathAnimFrame = null;
 
 // 从 localStorage 读取最高分
 const savedHighScore = localStorage.getItem('snakeHighScore');
@@ -60,19 +80,16 @@ highScoreElement.textContent = highScore;
 const difficultyBtns = document.querySelectorAll('.difficulty-btn');
 difficultyBtns.forEach(btn => {
     btn.addEventListener('click', function() {
-        if (gameRunning) return; // 游戏运行中不能切换难度
+        if (gameRunning) return;
 
-        // 移除所有选中状态
         difficultyBtns.forEach(b => b.classList.remove('selected'));
-        // 添加当前选中状态
         this.classList.add('selected');
 
-        // 设置新难度
         currentDifficulty = this.dataset.difficulty;
         baseSpeed = difficultyConfig[currentDifficulty].speed;
         applySpeed();
 
-        // 重置游戏
+        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
         resetGame();
     });
 });
@@ -80,13 +97,54 @@ difficultyBtns.forEach(btn => {
 document.addEventListener('keydown', changeDirection);
 restartBtn.addEventListener('click', resetGame);
 startBtn.addEventListener('click', startGame);
+pauseBtn.addEventListener('click', togglePause);
 
-// 触摸支持 - 优化微信环境
+// 暂停功能
+function togglePause() {
+    if (!gameRunning || !gameStarted) return;
+
+    gamePaused = !gamePaused;
+    pauseBtn.textContent = gamePaused ? '继续' : '暂停';
+
+    if (typeof GameAudio !== 'undefined') {
+        GameAudio.play(gamePaused ? 'pause' : 'resume');
+    }
+
+    if (!gamePaused) {
+        gameLoop();
+    } else if (gameLoopId) {
+        clearTimeout(gameLoopId);
+        gameLoopId = null;
+        // 暂停时绘制半透明遮罩
+        drawPauseOverlay();
+    }
+}
+
+function drawPauseOverlay() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 28px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('暂停中', canvas.width / 2, canvas.height / 2);
+    ctx.font = '14px Arial';
+    ctx.fillText('点击继续按钮恢复', canvas.width / 2, canvas.height / 2 + 30);
+}
+
+// ESC键暂停
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+        if (gameRunning && gameStarted) {
+            togglePause();
+        }
+    }
+});
+
+// 触摸支持
 let touchStartX = 0;
 let touchStartY = 0;
 const minSwipeDistance = 30;
 
-// 防止微信长按弹出菜单 - 但不影响画布、按钮和链接
 document.addEventListener('contextmenu', function(e) {
     if (e.target.tagName === 'CANVAS' || e.target.tagName === 'BUTTON' || e.target.closest('button') ||
         e.target.tagName === 'A' || e.target.closest('a')) {
@@ -96,7 +154,6 @@ document.addEventListener('contextmenu', function(e) {
     return false;
 });
 
-// 防止双击缩放 - 但不影响按钮和链接点击
 let lastTouchEnd = 0;
 document.addEventListener('touchend', function(e) {
     if (e.target.tagName === 'BUTTON' || e.target.closest('button') ||
@@ -120,7 +177,6 @@ canvas.addEventListener('touchmove', function(e) {
     e.preventDefault();
 }, {passive: false});
 
-// 全屏触摸控制
 document.addEventListener('touchstart', function(e) {
     if (e.target.tagName === 'BUTTON' || e.target.closest('button') ||
         e.target.tagName === 'A' || e.target.closest('a')) {
@@ -146,7 +202,7 @@ document.addEventListener('touchend', function(e) {
     }
     e.preventDefault();
     setBoosting(false);
-    if (!gameRunning) return;
+    if (!gameRunning || gamePaused) return;
 
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
@@ -159,17 +215,11 @@ document.addEventListener('touchend', function(e) {
     }
 
     if (Math.abs(diffX) > Math.abs(diffY)) {
-        if (diffX > 0 && dx !== -1) {
-            dx = 1; dy = 0;
-        } else if (diffX < 0 && dx !== 1) {
-            dx = -1; dy = 0;
-        }
+        if (diffX > 0 && dx !== -1) { dx = 1; dy = 0; }
+        else if (diffX < 0 && dx !== 1) { dx = -1; dy = 0; }
     } else {
-        if (diffY > 0 && dy !== -1) {
-            dx = 0; dy = 1;
-        } else if (diffY < 0 && dy !== 1) {
-            dx = 0; dy = -1;
-        }
+        if (diffY > 0 && dy !== -1) { dx = 0; dy = 1; }
+        else if (diffY < 0 && dy !== 1) { dx = 0; dy = -1; }
     }
 }, {passive: false});
 
@@ -178,6 +228,7 @@ canvas.addEventListener('click', function(e) {
         startGame();
         return;
     }
+    if (gamePaused) return;
 
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -189,84 +240,54 @@ canvas.addEventListener('click', function(e) {
     const headX = snakeHead.x * gridSize + gridSize/2;
     const headY = snakeHead.y * gridSize + gridSize/2;
 
-    const diffX = clickX - headX;
-    const diffY = clickY - headY;
+    const cDiffX = clickX - headX;
+    const cDiffY = clickY - headY;
 
-    if (Math.abs(diffX) > Math.abs(diffY)) {
-        if (diffX > 0 && dx !== -1) {
-            dx = 1; dy = 0;
-        } else if (diffX < 0 && dx !== 1) {
-            dx = -1; dy = 0;
-        }
+    if (Math.abs(cDiffX) > Math.abs(cDiffY)) {
+        if (cDiffX > 0 && dx !== -1) { dx = 1; dy = 0; }
+        else if (cDiffX < 0 && dx !== 1) { dx = -1; dy = 0; }
     } else {
-        if (diffY > 0 && dy !== -1) {
-            dx = 0; dy = 1;
-        } else if (diffY < 0 && dy !== 1) {
-            dx = 0; dy = -1;
-        }
+        if (cDiffY > 0 && dy !== -1) { dx = 0; dy = 1; }
+        else if (cDiffY < 0 && dy !== 1) { dx = 0; dy = -1; }
     }
 });
 
-canvas.addEventListener('mousedown', function() {
-    setBoosting(true);
-});
+canvas.addEventListener('mousedown', function() { setBoosting(true); });
+document.addEventListener('mouseup', function() { setBoosting(false); });
+document.addEventListener('mouseleave', function() { setBoosting(false); });
 
-document.addEventListener('mouseup', function() {
-    setBoosting(false);
-});
-
-document.addEventListener('mouseleave', function() {
-    setBoosting(false);
-});
-
-document.addEventListener('copy', function(e) {
-    e.preventDefault();
-});
-
-document.addEventListener('cut', function(e) {
-    e.preventDefault();
-});
-
-document.addEventListener('paste', function(e) {
-    e.preventDefault();
-});
+document.addEventListener('copy', function(e) { e.preventDefault(); });
+document.addEventListener('cut', function(e) { e.preventDefault(); });
+document.addEventListener('paste', function(e) { e.preventDefault(); });
 
 document.addEventListener('wheel', function(e) {
-    if (e.ctrlKey) {
-        e.preventDefault();
-    }
+    if (e.ctrlKey) e.preventDefault();
 }, { passive: false });
 
 document.addEventListener('keydown', function(e) {
     if (!e.ctrlKey) return;
-    if (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0') {
-        e.preventDefault();
-    }
+    if (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0') e.preventDefault();
 });
 
-document.addEventListener('gesturestart', function(e) {
-    e.preventDefault();
-});
-
-document.addEventListener('gesturechange', function(e) {
-    e.preventDefault();
-});
-
-document.addEventListener('gestureend', function(e) {
-    e.preventDefault();
-});
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
+document.addEventListener('gestureend', function(e) { e.preventDefault(); });
 
 function startGame() {
     gameStarted = true;
     gameRunning = true;
+    gamePaused = false;
     startBtn.style.display = 'none';
+    pauseBtn.style.display = 'inline-block';
+    pauseBtn.textContent = '暂停';
     dx = 1;
     dy = 0;
+    if (typeof GameAudio !== 'undefined') GameAudio.play('click');
     gameLoop();
 }
 
 function gameLoop() {
-    if (!gameRunning) return;
+    if (!gameRunning || gamePaused) return;
 
     stepGame();
 
@@ -295,24 +316,95 @@ function update() {
 
     snake.unshift(head);
 
+    // 检查吃到食物
     if (head.x === food.x && head.y === food.y) {
-        score += 10;
+        let points = 10;
+        if (activePowerUp === 'double') points = 20;
+        score += points;
         scoreElement.textContent = score;
+
+        if (typeof GameAudio !== 'undefined') GameAudio.play('score');
+
+        let isNewRecord = false;
         if (score > highScore) {
             highScore = score;
             highScoreElement.textContent = highScore;
             localStorage.setItem('snakeHighScore', highScore);
+            isNewRecord = true;
         }
+
         generateFood();
+
+        // 概率生成道具
+        if (!powerUp && Math.random() < POWERUP_SPAWN_CHANCE) {
+            spawnPowerUp();
+        }
+
+        // 新纪录庆祝（首次超越时）
+        if (isNewRecord && score === points) {
+            // 第一次得分就是新纪录就不庆祝
+        } else if (isNewRecord && score === highScore) {
+            if (typeof GameAudio !== 'undefined') GameAudio.play('record');
+        }
     } else {
         snake.pop();
     }
+
+    // 检查吃到道具
+    if (powerUp && head.x === powerUp.x && head.y === powerUp.y) {
+        activatePowerUp(powerUp.type);
+        powerUp = null;
+        if (typeof GameAudio !== 'undefined') GameAudio.play('upgrade');
+    }
+
+    // 更新道具计时
+    if (activePowerUp) {
+        powerUpTimer--;
+        if (powerUpTimer <= 0) {
+            deactivatePowerUp();
+        }
+    }
+}
+
+// 道具系统
+function spawnPowerUp() {
+    const types = Object.keys(powerUpTypes);
+    const type = types[Math.floor(Math.random() * types.length)];
+    let x, y;
+    do {
+        x = Math.floor(Math.random() * tileCount);
+        y = Math.floor(Math.random() * tileCount);
+    } while (
+        snake.some(s => s.x === x && s.y === y) ||
+        (food.x === x && food.y === y)
+    );
+    powerUp = { x, y, type };
+}
+
+function activatePowerUp(type) {
+    activePowerUp = type;
+    powerUpTimer = POWERUP_DURATION;
+
+    if (type === 'speed') {
+        baseSpeed = difficultyConfig[currentDifficulty].speed * powerUpTypes.speed.effect;
+    } else if (type === 'slow') {
+        baseSpeed = difficultyConfig[currentDifficulty].speed * powerUpTypes.slow.effect;
+    }
+    applySpeed();
+}
+
+function deactivatePowerUp() {
+    activePowerUp = null;
+    powerUpTimer = 0;
+    baseSpeed = difficultyConfig[currentDifficulty].speed;
+    applySpeed();
 }
 
 function draw() {
     ctx.fillStyle = '#f0f0f0';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // 绘制蛇
     snake.forEach((segment, index) => {
         const gradient = ctx.createRadialGradient(
             segment.x * gridSize + gridSize/2,
@@ -324,12 +416,35 @@ function draw() {
         );
 
         if (index === 0) {
-            gradient.addColorStop(0, '#27ae60');
-            gradient.addColorStop(1, '#1e8449');
+            // 根据当前道具效果改变蛇头颜色
+            if (activePowerUp === 'speed') {
+                gradient.addColorStop(0, '#f39c12');
+                gradient.addColorStop(1, '#d68910');
+            } else if (activePowerUp === 'slow') {
+                gradient.addColorStop(0, '#3498db');
+                gradient.addColorStop(1, '#2980b9');
+            } else if (activePowerUp === 'double') {
+                gradient.addColorStop(0, '#e74c3c');
+                gradient.addColorStop(1, '#c0392b');
+            } else {
+                gradient.addColorStop(0, '#27ae60');
+                gradient.addColorStop(1, '#1e8449');
+            }
         } else {
             const alpha = 1 - (index / snake.length) * 0.5;
-            gradient.addColorStop(0, `rgba(46, 204, 113, ${alpha})`);
-            gradient.addColorStop(1, `rgba(39, 174, 96, ${alpha})`);
+            if (activePowerUp === 'speed') {
+                gradient.addColorStop(0, `rgba(243, 156, 18, ${alpha})`);
+                gradient.addColorStop(1, `rgba(214, 137, 16, ${alpha})`);
+            } else if (activePowerUp === 'slow') {
+                gradient.addColorStop(0, `rgba(52, 152, 219, ${alpha})`);
+                gradient.addColorStop(1, `rgba(41, 128, 185, ${alpha})`);
+            } else if (activePowerUp === 'double') {
+                gradient.addColorStop(0, `rgba(231, 76, 60, ${alpha})`);
+                gradient.addColorStop(1, `rgba(192, 57, 43, ${alpha})`);
+            } else {
+                gradient.addColorStop(0, `rgba(46, 204, 113, ${alpha})`);
+                gradient.addColorStop(1, `rgba(39, 174, 96, ${alpha})`);
+            }
         }
 
         ctx.fillStyle = gradient;
@@ -352,67 +467,81 @@ function draw() {
         }
         ctx.fill();
 
+        // 蛇头眼睛
         if (index === 0) {
             ctx.fillStyle = 'white';
             ctx.beginPath();
-            ctx.arc(
-                segment.x * gridSize + gridSize/3,
-                segment.y * gridSize + gridSize/3,
-                3, 0, Math.PI * 2
-            );
-            ctx.arc(
-                segment.x * gridSize + gridSize*2/3,
-                segment.y * gridSize + gridSize/3,
-                3, 0, Math.PI * 2
-            );
+            ctx.arc(segment.x * gridSize + gridSize/3, segment.y * gridSize + gridSize/3, 3, 0, Math.PI * 2);
+            ctx.arc(segment.x * gridSize + gridSize*2/3, segment.y * gridSize + gridSize/3, 3, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.fillStyle = 'black';
             ctx.beginPath();
-            ctx.arc(
-                segment.x * gridSize + gridSize/3,
-                segment.y * gridSize + gridSize/3,
-                1.5, 0, Math.PI * 2
-            );
-            ctx.arc(
-                segment.x * gridSize + gridSize*2/3,
-                segment.y * gridSize + gridSize/3,
-                1.5, 0, Math.PI * 2
-            );
+            ctx.arc(segment.x * gridSize + gridSize/3, segment.y * gridSize + gridSize/3, 1.5, 0, Math.PI * 2);
+            ctx.arc(segment.x * gridSize + gridSize*2/3, segment.y * gridSize + gridSize/3, 1.5, 0, Math.PI * 2);
             ctx.fill();
         }
     });
 
+    // 绘制食物
     const foodGradient = ctx.createRadialGradient(
-        food.x * gridSize + gridSize/2,
-        food.y * gridSize + gridSize/2,
-        0,
-        food.x * gridSize + gridSize/2,
-        food.y * gridSize + gridSize/2,
-        gridSize/2
+        food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2, 0,
+        food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2, gridSize/2
     );
     foodGradient.addColorStop(0, '#e74c3c');
     foodGradient.addColorStop(1, '#c0392b');
 
     ctx.fillStyle = foodGradient;
     ctx.beginPath();
-    ctx.arc(
-        food.x * gridSize + gridSize/2,
-        food.y * gridSize + gridSize/2,
-        gridSize/2 - 2,
-        0, Math.PI * 2
-    );
+    ctx.arc(food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2, gridSize/2 - 2, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.beginPath();
-    ctx.arc(
-        food.x * gridSize + gridSize/2 - 3,
-        food.y * gridSize + gridSize/2 - 3,
-        3,
-        0, Math.PI * 2
-    );
+    ctx.arc(food.x * gridSize + gridSize/2 - 3, food.y * gridSize + gridSize/2 - 3, 3, 0, Math.PI * 2);
     ctx.fill();
+
+    // 绘制道具
+    if (powerUp) {
+        const pt = powerUpTypes[powerUp.type];
+        const px = powerUp.x * gridSize + gridSize / 2;
+        const py = powerUp.y * gridSize + gridSize / 2;
+
+        // 发光效果
+        const glow = ctx.createRadialGradient(px, py, 0, px, py, gridSize);
+        glow.addColorStop(0, pt.color + '60');
+        glow.addColorStop(1, pt.color + '00');
+        ctx.fillStyle = glow;
+        ctx.fillRect(powerUp.x * gridSize - 4, powerUp.y * gridSize - 4, gridSize + 8, gridSize + 8);
+
+        // 道具背景
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(px, py, gridSize / 2 - 1, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 道具图标
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pt.symbol, px, py);
+    }
+
+    // 绘制道具效果指示器
+    if (activePowerUp) {
+        const pt = powerUpTypes[activePowerUp];
+        const barWidth = (powerUpTimer / POWERUP_DURATION) * 80;
+        ctx.fillStyle = pt.color + '80';
+        ctx.fillRect(canvas.width / 2 - 40, 4, barWidth, 6);
+        ctx.strokeStyle = pt.color;
+        ctx.strokeRect(canvas.width / 2 - 40, 4, 80, 6);
+
+        ctx.fillStyle = pt.color;
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(pt.name, canvas.width / 2, 22);
+    }
 }
 
 function applySpeed() {
@@ -424,7 +553,7 @@ function applySpeed() {
 }
 
 function setBoosting(active) {
-    if (!gameRunning) {
+    if (!gameRunning || gamePaused) {
         isBoosting = false;
         return;
     }
@@ -433,9 +562,93 @@ function setBoosting(active) {
     applySpeed();
 }
 
+// 死亡动画
+function DeathParticle(x, y, color) {
+    this.x = x;
+    this.y = y;
+    this.size = 3 + Math.random() * 4;
+    var angle = Math.random() * Math.PI * 2;
+    var speed = 1 + Math.random() * 3;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.color = color;
+    this.opacity = 1;
+    this.gravity = 0.05;
+}
+
+function startDeathAnimation() {
+    deathAnimating = true;
+    deathParticles = [];
+
+    // 为蛇的每个段创建粒子
+    snake.forEach(function(segment, index) {
+        var cx = segment.x * gridSize + gridSize / 2;
+        var cy = segment.y * gridSize + gridSize / 2;
+        var count = index === 0 ? 12 : 6;
+        for (var i = 0; i < count; i++) {
+            var hue = 120 + (index / snake.length) * 30;
+            var color = 'hsl(' + hue + ', 70%, ' + (40 + Math.random() * 20) + '%)';
+            deathParticles.push(new DeathParticle(cx, cy, color));
+        }
+    });
+
+    animateDeathParticles();
+}
+
+function animateDeathParticles() {
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 绘制食物（保持可见）
+    const foodGradient = ctx.createRadialGradient(
+        food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2, 0,
+        food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2, gridSize/2
+    );
+    foodGradient.addColorStop(0, '#e74c3c');
+    foodGradient.addColorStop(1, '#c0392b');
+    ctx.fillStyle = foodGradient;
+    ctx.beginPath();
+    ctx.arc(food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2, gridSize/2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    var alive = false;
+    for (var i = 0; i < deathParticles.length; i++) {
+        var p = deathParticles[i];
+        p.vy += p.gravity;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.opacity -= 0.02;
+        p.size *= 0.98;
+        if (p.opacity > 0) {
+            alive = true;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, p.opacity);
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    if (alive) {
+        deathAnimFrame = requestAnimationFrame(animateDeathParticles);
+    } else {
+        deathAnimating = false;
+        deathParticles = [];
+        showGameOver();
+    }
+}
+
+function showGameOver() {
+    gameOverElement.style.display = 'block';
+    restartBtn.style.display = 'inline-block';
+    pauseBtn.style.display = 'none';
+}
+
 function renderGameToText() {
     const payload = {
-        mode: gameRunning ? 'playing' : (gameOverElement.style.display === 'block' ? 'game_over' : 'idle'),
+        mode: gameRunning ? (gamePaused ? 'paused' : 'playing') : (gameOverElement.style.display === 'block' ? 'game_over' : 'idle'),
         grid: {
             cols: tileCount,
             rows: tileCount,
@@ -445,6 +658,8 @@ function renderGameToText() {
         snake: snake.map(segment => ({ x: segment.x, y: segment.y })),
         direction: { dx, dy },
         food: { x: food.x, y: food.y },
+        powerUp: powerUp,
+        activePowerUp: activePowerUp,
         score,
         highScore,
         speed: gameSpeed,
@@ -456,7 +671,7 @@ function renderGameToText() {
 window.render_game_to_text = renderGameToText;
 
 window.advanceTime = (ms) => {
-    if (!gameRunning) return;
+    if (!gameRunning || gamePaused) return;
     const stepMs = Math.max(1, gameSpeed);
     const steps = Math.max(1, Math.round(ms / stepMs));
     for (let i = 0; i < steps; i++) {
@@ -480,7 +695,7 @@ function generateFood() {
 }
 
 function changeDirection(event) {
-    if (!gameRunning) return;
+    if (!gameRunning || gamePaused) return;
 
     const LEFT_KEY = 37;
     const RIGHT_KEY = 39;
@@ -494,25 +709,10 @@ function changeDirection(event) {
     const goingRight = dx === 1;
     const goingLeft = dx === -1;
 
-    if (keyPressed === LEFT_KEY && !goingRight) {
-        dx = -1;
-        dy = 0;
-    }
-
-    if (keyPressed === UP_KEY && !goingDown) {
-        dx = 0;
-        dy = -1;
-    }
-
-    if (keyPressed === RIGHT_KEY && !goingLeft) {
-        dx = 1;
-        dy = 0;
-    }
-
-    if (keyPressed === DOWN_KEY && !goingUp) {
-        dx = 0;
-        dy = 1;
-    }
+    if (keyPressed === LEFT_KEY && !goingRight) { dx = -1; dy = 0; }
+    if (keyPressed === UP_KEY && !goingDown) { dx = 0; dy = -1; }
+    if (keyPressed === RIGHT_KEY && !goingLeft) { dx = 1; dy = 0; }
+    if (keyPressed === DOWN_KEY && !goingUp) { dx = 0; dy = 1; }
 }
 
 function endGame() {
@@ -520,31 +720,51 @@ function endGame() {
     gameStarted = false;
     isBoosting = false;
     applySpeed();
-    gameOverElement.style.display = 'block';
-    restartBtn.style.display = 'inline-block';
+
     if (gameLoopId) {
         clearTimeout(gameLoopId);
+        gameLoopId = null;
     }
+
+    if (typeof GameAudio !== 'undefined') GameAudio.play('lose');
+
+    // 启动死亡动画
+    startDeathAnimation();
 }
 
 function resetGame() {
+    // 取消任何正在进行的死亡动画
+    if (deathAnimFrame) {
+        cancelAnimationFrame(deathAnimFrame);
+        deathAnimFrame = null;
+    }
+    deathAnimating = false;
+    deathParticles = [];
+
     snake = [{x: 9, y: 9}];
     food = {x: 15, y: 15};
     dx = 0;
     dy = 0;
     score = 0;
+    powerUp = null;
+    activePowerUp = null;
+    powerUpTimer = 0;
     baseSpeed = difficultyConfig[currentDifficulty].speed;
     isBoosting = false;
+    gamePaused = false;
     applySpeed();
     scoreElement.textContent = score;
     gameRunning = true;
     gameStarted = true;
     gameOverElement.style.display = 'none';
     restartBtn.style.display = 'none';
+    pauseBtn.style.display = 'inline-block';
+    pauseBtn.textContent = '暂停';
 
     dx = 1;
     dy = 0;
 
+    if (typeof GameAudio !== 'undefined') GameAudio.play('click');
     gameLoop();
 }
 

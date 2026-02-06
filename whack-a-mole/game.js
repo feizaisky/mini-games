@@ -5,6 +5,7 @@ let gameRunning = false;
 let moleTimer = null;
 let countdownTimer = null;
 let currentMole = null;
+let currentMoleType = 'normal'; // 'normal', 'golden', 'bomb'
 let moleSpeed = 1500;
 let holes = [];
 
@@ -82,7 +83,7 @@ function showMole() {
 
     // 隐藏当前地鼠
     if (currentMole !== null) {
-        holes[currentMole].mole.classList.remove('up');
+        holes[currentMole].mole.classList.remove('up', 'golden', 'bomb');
     }
 
     // 随机选择一个洞
@@ -94,6 +95,20 @@ function showMole() {
     currentMole = randomHole;
     holes[currentMole].mole.classList.remove('hit');
     holes[currentMole].mole.classList.add('up');
+
+    // 随机分配地鼠类型
+    const typeRoll = Math.random();
+    if (typeRoll < 0.1) {
+        currentMoleType = 'golden';
+    } else if (typeRoll < 0.2) {
+        currentMoleType = 'bomb';
+    } else {
+        currentMoleType = 'normal';
+    }
+    holes[currentMole].mole.classList.remove('golden', 'bomb');
+    if (currentMoleType !== 'normal') {
+        holes[currentMole].mole.classList.add(currentMoleType);
+    }
 
     // 根据分数增加难度
     if (score >= 50) {
@@ -109,7 +124,7 @@ function showMole() {
 
     moleTimer = setTimeout(() => {
         if (currentMole !== null && !holes[currentMole].mole.classList.contains('hit')) {
-            holes[currentMole].mole.classList.remove('up');
+            holes[currentMole].mole.classList.remove('up', 'golden', 'bomb');
         }
         showMole();
     }, randomTime);
@@ -124,7 +139,17 @@ function whackMole(index) {
         return;
     }
 
-    score++;
+    // 根据地鼠类型计分
+    if (currentMoleType === 'golden') {
+        score += 3;
+    } else if (currentMoleType === 'bomb') {
+        score = Math.max(0, score - 2);
+    } else {
+        score++;
+    }
+
+    if (typeof GameAudio !== 'undefined') GameAudio.play('hit');
+
     hole.mole.classList.add('hit');
     hole.mole.classList.remove('up');
 
@@ -183,7 +208,7 @@ function endGame() {
 
     // 隐藏当前地鼠
     if (currentMole !== null) {
-        holes[currentMole].mole.classList.remove('up');
+        holes[currentMole].mole.classList.remove('up', 'golden', 'bomb');
     }
 
     document.getElementById('startBtn').disabled = false;
@@ -191,9 +216,18 @@ function endGame() {
 
     // 保存最高分
     const highScore = localStorage.getItem('whackMoleHighScore') || 0;
-    if (score > parseInt(highScore)) {
+    const isNewRecord = score > parseInt(highScore);
+    if (isNewRecord) {
         localStorage.setItem('whackMoleHighScore', score);
         updateBestScore();
+    }
+
+    // 音效和庆祝
+    if (isNewRecord) {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('record');
+        if (typeof GameCelebration !== 'undefined') GameCelebration.show();
+    } else {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('lose');
     }
 
     // 显示模态框

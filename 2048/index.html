@@ -2,7 +2,12 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>2048 游戏</title>
     <style>
         * {
@@ -197,6 +202,44 @@
         .grid-cell.tile-1024 { background: #edc53f; color: #f9f6f2; font-size: 24px; }
         .grid-cell.tile-2048 { background: #edc22e; color: #f9f6f2; font-size: 24px; }
         .grid-cell.tile-super { background: #3c3a32; color: #f9f6f2; font-size: 20px; }
+        .grid-cell.tile-merged {
+            animation: mergePop 0.25s ease;
+        }
+        .grid-cell.tile-new {
+            animation: tileAppear 0.2s ease;
+        }
+        @keyframes mergePop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @keyframes tileAppear {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .new-record-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #f39c12, #e74c3c);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 10000;
+            pointer-events: none;
+            animation: recordToast 1.5s ease forwards;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        @keyframes recordToast {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            30% { transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -60%) scale(0.9); }
+        }
         .controls {
             color: #666;
             font-size: 14px;
@@ -268,6 +311,7 @@
         }
     </style>
     <link rel="stylesheet" href="/common/loader.css">
+    <link rel="stylesheet" href="/common/celebration.css">
 </head>
 <body>
     <!-- 加载动画 -->
@@ -307,6 +351,7 @@
             相同的数字碰撞时会合并
         </div>
         <button id="newGameBtn">新游戏</button>
+        <button id="undoBtn" style="background: #8f7a66;">撤销 (<span id="undoCount">3</span>)</button>
         <div class="game-over" id="gameOver">
             游戏结束！
         </div>
@@ -323,6 +368,9 @@
     </div>
 
     <script src="game.js"></script>
+    <script src="/common/audio.js"></script>
+    <script src="/common/celebration.js"></script>
+    <script src="/common/share.js"></script>
     <script src="/common/loader.js"></script>
 </body>
 </html>

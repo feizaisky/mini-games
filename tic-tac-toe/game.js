@@ -118,6 +118,8 @@ function makeMove(index) {
     board[index] = currentPlayer;
     moveHistory.push({ index, player: currentPlayer });
 
+    if (typeof GameAudio !== 'undefined') GameAudio.play('move');
+
     renderBoard();
 
     // 检查胜负
@@ -145,7 +147,8 @@ function makeMove(index) {
 
     // AI 回合
     if (gameMode === 'ai' && currentPlayer === 'O' && gameActive) {
-        setTimeout(aiMove, 300);
+        const aiDelay = 300 + Math.floor(Math.random() * 200);
+        setTimeout(aiMove, aiDelay);
     }
 }
 
@@ -239,6 +242,8 @@ function announceWinner(winner) {
 
     if (winner === 'X') {
         statusText.textContent = '🎉 X 获胜！';
+        if (typeof GameAudio !== 'undefined') GameAudio.play('win');
+        if (typeof GameCelebration !== 'undefined') GameCelebration.show();
         wins++;
         if (gameMode === 'ai') {
             localStorage.setItem('tictactoeWins', wins);
@@ -246,8 +251,12 @@ function announceWinner(winner) {
     } else {
         statusText.textContent = gameMode === 'ai' ? '😢 AI 获胜！' : '🎉 O 获胜！';
         if (gameMode === 'ai') {
+            if (typeof GameAudio !== 'undefined') GameAudio.play('lose');
             losses++;
             localStorage.setItem('tictactoeLosses', losses);
+        } else {
+            if (typeof GameAudio !== 'undefined') GameAudio.play('win');
+            if (typeof GameCelebration !== 'undefined') GameCelebration.show();
         }
     }
 
@@ -257,6 +266,7 @@ function announceWinner(winner) {
 // 宣布平局
 function announceDraw() {
     document.getElementById('statusText').textContent = '🤝 平局！';
+    if (typeof GameAudio !== 'undefined') GameAudio.play('click');
     draws++;
     if (gameMode === 'ai') {
         localStorage.setItem('tictactoeDraws', draws);
@@ -294,6 +304,8 @@ function updateUndoButton() {
 // 悔棋
 function undo() {
     if (!gameActive) return;
+
+    if (typeof GameAudio !== 'undefined') GameAudio.play('undo');
 
     if (gameMode === 'ai') {
         // 撤销 AI 和玩家的各一步

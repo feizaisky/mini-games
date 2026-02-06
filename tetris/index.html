@@ -134,6 +134,31 @@
                 height: 24px;
             }
         }
+        #holdCanvas {
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: #111;
+        }
+        .combo-toast {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff9f43;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            z-index: 10000;
+            pointer-events: none;
+            animation: comboFade 1s ease forwards;
+        }
+        @keyframes comboFade {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            40% { transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -60%); }
+        }
         .game-over {
             display: none;
             font-size: 15px;
@@ -260,6 +285,7 @@
         }
     </style>
     <link rel="stylesheet" href="/common/loader.css">
+    <link rel="stylesheet" href="/common/celebration.css">
 </head>
 <body>
     <!-- 加载动画 -->
@@ -300,6 +326,10 @@
                     <div class="label">下一个</div>
                     <canvas id="nextCanvas" width="60" height="60"></canvas>
                 </div>
+                <div class="next-box">
+                    <div class="label">暂存</div>
+                    <canvas id="holdCanvas" width="60" height="60"></canvas>
+                </div>
                 <button id="startBtn">开始</button>
             </div>
         </div>
@@ -315,6 +345,7 @@
             <button onclick="mobileControl('down')">↓</button>
             <button onclick="mobileControl('right')">→</button>
             <button class="rotate-btn" onclick="mobileControl('rotate')">↻</button>
+            <button style="background:#8f7a66;font-size:12px;width:50px;height:50px;border-radius:50%" onclick="mobileControl('hold')">暂存</button>
         </div>
     </div>
 
@@ -335,9 +366,14 @@
                 tetris.moveDown();
             } else if (action === 'rotate') {
                 tetris.rotate();
+            } else if (action === 'hold') {
+                tetris.holdPiece();
             }
         }
     </script>
+    <script src="/common/audio.js"></script>
+    <script src="/common/celebration.js"></script>
+    <script src="/common/share.js"></script>
     <script src="/common/loader.js"></script>
 </body>
 </html>

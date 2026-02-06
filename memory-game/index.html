@@ -208,6 +208,32 @@
             font-weight: bold;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+        .difficulty-bar {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .difficulty-btn {
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid transparent;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .difficulty-btn.selected {
+            background: linear-gradient(145deg, #FF6B9D, #FF8E53);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 2px 10px rgba(255, 107, 157, 0.3);
+        }
+        .difficulty-btn:active {
+            transform: scale(0.95);
+        }
         .home-btn {
             position: fixed;
             top: env(safe-area-inset-top, 10px);
@@ -263,6 +289,7 @@
         }
     </style>
     <link rel="stylesheet" href="/common/loader.css">
+    <link rel="stylesheet" href="/common/celebration.css">
 </head>
 <body>
     <!-- 加载动画 -->
@@ -291,11 +318,17 @@
             </div>
             <div class="info-item">
                 <div class="info-label">配对</div>
-                <div class="info-value"><span id="matches">0</span>/8</div>
+                <div class="info-value"><span id="matches">0</span>/<span id="matchesTotal">8</span></div>
             </div>
         </div>
 
         <div class="best-score" id="bestScore"></div>
+
+        <div class="difficulty-bar">
+            <button class="difficulty-btn" data-difficulty="easy">简单</button>
+            <button class="difficulty-btn selected" data-difficulty="normal">普通</button>
+            <button class="difficulty-btn" data-difficulty="hard">困难</button>
+        </div>
 
         <div class="game-board" id="gameBoard"></div>
 
@@ -320,6 +353,9 @@
     </div>
 
     <script src="game.js"></script>
+    <script src="/common/audio.js"></script>
+    <script src="/common/celebration.js"></script>
+    <script src="/common/share.js"></script>
     <script src="/common/loader.js"></script>
 </body>
 </html>

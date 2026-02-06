@@ -121,6 +121,57 @@
             font-style: italic;
             margin-top: 10px;
         }
+        .category-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .category-tab {
+            background: #f0f0f0;
+            color: #666;
+            border: 2px solid transparent;
+            padding: 5px 14px;
+            font-size: 12px;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .category-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .category-title {
+            font-size: 14px;
+            color: #888;
+            text-align: left;
+            margin: 12px 0 6px 4px;
+            font-weight: 600;
+        }
+        .score-item {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .score-item:hover {
+            transform: scale(1.03);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .clear-scores-btn {
+            background: none;
+            border: 1px solid #ddd;
+            color: #999;
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .clear-scores-btn:hover {
+            color: #e74c3c;
+            border-color: #e74c3c;
+        }
         .my-scores {
             margin-top: 15px;
             padding-top: 15px;
@@ -222,8 +273,17 @@
         <h1>🎮 小游戏中心</h1>
         <p class="subtitle">精选网页小游戏，随时畅玩</p>
 
-        <div class="games-grid">
-            <a href="./snake-game/" class="game-card">
+        <div class="category-tabs" id="categoryTabs">
+            <button class="category-tab active" data-cat="all">全部</button>
+            <button class="category-tab" data-cat="classic">经典</button>
+            <button class="category-tab" data-cat="puzzle">益智</button>
+            <button class="category-tab" data-cat="board">棋类</button>
+            <button class="category-tab" data-cat="action">动作</button>
+            <button class="category-tab" data-cat="other">其他</button>
+        </div>
+
+        <div class="games-grid" id="gamesGrid">
+            <a href="./snake-game/" class="game-card" data-category="classic">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="贪吃蛇">
                         <path d="M12 20c0-6 6-10 12-10h16c8 0 12 4 12 10s-6 10-12 10H28c-6 0-10 4-10 9s4 9 10 9h20" fill="none" stroke="#4caf50" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -234,7 +294,7 @@
                 <div class="game-desc">经典贪吃蛇游戏</div>
             </a>
 
-            <a href="./2048/" class="game-card">
+            <a href="./2048/" class="game-card" data-category="classic">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="2048">
                         <rect x="6" y="6" width="52" height="52" rx="14" fill="#f2b179"/>
@@ -246,7 +306,7 @@
                 <div class="game-desc">经典数字合并游戏</div>
             </a>
 
-            <a href="./tetris/" class="game-card">
+            <a href="./tetris/" class="game-card" data-category="classic">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="俄罗斯方块">
                         <rect x="10" y="10" width="14" height="14" rx="3" fill="#4facfe"/>
@@ -261,7 +321,7 @@
                 <div class="game-desc">经典方块消除游戏</div>
             </a>
 
-            <a href="./lights-out/" class="game-card">
+            <a href="./lights-out/" class="game-card" data-category="puzzle">
                 <div class="game-icon" aria-hidden="true">
                     <img src="./lights-out/icon.svg" alt="熄灯">
                 </div>
@@ -269,7 +329,7 @@
                 <div class="game-desc">翻转灯光解谜</div>
             </a>
 
-            <a href="./tower-defense/" class="game-card">
+            <a href="./tower-defense/" class="game-card" data-category="action">
                 <div class="game-icon" aria-hidden="true">
                     <img src="/tower-defense/icon.svg" alt="塔防">
                 </div>
@@ -277,7 +337,7 @@
                 <div class="game-desc">策略塔防守卫王国</div>
             </a>
 
-            <a href="./gomoku/" class="game-card">
+            <a href="./gomoku/" class="game-card" data-category="board">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="五子棋">
                         <circle cx="24" cy="36" r="12" fill="#2f2f2f"/>
@@ -288,7 +348,7 @@
                 <div class="game-desc">益智棋类游戏</div>
             </a>
 
-            <a href="./chinese-chess/" class="game-card">
+            <a href="./chinese-chess/" class="game-card" data-category="board">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="中国象棋">
                         <rect x="8" y="8" width="48" height="48" rx="12" fill="#f5e3c5"/>
@@ -302,7 +362,7 @@
                 <div class="game-desc">人机对战与双人对弈</div>
             </a>
 
-            <a href="./memory-game/" class="game-card">
+            <a href="./memory-game/" class="game-card" data-category="puzzle">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="记忆翻牌">
                         <rect x="10" y="16" width="26" height="34" rx="6" fill="#4facfe"/>
@@ -314,7 +374,7 @@
                 <div class="game-desc">配对记忆游戏</div>
             </a>
 
-            <a href="./mbti-test/" class="game-card">
+            <a href="./mbti-test/" class="game-card" data-category="other">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="MBTI 测试">
                         <rect x="10" y="14" width="44" height="36" rx="10" fill="#8e9cff"/>
@@ -325,7 +385,7 @@
                 <div class="game-desc">人格性格测试</div>
             </a>
 
-            <a href="./whack-a-mole/" class="game-card">
+            <a href="./whack-a-mole/" class="game-card" data-category="action">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="打地鼠">
                         <rect x="36" y="10" width="16" height="12" rx="3" fill="#ff7a59"/>
@@ -338,7 +398,7 @@
                 <div class="game-desc">反应速度挑战</div>
             </a>
 
-            <a href="./sudoku/" class="game-card">
+            <a href="./sudoku/" class="game-card" data-category="puzzle">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="数独">
                         <rect x="10" y="10" width="44" height="44" rx="8" fill="#4facfe"/>
@@ -352,7 +412,7 @@
                 <div class="game-desc">逻辑填数游戏</div>
             </a>
 
-            <a href="./tic-tac-toe/" class="game-card">
+            <a href="./tic-tac-toe/" class="game-card" data-category="board">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="井字棋">
                         <line x1="22" y1="12" x2="22" y2="52" stroke="#1f2f55" stroke-width="4" stroke-linecap="round"/>
@@ -368,7 +428,7 @@
                 <div class="game-desc">经典策略游戏</div>
             </a>
 
-            <a href="./puzzle/" class="game-card">
+            <a href="./puzzle/" class="game-card" data-category="puzzle">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="拼图">
                         <path d="M18 18h10a6 6 0 1 1 12 0h8v10a6 6 0 1 0 0 12v8H18v-8a6 6 0 1 0 0-12z" fill="#ffcc4d"/>
@@ -379,7 +439,7 @@
                 <div class="game-desc">图像拼图挑战</div>
             </a>
 
-            <a href="./one-stroke/" class="game-card">
+            <a href="./one-stroke/" class="game-card" data-category="puzzle">
                 <div class="game-icon" aria-hidden="true">
                     <svg viewBox="0 0 64 64" role="img" aria-label="一笔画">
                         <circle cx="14" cy="18" r="6" fill="#4facfe"/>
@@ -404,172 +464,156 @@
     </div>
 
     <script>
-        // 加载各游戏的最高分
-        function loadScores() {
-            const scoresGrid = document.getElementById('scoresGrid');
-            const games = [
-                { key: 'snakeHighScore', name: '贪吃蛇', icon: '🐍' },
-                { key: 'bestScore2048', name: '2048', icon: '🃏' },
-                { key: 'tetrisHighScore', name: '俄罗斯方块', icon: '🎯' }
-            ];
+        // 分类筛选
+        (function() {
+            var tabs = document.querySelectorAll('.category-tab');
+            var cards = document.querySelectorAll('.game-card');
+            tabs.forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    tabs.forEach(function(t) { t.classList.remove('active'); });
+                    tab.classList.add('active');
+                    var cat = tab.dataset.cat;
+                    cards.forEach(function(card) {
+                        if (cat === 'all' || card.dataset.category === cat) {
+                            card.style.display = '';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        })();
 
-            let hasScores = false;
-
-            games.forEach(game => {
-                const score = localStorage.getItem(game.key);
-                if (score) {
-                    hasScores = true;
-                    const scoreItem = document.createElement('div');
-                    scoreItem.className = 'score-item';
-                    scoreItem.innerHTML = `
-                        <div class="game-name">${game.icon} ${game.name}</div>
-                        <div class="score-value">${score}${game.suffix || ''}</div>
-                    `;
-                    scoresGrid.appendChild(scoreItem);
+        // 记录访问（用于最近游玩排序）
+        document.querySelectorAll('.game-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                var href = card.getAttribute('href');
+                if (href) {
+                    try { localStorage.setItem('lastPlayed_' + href, Date.now()); } catch(e) {}
                 }
             });
+        });
 
-            // 记忆翻牌游戏的步数和时间
-            const memoryMoves = localStorage.getItem('memoryBestMoves');
-            const memoryTime = localStorage.getItem('memoryBestTime');
-            if (memoryMoves && memoryTime) {
-                hasScores = true;
-                const scoreItem = document.createElement('div');
-                scoreItem.className = 'score-item';
-                const minutes = Math.floor(parseInt(memoryTime) / 60);
-                const secs = parseInt(memoryTime) % 60;
-                const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
-                scoreItem.innerHTML = `
-                    <div class="game-name">🧠 记忆翻牌</div>
-                    <div class="score-value">${memoryMoves}步 / ${timeStr}</div>
-                `;
-                scoresGrid.appendChild(scoreItem);
-            }
+        // 加载各游戏的最高分
+        function addScoreItem(grid, icon, name, value, href) {
+            var item = document.createElement('a');
+            item.className = 'score-item';
+            item.href = href;
+            item.style.textDecoration = 'none';
+            item.style.color = 'inherit';
+            item.innerHTML = '<div class="game-name">' + icon + ' ' + name + '</div><div class="score-value">' + value + '</div>';
+            grid.appendChild(item);
+            return true;
+        }
 
-            // 打地鼠最高分
-            const whackMoleHighScore = localStorage.getItem('whackMoleHighScore');
-            if (whackMoleHighScore) {
-                hasScores = true;
-                const scoreItem = document.createElement('div');
-                scoreItem.className = 'score-item';
-                scoreItem.innerHTML = `
-                    <div class="game-name">🔨 打地鼠</div>
-                    <div class="score-value">${whackMoleHighScore}分</div>
-                `;
-                scoresGrid.appendChild(scoreItem);
-            }
+        function formatTime(seconds) {
+            var m = Math.floor(parseInt(seconds) / 60);
+            var s = parseInt(seconds) % 60;
+            return m + ':' + s.toString().padStart(2, '0');
+        }
 
-            // 数独最佳时间
-            const sudokuBestTime = localStorage.getItem('sudokuBestTime');
-            if (sudokuBestTime) {
-                hasScores = true;
-                const scoreItem = document.createElement('div');
-                scoreItem.className = 'score-item';
-                const minutes = Math.floor(parseInt(sudokuBestTime) / 60);
-                const secs = parseInt(sudokuBestTime) % 60;
-                const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
-                scoreItem.innerHTML = `
-                    <div class="game-name">🔢 数独</div>
-                    <div class="score-value">${timeStr}</div>
-                `;
-                scoresGrid.appendChild(scoreItem);
-            }
+        function loadScores() {
+            var grid = document.getElementById('scoresGrid');
+            grid.innerHTML = '';
+            var hasScores = false;
 
-            // 井字棋统计
-            const tictactoeWins = localStorage.getItem('tictactoeWins');
-            if (tictactoeWins && parseInt(tictactoeWins) > 0) {
-                hasScores = true;
-                const losses = localStorage.getItem('tictactoeLosses') || 0;
-                const draws = localStorage.getItem('tictactoeDraws') || 0;
-                const scoreItem = document.createElement('div');
-                scoreItem.className = 'score-item';
-                scoreItem.innerHTML = `
-                    <div class="game-name">⭕ 井字棋</div>
-                    <div class="score-value">${tictactoeWins}胜</div>
-                `;
-                scoresGrid.appendChild(scoreItem);
-            }
+            // 简单分数类
+            var simpleGames = [
+                { key: 'snakeHighScore', name: '贪吃蛇', icon: '🐍', href: './snake-game/', suffix: '分' },
+                { key: 'bestScore2048', name: '2048', icon: '🃏', href: './2048/', suffix: '分' },
+                { key: 'tetrisHighScore', name: '俄罗斯方块', icon: '🎯', href: './tetris/', suffix: '分' },
+                { key: 'whackMoleHighScore', name: '打地鼠', icon: '🔨', href: './whack-a-mole/', suffix: '分' }
+            ];
 
-            // 拼图最佳成绩（显示3x3的）
-            const puzzleBestRaw = localStorage.getItem('puzzleV2Best_3');
-            if (puzzleBestRaw) {
-                hasScores = true;
-                const scoreItem = document.createElement('div');
-                scoreItem.className = 'score-item';
-                let moves = 0;
-                let time = 0;
-                try {
-                    const best = JSON.parse(puzzleBestRaw);
-                    moves = parseInt(best.moves) || 0;
-                    time = parseInt(best.time) || 0;
-                } catch (error) {
-                    moves = 0;
-                    time = 0;
+            simpleGames.forEach(function(g) {
+                var val = localStorage.getItem(g.key);
+                if (val) { hasScores = addScoreItem(grid, g.icon, g.name, val + (g.suffix || ''), g.href); }
+            });
+
+            // 记忆翻牌
+            var mm = localStorage.getItem('memoryBestMoves');
+            var mt = localStorage.getItem('memoryBestTime');
+            if (mm && mt) { hasScores = addScoreItem(grid, '🧠', '记忆翻牌', mm + '步 / ' + formatTime(mt), './memory-game/'); }
+
+            // 数独
+            var st = localStorage.getItem('sudokuBestTime');
+            if (st) { hasScores = addScoreItem(grid, '🔢', '数独', formatTime(st), './sudoku/'); }
+
+            // 井字棋
+            var tw = localStorage.getItem('tictactoeWins');
+            if (tw && parseInt(tw) > 0) { hasScores = addScoreItem(grid, '⭕', '井字棋', tw + '胜', './tic-tac-toe/'); }
+
+            // 拼图
+            try {
+                var pr = localStorage.getItem('puzzleV2Best_3');
+                if (pr) {
+                    var pb = JSON.parse(pr);
+                    hasScores = addScoreItem(grid, '🧩', '拼图', (pb.moves || 0) + '步 / ' + formatTime(pb.time || 0), './puzzle/');
                 }
-                const minutes = Math.floor(time / 60);
-                const secs = time % 60;
-                const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
-                scoreItem.innerHTML = `
-                    <div class="game-name">🧩 拼图</div>
-                    <div class="score-value">${moves}步 / ${timeStr}</div>
-                `;
-                scoresGrid.appendChild(scoreItem);
-            }
+            } catch(e) {}
 
-            // 熄灯最佳成绩
-            const lightsOutBestRaw = localStorage.getItem('lightsOutBest');
-            if (lightsOutBestRaw) {
-                try {
-                    const best = JSON.parse(lightsOutBestRaw);
-                    if (best && best.moves !== undefined && best.time !== undefined) {
-                        hasScores = true;
-                        const scoreItem = document.createElement('div');
-                        scoreItem.className = 'score-item';
-                        const minutes = Math.floor(parseInt(best.time) / 60);
-                        const secs = parseInt(best.time) % 60;
-                        const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
-                        const diffLabelMap = { easy: '轻松', normal: '经典', hard: '进阶' };
-                        const diffLabel = diffLabelMap[best.difficulty] || '';
-                        scoreItem.innerHTML = `
-                            <div class="game-name">💡 熄灯 ${best.size || ''}x${best.size || ''} ${diffLabel}</div>
-                            <div class="score-value">${best.moves}步 / ${timeStr}</div>
-                        `;
-                        scoresGrid.appendChild(scoreItem);
+            // 熄灯
+            try {
+                var lr = localStorage.getItem('lightsOutBest');
+                if (lr) {
+                    var lb = JSON.parse(lr);
+                    if (lb && lb.moves !== undefined) {
+                        var dlm = { easy: '轻松', normal: '经典', hard: '进阶' };
+                        hasScores = addScoreItem(grid, '💡', '熄灯', lb.moves + '步 / ' + formatTime(lb.time || 0), './lights-out/');
                     }
-                } catch (error) {
-                    // ignore invalid data
                 }
-            }
+            } catch(e) {}
 
-            // 一笔画最佳成绩
-            const oneStrokeBest = localStorage.getItem('oneStrokeBest');
-            if (oneStrokeBest) {
-                try {
-                    const best = JSON.parse(oneStrokeBest);
-                    if (best && best.time !== undefined && best.moves !== undefined) {
-                        hasScores = true;
-                        const scoreItem = document.createElement('div');
-                        scoreItem.className = 'score-item';
-                        const minutes = Math.floor(parseInt(best.time) / 60);
-                        const secs = parseInt(best.time) % 60;
-                        const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
-                        scoreItem.innerHTML = `
-                            <div class="game-name">✍️ 一笔画</div>
-                            <div class="score-value">${best.level || ''} ${timeStr} / ${best.moves}步</div>
-                        `;
-                        scoresGrid.appendChild(scoreItem);
+            // 一笔画
+            try {
+                var or = localStorage.getItem('oneStrokeBest');
+                if (or) {
+                    var ob = JSON.parse(or);
+                    if (ob && ob.moves !== undefined) {
+                        hasScores = addScoreItem(grid, '✍️', '一笔画', (ob.level || '') + ' ' + formatTime(ob.time || 0), './one-stroke/');
                     }
-                } catch (error) {
-                    // ignore invalid data
                 }
-            }
+            } catch(e) {}
+
+            // 塔防
+            try {
+                var td = localStorage.getItem('td_progress_v1');
+                if (td) {
+                    var tp = JSON.parse(td);
+                    var maxWave = Math.max.apply(null, tp.bestWaves || [0]);
+                    if (maxWave > 0) { hasScores = addScoreItem(grid, '🏰', '塔防', '最高' + maxWave + '波', './tower-defense/'); }
+                }
+            } catch(e) {}
 
             if (!hasScores) {
-                scoresGrid.innerHTML = '<p style="color: #999; grid-column: 1 / -1;">暂无游戏记录，快去玩游戏吧！</p>';
+                grid.innerHTML = '<p style="color: #999; grid-column: 1 / -1;">暂无游戏记录，快去玩游戏吧！</p>';
+            } else {
+                // 添加清除按钮
+                var clearWrap = document.createElement('div');
+                clearWrap.style.cssText = 'grid-column: 1 / -1; text-align: center;';
+                clearWrap.innerHTML = '<button class="clear-scores-btn" onclick="clearAllScores()">清除所有记录</button>';
+                grid.appendChild(clearWrap);
             }
         }
 
-        // 页面加载时读取成绩
+        function clearAllScores() {
+            if (!confirm('确定要清除所有游戏记录吗？')) return;
+            var keys = ['snakeHighScore','bestScore2048','tetrisHighScore','whackMoleHighScore',
+                'memoryBestMoves','memoryBestTime','sudokuBestTime','sudokuGamesWon','sudokuDifficulty',
+                'tictactoeWins','tictactoeLosses','tictactoeDraws',
+                'puzzleV2Best_3','puzzleV2Best_4','puzzleV2Best_5','puzzleV2Unlock',
+                'lightsOutBest','oneStrokeBest','oneStrokeUnlocked','td_progress_v1','td_achievements_v1',
+                'mbtiHistory'];
+            keys.forEach(function(k) { localStorage.removeItem(k); });
+            // 清除所有 lightsOutBest_ 前缀的键
+            for (var i = localStorage.length - 1; i >= 0; i--) {
+                var key = localStorage.key(i);
+                if (key && key.startsWith('lightsOutBest_')) localStorage.removeItem(key);
+                if (key && key.startsWith('lastPlayed_')) localStorage.removeItem(key);
+            }
+            loadScores();
+        }
+
         loadScores();
     </script>
 </body>

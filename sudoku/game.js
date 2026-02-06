@@ -8,6 +8,9 @@ let gameTimer = null;
 let seconds = 0;
 let currentDifficulty = 'beginner';
 const difficultyStorageKey = 'sudokuDifficulty';
+let hintsRemaining = 3;
+let notesMode = false;
+let notes = []; // 9x9 array of Sets for candidate numbers
 
 // 难度配置（移除的数字数量）
 const difficultyConfig = {
@@ -87,6 +90,11 @@ function newGame() {
     selectedCell = null;
     seconds = 0;
     gameStarted = false;
+    hintsRemaining = 3;
+    notesMode = false;
+    notes = Array(9).fill(null).map(() => Array(9).fill(null).map(() => new Set()));
+    updateHintButton();
+    updateNotesButton();
 
     // 停止计时器
     if (gameTimer) {
@@ -215,8 +223,22 @@ function renderBoard() {
         const value = board[row][col];
         const cell = cells[i];
 
-        cell.textContent = value || '';
         cell.classList.remove('fixed', 'selected', 'error', 'same-number');
+
+        if (value) {
+            cell.innerHTML = '';
+            cell.textContent = value;
+        } else if (notes[row] && notes[row][col] && notes[row][col].size > 0) {
+            let html = '<div class="cell-notes">';
+            for (let n = 1; n <= 9; n++) {
+                html += `<span>${notes[row][col].has(n) ? n : ''}</span>`;
+            }
+            html += '</div>';
+            cell.innerHTML = html;
+        } else {
+            cell.innerHTML = '';
+            cell.textContent = '';
+        }
 
         // 只标记初始数字为 fixed
         if (value && initialNumbers[row] && initialNumbers[row][col]) {
@@ -258,14 +280,33 @@ function inputNumber(num) {
     const { row, col, index } = selectedCell;
     const cells = document.querySelectorAll('.cell');
 
+    // 笔记模式
+    if (notesMode && num !== 0) {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+        board[row][col] = 0;
+        if (notes[row][col].has(num)) {
+            notes[row][col].delete(num);
+        } else {
+            notes[row][col].add(num);
+        }
+        renderBoard();
+        cells[index].classList.add('selected');
+        return;
+    }
+
     if (num === 0) {
         // 清除
         board[row][col] = 0;
+        notes[row][col].clear();
+        cells[index].innerHTML = '';
         cells[index].textContent = '';
         cells[index].classList.remove('error', 'same-number');
     } else {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
         // 允许填写，错误由统一校验标记
         board[row][col] = num;
+        notes[row][col].clear();
+        cells[index].innerHTML = '';
         cells[index].textContent = num;
         cells[index].classList.remove('error');
         // 先清掉上一轮高亮，再高亮当前数字
@@ -274,6 +315,11 @@ function inputNumber(num) {
     }
 
     const errors = markErrors();
+
+    // 错误音效
+    if (num !== 0 && board[row][col] !== solution[row][col]) {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('error');
+    }
 
     // 填满最后一格时提示结果
     if (isBoardFull()) {
@@ -356,6 +402,9 @@ function gameWon() {
     clearInterval(gameTimer);
     gameStarted = false;
 
+    if (typeof GameAudio !== 'undefined') GameAudio.play('win');
+    if (typeof GameCelebration !== 'undefined') GameCelebration.show();
+
     // 保存最佳时间
     const bestTime = localStorage.getItem('sudokuBestTime');
     if (!bestTime || seconds < parseInt(bestTime)) {
@@ -432,6 +481,65 @@ function openRules() {
 
 function closeRules() {
     document.getElementById('rulesModal').classList.remove('show');
+}
+
+// 使用提示
+function useHint() {
+    if (hintsRemaining <= 0) return;
+
+    // 开始计时
+    if (!gameStarted) {
+        gameStarted = true;
+        startTimer();
+    }
+
+    // 找到空格或错误格子
+    const emptyCells = [];
+    for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+            if (!initialNumbers[i][j] && board[i][j] !== solution[i][j]) {
+                emptyCells.push([i, j]);
+            }
+        }
+    }
+    if (emptyCells.length === 0) return;
+
+    const [row, col] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    board[row][col] = solution[row][col];
+    notes[row][col].clear();
+
+    hintsRemaining--;
+    updateHintButton();
+
+    if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+
+    renderBoard();
+    markErrors();
+
+    if (isBoardFull() && markErrors() === 0) {
+        gameWon();
+    }
+}
+
+// 切换笔记模式
+function toggleNotesMode() {
+    notesMode = !notesMode;
+    updateNotesButton();
+}
+
+// 更新提示按钮
+function updateHintButton() {
+    const btn = document.getElementById('hintBtn');
+    if (btn) btn.textContent = `💡 提示 (${hintsRemaining})`;
+}
+
+// 更新笔记按钮
+function updateNotesButton() {
+    const btn = document.getElementById('notesBtn');
+    if (btn) {
+        btn.textContent = notesMode ? '📝 笔记 ON' : '📝 笔记';
+        btn.classList.toggle('notes-active', notesMode);
+    }
 }
 
 // 页面加载时初始化

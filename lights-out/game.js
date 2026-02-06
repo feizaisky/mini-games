@@ -84,6 +84,7 @@
         toggleAt(row, col - 1, state.grid);
         toggleAt(row, col + 1, state.grid);
 
+        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
         state.moves += 1;
         updateStats();
         checkWin();
@@ -91,6 +92,7 @@
 
     function undoMove() {
         if (state.history.length === 0) return;
+        if (typeof GameAudio !== 'undefined') GameAudio.play('undo');
         const snapshot = state.history.pop();
         state.grid = snapshot.grid;
         state.moves = snapshot.moves;
@@ -142,6 +144,7 @@
     }
 
     function startGame() {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
         shuffleGrid();
         updateModeText();
         hideOverlay();
@@ -223,6 +226,8 @@
     function checkWin() {
         if (!isSolved()) return;
         state.mode = 'won';
+        if (typeof GameAudio !== 'undefined') GameAudio.play('win');
+        if (typeof GameCelebration !== 'undefined') GameCelebration.show();
         updateModeText();
         updateBestIfNeeded();
         showOverlay(true);

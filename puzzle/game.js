@@ -153,6 +153,7 @@ function renderImageCards() {
 }
 
 function startGame() {
+    if (typeof GameAudio !== 'undefined') GameAudio.play('click');
     if (!hasStarted) {
         hasStarted = true;
         shuffleBoard();
@@ -257,6 +258,7 @@ function moveTile(index) {
     swapTiles(index, selectedIndex, true);
     selectedIndex = null;
     moves += 1;
+    if (typeof GameAudio !== 'undefined') GameAudio.play('move');
 
     renderBoard();
     updateStats();
@@ -284,6 +286,8 @@ function isSolved() {
 
 function finishGame() {
     stopTimer();
+    if (typeof GameAudio !== 'undefined') GameAudio.play('win');
+    if (typeof GameCelebration !== 'undefined') GameCelebration.show();
     setMessage('太棒了！拼图完成。', true);
     saveBest();
     unlockNext();
@@ -301,6 +305,7 @@ function unlockNext() {
     if (currentIndex >= 0 && currentIndex >= unlockedLevel && currentIndex < sizeLevels.length - 1) {
         unlockedLevel = currentIndex + 1;
         localStorage.setItem(unlockKey, String(unlockedLevel));
+        if (typeof GameAudio !== 'undefined') GameAudio.play('upgrade');
         renderSizeButtons();
     }
 }

@@ -56,6 +56,91 @@ const aiColor = 'black';
 let moveHistory = [];
 let aiTimeoutId = null;
 
+// 走子动画
+let animating = false;
+let animPiece = null;
+let animFromX = 0, animFromY = 0, animToX = 0, animToY = 0;
+let animProgress = 0;
+const ANIM_SPEED = 0.08;
+
+// 棋谱面板
+const notationBtn = document.getElementById('notationBtn');
+const notationPanel = document.getElementById('notationPanel');
+const notationContent = document.getElementById('notationContent');
+const copyNotationBtn = document.getElementById('copyNotationBtn');
+
+if (notationBtn) {
+    notationBtn.addEventListener('click', function() {
+        if (notationPanel.style.display === 'none') {
+            notationPanel.style.display = 'block';
+            updateNotation();
+        } else {
+            notationPanel.style.display = 'none';
+        }
+        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+    });
+}
+
+if (copyNotationBtn) {
+    copyNotationBtn.addEventListener('click', function() {
+        var text = notationContent.textContent;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text);
+        }
+        copyNotationBtn.textContent = '已复制';
+        setTimeout(function() { copyNotationBtn.textContent = '复制'; }, 1500);
+    });
+}
+
+// 棋谱格式化
+const COL_NAMES_RED = ['九','八','七','六','五','四','三','二','一'];
+const COL_NAMES_BLACK = ['1','2','3','4','5','6','7','8','9'];
+
+function formatMoveNotation(move, piece) {
+    var colNames = piece.color === 'red' ? COL_NAMES_RED : COL_NAMES_BLACK;
+    var pName = PIECE_SYMBOLS[piece.color][piece.type];
+    var fromCol = colNames[move.fromX];
+    var toCol = colNames[move.toX];
+    var dy = move.toY - move.fromY;
+    var forward = piece.color === 'red' ? -1 : 1;
+    var action = '';
+
+    if (dy === 0) {
+        action = pName + fromCol + '平' + toCol;
+    } else if (dy * forward > 0) {
+        // 进
+        if (move.fromX === move.toX) {
+            action = pName + fromCol + '进' + Math.abs(dy);
+        } else {
+            action = pName + fromCol + '进' + toCol;
+        }
+    } else {
+        // 退
+        if (move.fromX === move.toX) {
+            action = pName + fromCol + '退' + Math.abs(dy);
+        } else {
+            action = pName + fromCol + '退' + toCol;
+        }
+    }
+    return action;
+}
+
+function updateNotation() {
+    if (!notationContent) return;
+    var lines = [];
+    for (var i = 0; i < moveHistory.length; i++) {
+        var m = moveHistory[i];
+        var notation = m.notation || '';
+        var turnNum = Math.floor(i / 2) + 1;
+        if (i % 2 === 0) {
+            lines.push(turnNum + '. ' + notation);
+        } else {
+            lines[lines.length - 1] += '  ' + notation;
+        }
+    }
+    notationContent.textContent = lines.join('\n') || '暂无棋谱记录';
+}
+
 function initBoard() {
     const emptyRow = () => Array.from({ length: COLS }, () => null);
     const newBoard = Array.from({ length: ROWS }, () => emptyRow());
@@ -625,44 +710,131 @@ function chooseAIMove() {
 
 function handleMove(fromX, fromY, toX, toY) {
     const prevPlayer = currentPlayer;
-    const target = makeMove(fromX, fromY, toX, toY);
-    moveHistory.push({
-        fromX,
-        fromY,
-        toX,
-        toY,
-        captured: target,
-        prevPlayer
-    });
+    const movingPiece = board[fromY][fromX];
 
-    if (target && target.type === 'G') {
-        gameOver = true;
-        winner = currentPlayer;
-    }
+    // 生成棋谱
+    var notation = formatMoveNotation({ fromX, fromY, toX, toY }, movingPiece);
 
-    currentPlayer = currentPlayer === 'red' ? 'black' : 'red';
-    selected = null;
-    legalMoves = [];
-
-    if (!gameOver) {
-        const opponentCheck = isInCheck(currentPlayer);
-        const opponentMoves = getAllLegalMoves(currentPlayer);
-        if (opponentMoves.length === 0) {
-            gameOver = true;
-            winner = currentPlayer === 'red' ? 'black' : 'red';
-            updateStatus();
+    // 播放音效
+    var target = board[toY][toX];
+    if (typeof GameAudio !== 'undefined') {
+        if (target) {
+            GameAudio.play('hit');
         } else {
-            updateStatus(opponentCheck ? '（被将军）' : '');
+            GameAudio.play('move');
         }
-    } else {
-        updateStatus();
     }
 
+    // 执行走子动画
+    animatePieceMove(fromX, fromY, toX, toY, function() {
+        var capturedPiece = makeMove(fromX, fromY, toX, toY);
+        moveHistory.push({
+            fromX,
+            fromY,
+            toX,
+            toY,
+            captured: capturedPiece,
+            prevPlayer,
+            notation: notation
+        });
+
+        if (capturedPiece && capturedPiece.type === 'G') {
+            gameOver = true;
+            winner = prevPlayer;
+        }
+
+        currentPlayer = prevPlayer === 'red' ? 'black' : 'red';
+        selected = null;
+        legalMoves = [];
+
+        if (!gameOver) {
+            const opponentCheck = isInCheck(currentPlayer);
+            const opponentMoves = getAllLegalMoves(currentPlayer);
+            if (opponentMoves.length === 0) {
+                gameOver = true;
+                winner = currentPlayer === 'red' ? 'black' : 'red';
+                updateStatus();
+            } else {
+                updateStatus(opponentCheck ? '（被将军）' : '');
+                if (opponentCheck && typeof GameAudio !== 'undefined') {
+                    GameAudio.play('error');
+                }
+            }
+        } else {
+            updateStatus();
+            // 胜利庆祝
+            if (winner === humanColor || gameMode === 'pvp') {
+                if (typeof GameAudio !== 'undefined') GameAudio.play('win');
+                if (typeof GameCelebration !== 'undefined') GameCelebration.show();
+            } else {
+                if (typeof GameAudio !== 'undefined') GameAudio.play('lose');
+            }
+        }
+
+        updateNotation();
+        draw();
+
+        if (!gameOver && gameMode === 'ai' && currentPlayer === aiColor) {
+            triggerAIMove();
+        }
+    });
+}
+
+function animatePieceMove(fromX, fromY, toX, toY, callback) {
+    animating = true;
+    animPiece = board[fromY][fromX];
+    animFromX = fromX;
+    animFromY = fromY;
+    animToX = toX;
+    animToY = toY;
+    animProgress = 0;
+
+    // 临时从棋盘移除以便动画
+    board[fromY][fromX] = null;
+
+    function step() {
+        animProgress += ANIM_SPEED;
+        if (animProgress >= 1) {
+            animProgress = 1;
+            animating = false;
+            board[fromY][fromX] = animPiece; // 恢复以便 makeMove 正常工作
+            animPiece = null;
+            callback();
+            return;
+        }
+        drawWithAnimation();
+        requestAnimationFrame(step);
+    }
+
+    requestAnimationFrame(step);
+}
+
+function drawWithAnimation() {
+    // 重绘棋盘
     draw();
 
-    if (!gameOver && gameMode === 'ai' && currentPlayer === aiColor) {
-        triggerAIMove();
-    }
+    if (!animPiece) return;
+
+    // 绘制动画中的棋子
+    var t = animProgress;
+    // ease-out
+    t = 1 - (1 - t) * (1 - t);
+    var cx = PADDING + (animFromX + (animToX - animFromX) * t) * CELL_SIZE;
+    var cy = PADDING + (animFromY + (animToY - animFromY) * t) * CELL_SIZE;
+
+    ctx.beginPath();
+    ctx.fillStyle = '#fffaf0';
+    ctx.strokeStyle = animPiece.color === 'red' ? COLORS.red : COLORS.black;
+    ctx.lineWidth = 3;
+    ctx.arc(cx, cy, PIECE_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = animPiece.color === 'red' ? COLORS.red : COLORS.black;
+    ctx.font = Math.round(CELL_SIZE * 0.36) + 'px "KaiTi", "STKaiti", serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(PIECE_SYMBOLS[animPiece.color][animPiece.type], cx, cy + 1);
 }
 
 function triggerAIMove() {
@@ -697,7 +869,8 @@ function undoSingleHistoryMove() {
 }
 
 function undoLastAction() {
-    if (!gameRunning || moveHistory.length === 0) return;
+    if (!gameRunning || moveHistory.length === 0 || animating) return;
+    if (typeof GameAudio !== 'undefined') GameAudio.play('undo');
     if (aiTimeoutId) {
         clearTimeout(aiTimeoutId);
         aiTimeoutId = null;
@@ -719,11 +892,12 @@ function undoLastAction() {
     legalMoves = [];
     const check = isInCheck(currentPlayer);
     updateStatus(check ? '（被将军）' : '');
+    updateNotation();
     draw();
 }
 
 function handleBoardClick(evt) {
-    if (!gameRunning || gameOver || aiThinking) return;
+    if (!gameRunning || gameOver || aiThinking || animating) return;
     if (gameMode === 'ai' && currentPlayer !== humanColor) return;
 
     const rect = canvas.getBoundingClientRect();
@@ -765,10 +939,12 @@ canvas.addEventListener('touchstart', evt => {
 }, { passive: false });
 
 startBtn.addEventListener('click', () => {
+    if (typeof GameAudio !== 'undefined') GameAudio.play('click');
     resetGame();
 });
 
 resetBtn.addEventListener('click', () => {
+    if (typeof GameAudio !== 'undefined') GameAudio.play('click');
     resetGame();
 });
 

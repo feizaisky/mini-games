@@ -332,6 +332,32 @@ body {
   left: 14px;
 }
 
+.card-icon.lightning {
+  background: linear-gradient(135deg, #c9a626, #e8d740);
+}
+
+.card-icon.lightning::after {
+  content: "⚡";
+  position: absolute;
+  font-size: 18px;
+  top: 8px;
+  left: 10px;
+  filter: brightness(0.7);
+}
+
+.card-icon.poison {
+  background: linear-gradient(135deg, #4a8f40, #7bb86f);
+}
+
+.card-icon.poison::after {
+  content: "☠";
+  position: absolute;
+  font-size: 16px;
+  top: 9px;
+  left: 11px;
+  filter: brightness(0.8);
+}
+
 .card-info {
   flex: 1;
 }

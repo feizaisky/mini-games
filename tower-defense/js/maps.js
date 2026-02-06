@@ -60,6 +60,28 @@ export const maps = [
       { x: 9, y: 2, type: "tree" },
       { x: 3, y: 2, type: "rock" }
     ]
+  },
+  {
+    id: "fortress",
+    name: "王城堡垒",
+    description: "漫长的绕城之路，终极防线。",
+    grid: { cols: 12, rows: 8 },
+    path: [
+      { x: 0, y: 0 },
+      { x: 0, y: 7 },
+      { x: 5, y: 7 },
+      { x: 5, y: 1 },
+      { x: 9, y: 1 },
+      { x: 9, y: 6 },
+      { x: 11, y: 6 }
+    ],
+    decor: [
+      { x: 2, y: 3, type: "rock" },
+      { x: 3, y: 5, type: "tree" },
+      { x: 7, y: 4, type: "rock" },
+      { x: 10, y: 3, type: "tree" },
+      { x: 8, y: 7, type: "rock" }
+    ]
   }
 ];
 
@@ -96,6 +118,30 @@ export const towerTypes = {
     projectileSpeed: 5.4,
     color: "#d6975a",
     desc: "范围伤害，擅长清群。"
+  },
+  lightning: {
+    name: "闪电塔",
+    cost: 150,
+    range: 2.8,
+    fireRate: 1.8,
+    damage: 18,
+    chainCount: 3,
+    chainRange: 1.5,
+    projectileSpeed: 12,
+    color: "#e8c840",
+    desc: "闪电链击，连锁打击多个敌人。"
+  },
+  poison: {
+    name: "瘴毒塔",
+    cost: 100,
+    range: 2.2,
+    fireRate: 1.4,
+    damage: 4,
+    poisonDamage: 3,
+    poisonDuration: 3.0,
+    projectileSpeed: 5.0,
+    color: "#7bb86f",
+    desc: "持续中毒，慢性消耗敌人。"
   }
 };
 

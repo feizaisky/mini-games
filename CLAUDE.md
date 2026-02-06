@@ -19,6 +19,7 @@ python3 -m http.server 8000
 
 - 主页：`/opt/code/mini-games/index.html`
 - 每个游戏一个目录：`<game>/index.html` + `<game>/game.js`
+- 公共组件目录：`common/`
 
 ### 目录结构约定
 
@@ -53,24 +54,29 @@ python3 -m http.server 8000
 ## 新增游戏
 
 1. 新建目录（如 `new-game/`），包含 `index.html` 和 `game.js`（复杂游戏可用 `js/` 子目录）
-2. 在主站 `index.html` 的 `.games-grid` 中加入口卡片
+2. 在主站 `index.html` 的 `.games-grid` 中加入口卡片（需要添加 `data-category` 属性）
 3. 若有最高分，需加入主站的分数读取脚本
 4. 添加统一加载动画（见下方说明）
+5. 接入公共音效、庆祝动画、分享组件
 
 示例卡片：
 ```html
-<a href="/your-game/" class="game-card">
+<a href="/your-game/" class="game-card" data-category="classic">
   <div class="game-icon">🎮</div>
   <div class="game-title">Game Name</div>
   <div class="game-desc">Description</div>
 </a>
 ```
 
-## 统一加载动画
+分类标签可选值：`classic`（经典）、`puzzle`（益智）、`board`（棋类）、`action`（动作）、`other`（其他）
 
-所有游戏使用 `common/` 目录下的公共加载组件，确保用户在游戏完全加载前无法操作。
+## 公共组件（common/）
 
-### 添加方式
+所有游戏共享 `common/` 目录下的组件。
+
+### 加载动画
+
+确保用户在游戏完全加载前无法操作。
 
 在游戏 `index.html` 中添加以下内容：
 
@@ -92,16 +98,90 @@ python3 -m http.server 8000
 <script src="/common/loader.js"></script>
 ```
 
-### 公共文件
-
-- `common/loader.css` — 加载动画样式
-- `common/loader.js` — 自动监听页面加载完成并隐藏遮罩
-
-### 手动控制（可选）
-
-如需手动隐藏加载动画（如异步资源加载完成后）：
+手动控制（可选）：
 ```javascript
 window.GameLoader.hide();
+```
+
+### 音效系统
+
+基于 Web Audio API 合成音效，无需加载外部音频文件。
+
+```html
+<script src="/common/audio.js"></script>
+```
+
+常用 API：
+```javascript
+GameAudio.play('click');    // 按钮点击
+GameAudio.play('move');     // 移动/放置
+GameAudio.play('merge');    // 合并/匹配
+GameAudio.play('score');    // 得分
+GameAudio.play('clear');    // 消除
+GameAudio.play('flip');     // 翻牌
+GameAudio.play('error');    // 错误
+GameAudio.play('win');      // 胜利
+GameAudio.play('lose');     // 失败
+GameAudio.play('record');   // 新纪录
+GameAudio.play('hit');      // 打击
+GameAudio.play('drop');     // 落下
+GameAudio.play('select');   // 选择
+GameAudio.play('upgrade');  // 升级
+GameAudio.play('pause');    // 暂停
+GameAudio.play('resume');   // 恢复
+GameAudio.play('undo');     // 撤销
+GameAudio.play('combo');    // 连击
+GameAudio.play('tick');     // 倒计时
+GameAudio.toggle();         // 切换静音
+GameAudio.isMuted();        // 查询静音状态
+GameAudio.register('name', fn); // 注册自定义音效
+```
+
+静音状态自动通过 localStorage 键 `gameAudioMuted` 持久化。
+
+### 庆祝动画
+
+Canvas 彩带/粒子效果。
+
+```html
+<link rel="stylesheet" href="/common/celebration.css">
+<script src="/common/celebration.js"></script>
+```
+
+```javascript
+GameCelebration.show();                   // 默认效果
+GameCelebration.show({ duration: 3000 }); // 自定义时长
+GameCelebration.hide();                   // 手动隐藏
+```
+
+### 分享组件
+
+生成成绩卡片图，支持保存图片和复制文本。
+
+```html
+<script src="/common/share.js"></script>
+```
+
+```javascript
+GameShare.show({
+    title: '贪吃蛇',
+    score: '120分',
+    extra: '最高纪录',
+    icon: '🐍'
+});
+GameShare.hide();
+GameShare.toDataURL(opts); // 获取卡片图 dataURL
+```
+
+### 脚本加载顺序
+
+在 `</body>` 前按以下顺序引入：
+```html
+<script src="game.js"></script>
+<script src="/common/audio.js"></script>
+<script src="/common/celebration.js"></script>
+<script src="/common/share.js"></script>
+<script src="/common/loader.js"></script>
 ```
 
 ## 移动端/微信兼容
@@ -128,10 +208,27 @@ window.GameLoader.hide();
 
 ## LocalStorage 键
 
-- `snakeHighScore`
-- `bestScore2048`
-- `tetrisHighScore`
-- `oneStrokeBest`
+### 游戏成绩
+- `snakeHighScore` — 贪吃蛇最高分
+- `bestScore2048` — 2048 最高分
+- `tetrisHighScore` — 俄罗斯方块最高分
+- `whackMoleHighScore` — 打地鼠最高分
+- `memoryBestMoves` / `memoryBestTime` — 记忆翻牌最佳成绩
+- `sudokuBestTime` — 数独最佳时间
+- `tictactoeWins` / `tictactoeLosses` / `tictactoeDraws` — 井字棋胜负统计
+- `puzzleV2Best_3` / `puzzleV2Best_4` / `puzzleV2Best_5` — 拼图各尺寸最佳
+- `lightsOutBest` — 熄灯最佳成绩
+- `oneStrokeBest` — 一笔画最佳成绩
+- `td_progress_v1` — 塔防进度（解锁地图、最佳波数）
+- `td_achievements_v1` — 塔防成就
+
+### 游戏设置
+- `gameMode2048` — 2048 游戏模式
+- `gameAudioMuted` — 全局静音状态
+- `mbtiHistory` — MBTI 历史记录
+
+### 主站
+- `lastPlayed_<href>` — 各游戏最后游玩时间
 
 ## 语言
 
