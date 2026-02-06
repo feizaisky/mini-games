@@ -83,9 +83,9 @@
         .side-panel {
             display: flex;
             flex-direction: column;
+            align-items: stretch;
             gap: 3px;
             flex-shrink: 0;
-            width: 68px;
         }
         .info-box {
             background: #f8f9fa;
@@ -124,20 +124,28 @@
             background: #667eea;
             color: white;
             border: none;
-            padding: 6px 10px;
-            font-size: 11px;
-            border-radius: 22px;
             cursor: pointer;
             transition: all 0.2s;
         }
         button:active {
             transform: scale(0.95);
         }
-        #startBtn {
+        .ctrl-btn {
             width: 100%;
-            min-width: 0;
-            padding: 6px 0;
-            font-size: 12px;
+            padding: 0;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 6px;
+            background: #667eea;
+        }
+        .ctrl-btn.rotate-btn {
+            background: #764ba2;
+        }
+        .ctrl-btn.hold-btn {
+            background: #8f7a66;
+        }
+        #startBtn {
+            font-size: 13px;
         }
         @media (max-width: 360px) {
             .logo-icon {
@@ -197,24 +205,6 @@
             margin: 0;
             pointer-events: none;
         }
-        .controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            margin-top: 6px;
-        }
-        .controls button {
-            width: 50px;
-            height: 50px;
-            font-size: 18px;
-            padding: 0;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-        .controls .rotate-btn {
-            background: #764ba2;
-        }
         .home-btn {
             position: fixed;
             top: env(safe-area-inset-top, 10px);
@@ -266,7 +256,6 @@
                 align-items: flex-start;
             }
             .side-panel {
-                width: 64px;
                 display: flex;
                 flex-direction: column;
                 gap: 2px;
@@ -296,23 +285,16 @@
                 border-width: 1px;
             }
             #startBtn {
-                font-size: 11px;
-                border-radius: 12px;
-                padding: 5px 0;
+                font-size: 12px;
+            }
+            .ctrl-btn {
+                font-size: 12px;
+                border-radius: 5px;
             }
             .swipe-hint {
                 font-size: 9px;
                 margin: 5px 0;
                 padding: 4px 6px;
-            }
-            .controls {
-                gap: 6px;
-                margin-top: 5px;
-            }
-            .controls button {
-                width: 48px;
-                height: 48px;
-                font-size: 16px;
             }
             .home-btn {
                 width: 40px;
@@ -379,23 +361,21 @@
                     <div class="label">暂存</div>
                     <canvas id="holdCanvas" width="60" height="60"></canvas>
                 </div>
-                <button id="startBtn">开始</button>
+                <button id="startBtn" class="ctrl-btn">开始</button>
+                <button class="ctrl-btn hold-btn" onclick="tetris.holdPiece()">暂存</button>
+                <button class="ctrl-btn" onclick="tetris.moveLeft()">←</button>
+                <button class="ctrl-btn" onclick="tetris.moveRight()">→</button>
+                <button class="ctrl-btn" onclick="tetris.moveDown()">↓</button>
+                <button class="ctrl-btn rotate-btn" onclick="tetris.rotate()">↻</button>
             </div>
         </div>
 
         <div class="game-over" id="gameOver"></div>
 
         <div class="swipe-hint">
-            <p>👆 上滑旋转 · 👈👆 左右移动 · 👇 下滑直接落下</p>
+            <p>👈👉 左右滑动 · 👆 上滑旋转 · 👇 下滑落下 · 👆👆 双击暂存</p>
         </div>
 
-        <div class="controls">
-            <button onclick="mobileControl('left')">←</button>
-            <button onclick="mobileControl('down')">↓</button>
-            <button onclick="mobileControl('right')">→</button>
-            <button class="rotate-btn" onclick="mobileControl('rotate')">↻</button>
-            <button style="background:#8f7a66;font-size:12px;width:50px;height:50px;border-radius:50%" onclick="mobileControl('hold')">暂存</button>
-        </div>
     </div>
 
     <a href="/" class="home-btn" aria-label="返回首页">
@@ -405,22 +385,6 @@
     </a>
 
     <script src="game.js?v=1.1"></script>
-    <script>
-        function mobileControl(action) {
-            if (action === 'left') {
-                tetris.moveLeft();
-            } else if (action === 'right') {
-                tetris.moveRight();
-            } else if (action === 'down') {
-                tetris.moveDown();
-            } else if (action === 'rotate') {
-                tetris.rotate();
-            } else if (action === 'hold') {
-                tetris.holdPiece();
-            }
-        }
-
-    </script>
     <script src="/common/audio.js?v=1.1"></script>
     <script src="/common/celebration.js?v=1.1"></script>
     <script src="/common/share.js?v=1.1"></script>

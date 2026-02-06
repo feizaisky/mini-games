@@ -43,20 +43,19 @@ function resizeCanvas() {
     const container = document.querySelector('.game-container');
     const containerWidth = container.clientWidth;
     const isMobile = window.innerWidth <= 768;
-    const sidePanelWidth = isMobile ? 66 : 74;
+    const sidePanel = document.querySelector('.side-panel');
+    const sidePanelWidth = sidePanel ? sidePanel.offsetWidth : (isMobile ? 66 : 74);
 
     const availableWidth = containerWidth - sidePanelWidth - (isMobile ? 6 : 20);
 
     const headerHeight = 40;
-    const controlsHeight = isMobile ? 62 : 70;
-    const hintHeight = isMobile ? 34 : 40;
-    const sidePanelHeight = 0;
-    const padding = isMobile ? 20 : 35;
-    const availableHeight = window.innerHeight - headerHeight - controlsHeight - hintHeight - sidePanelHeight - padding;
+    const hintHeight = isMobile ? 30 : 36;
+    const padding = isMobile ? 16 : 30;
+    const availableHeight = window.innerHeight - headerHeight - hintHeight - padding;
 
     const maxBlockWidth = Math.floor(availableWidth / COLS);
     const maxBlockHeight = Math.floor(availableHeight / ROWS);
-    BLOCK_SIZE = Math.min(maxBlockWidth, maxBlockHeight, 35);
+    BLOCK_SIZE = Math.min(maxBlockWidth, maxBlockHeight, 40);
     BLOCK_SIZE = Math.max(BLOCK_SIZE, 15);
 
     canvas.width = COLS * BLOCK_SIZE;
@@ -69,6 +68,20 @@ function resizeCanvas() {
     nextCanvas.height = 4 * NEXT_BLOCK_SIZE;
     holdCanvas.width = 4 * NEXT_BLOCK_SIZE;
     holdCanvas.height = 4 * NEXT_BLOCK_SIZE;
+
+    // 按钮尺寸：宽度基于"下一个"区域，高度 = 暂存框高度的 2/3
+    const nextBox = document.querySelector('.next-box');
+    const nextBoxWidth = nextBox ? nextBox.offsetWidth : holdCanvas.width;
+    const holdBoxHeight = holdCanvas.height;
+    const btnHeight = Math.round(holdBoxHeight * 2 / 3);
+    document.querySelectorAll('.ctrl-btn').forEach(btn => {
+        btn.style.height = btnHeight + 'px';
+        btn.style.lineHeight = btnHeight + 'px';
+    });
+    // 所有按钮宽度 = 下一个区域宽度
+    document.querySelectorAll('.ctrl-btn').forEach(btn => {
+        btn.style.width = nextBoxWidth + 'px';
+    });
 
     if (board.length > 0) {
         drawBoard();
@@ -606,14 +619,18 @@ let moveDirection = null;
 const MOVE_THRESHOLD = 20;
 const THROTTLE_MS = 50;
 
-document.querySelectorAll('.controls button, #startBtn').forEach(btn => {
+// 双击检测（用于暂存）
+let lastTapTime = 0;
+const DOUBLE_TAP_MS = 300;
+
+document.querySelectorAll('.side-panel button, #startBtn').forEach(btn => {
     btn.addEventListener('touchstart', (e) => { e.stopPropagation(); }, {capture: true});
     btn.addEventListener('touchend', (e) => { e.stopPropagation(); }, {capture: true});
     btn.addEventListener('touchmove', (e) => { e.stopPropagation(); }, {capture: true});
 });
 
 document.addEventListener('touchstart', (e) => {
-    if (e.target.closest('button')) return;
+    if (e.target.closest('button') || e.target.closest('a')) return;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     lastMoveX = touchStartX;
@@ -621,7 +638,7 @@ document.addEventListener('touchstart', (e) => {
 }, {passive: true});
 
 document.addEventListener('touchmove', (e) => {
-    if (e.target.closest('button')) return;
+    if (e.target.closest('button') || e.target.closest('a')) return;
     if (!gameRunning || !currentPiece) return;
 
     const currentX = e.touches[0].clientX;
@@ -647,7 +664,7 @@ document.addEventListener('touchmove', (e) => {
 }, {passive: false});
 
 document.addEventListener('touchend', (e) => {
-    if (e.target.closest('button')) return;
+    if (e.target.closest('button') || e.target.closest('a')) return;
     if (!gameRunning || !currentPiece) return;
 
     const touchEndX = e.changedTouches[0].clientX;
@@ -656,7 +673,19 @@ document.addEventListener('touchend', (e) => {
     const diffY = touchEndY - touchStartY;
     const minSwipe = 30;
 
-    if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > minSwipe) {
+    // 检测是否为轻点（非滑动）
+    const isTap = Math.abs(diffX) < 15 && Math.abs(diffY) < 15;
+
+    if (isTap) {
+        // 双击暂存
+        const now = Date.now();
+        if (now - lastTapTime < DOUBLE_TAP_MS) {
+            holdPieceFn();
+            lastTapTime = 0;
+        } else {
+            lastTapTime = now;
+        }
+    } else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > minSwipe) {
         if (diffY > 0) hardDropFn();
         else rotateFn();
     }
@@ -675,7 +704,7 @@ startBtn.addEventListener('touchend', (e) => {
     startGame();
 }, {passive: false});
 
-// 导出对象供移动端按钮使用
+// 导出对象供侧边按钮使用
 const tetris = {
     moveLeft: moveLeftFn,
     moveRight: moveRightFn,
