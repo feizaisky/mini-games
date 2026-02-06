@@ -93,6 +93,13 @@ let lastFrameTs = 0;
 let dropAccumulator = 0;
 let dropInterval = 1000;
 
+// 锁定延迟系统：方块触底后独立计时，不等 dropInterval
+const LOCK_DELAY = 500;
+const MAX_LOCK_RESETS = 15;
+let lockTimer = 0;
+let lockMoves = 0;
+let pieceGrounded = false;
+
 // 连击系统
 let combo = 0;
 let backToBack = 0;
@@ -365,6 +372,8 @@ function showComboToast(comboCount, linesCleared) {
 function spawnPiece() {
     currentPiece = nextPiece || createPiece();
     nextPiece = createPiece();
+    lockTimer = 0;
+    lockMoves = 0;
     drawNextPiece();
 
     if (collision(currentPiece.shape, currentPiece.x, currentPiece.y)) {
@@ -398,11 +407,22 @@ function holdPieceFn() {
     drawBoard();
 }
 
+// 移动/旋转时重置锁定计时器（允许玩家在触底后调整位置）
+function resetLockIfGrounded() {
+    if (currentPiece && collision(currentPiece.shape, currentPiece.x, currentPiece.y + 1)) {
+        if (lockMoves < MAX_LOCK_RESETS) {
+            lockTimer = 0;
+            lockMoves++;
+        }
+    }
+}
+
 function moveLeftFn() {
     if (!gameRunning || !currentPiece) return;
     if (!collision(currentPiece.shape, currentPiece.x - 1, currentPiece.y)) {
         currentPiece.x--;
         if (typeof GameAudio !== 'undefined') GameAudio.play('move');
+        resetLockIfGrounded();
         drawBoard();
     }
 }
@@ -412,6 +432,7 @@ function moveRightFn() {
     if (!collision(currentPiece.shape, currentPiece.x + 1, currentPiece.y)) {
         currentPiece.x++;
         if (typeof GameAudio !== 'undefined') GameAudio.play('move');
+        resetLockIfGrounded();
         drawBoard();
     }
 }
@@ -456,6 +477,7 @@ function rotateFn() {
             currentPiece.shape = rotated;
             currentPiece.x += kick;
             if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+            resetLockIfGrounded();
             drawBoard();
             return;
         }
@@ -482,10 +504,26 @@ function gameLoop(timestamp) {
     lastFrameTs = timestamp;
     dropAccumulator += frameDelta;
 
-    while (dropAccumulator >= dropInterval) {
-        moveDownFn(false);
-        dropAccumulator -= dropInterval;
-        if (!gameRunning) return;
+    // 检测方块是否触底
+    var grounded = currentPiece && collision(currentPiece.shape, currentPiece.x, currentPiece.y + 1);
+
+    if (grounded) {
+        // 方块触底：使用独立的锁定计时器（比 dropInterval 更短）
+        lockTimer += frameDelta;
+        if (lockTimer >= Math.min(dropInterval, LOCK_DELAY)) {
+            moveDownFn(false); // 触发 lockPiece
+            dropAccumulator = 0;
+            lockTimer = 0;
+            if (!gameRunning) return;
+        }
+    } else {
+        lockTimer = 0;
+        // 正常重力下落
+        while (dropAccumulator >= dropInterval) {
+            moveDownFn(false);
+            dropAccumulator -= dropInterval;
+            if (!gameRunning) return;
+        }
     }
 
     gameLoopId = requestAnimationFrame(gameLoop);
@@ -501,6 +539,8 @@ function startGame() {
     heldPiece = null;
     canHold = true;
     dropInterval = 1000;
+    lockTimer = 0;
+    lockMoves = 0;
     scoreElement.textContent = score;
     levelElement.textContent = level;
     gameOverElement.style.display = 'none';
