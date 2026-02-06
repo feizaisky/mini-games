@@ -131,3 +131,13 @@
 - `node --check /opt/code/mini-games/tower-defense/js/ui.js`
 - `node --check /opt/code/mini-games/tower-defense/js/main.js`
 - Playwright 验证截图：`/opt/code/mini-games/output/tower-defense-map-fix/shot-0.png`
+
+更新：
+- 地图选择卡片增加显式“开始游戏”按钮（仅已解锁地图显示），降低 WebView 点击歧义。
+- 地图启动事件改为三通道：`click + pointerup + touchend(passive:false)`，提升微信/内嵌浏览器兼容性。
+- 锁定地图同样三通道提示“未解锁”。
+
+测试：
+- `node --check /opt/code/mini-games/tower-defense/js/ui.js`
+- Playwright 端到端：打开地图面板并触发开始，结果进入 playing。
+- 截图：`/opt/code/mini-games/output/tower-defense-map-start-fix/shot-0.png`

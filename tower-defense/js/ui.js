@@ -33,6 +33,7 @@ export function setupUI({
 
   const LONG_PRESS_MS = 420;
   let cardPress = null;
+  let lastTouchAt = 0;
 
   const getEffectLabel = (tower) => {
     if (tower.slowFactor) return "减速";
@@ -61,17 +62,36 @@ export function setupUI({
     }, duration);
   };
 
+  const bindTap = (element, handler) => {
+    if (!element) return;
+    element.addEventListener("touchend", (event) => {
+      if (event.changedTouches && event.changedTouches.length !== 1) return;
+      event.preventDefault();
+      lastTouchAt = Date.now();
+      handler(event);
+    }, { passive: false });
+    element.addEventListener("click", (event) => {
+      if (Date.now() - lastTouchAt < 450) {
+        event.preventDefault();
+        return;
+      }
+      handler(event);
+    });
+  };
+
   const updateMapList = () => {
     mapList.innerHTML = "";
     maps.forEach((map, index) => {
       const card = document.createElement("div");
       const unlocked = index + 1 <= progress.unlocked;
       card.className = `map-card${unlocked ? "" : " locked"}`;
+      card.dataset.mapIndex = String(index);
+      card.dataset.unlocked = unlocked ? "1" : "0";
       card.innerHTML = `
         <h3>${map.name}</h3>
         <p>${map.description}</p>
         <p>最高波次：${progress.bestWaves[index] || 0}/${waves.length}</p>
-        ${unlocked ? "" : "<p>未解锁</p>"}
+        ${unlocked ? "<button class=\"map-start-btn\" type=\"button\">开始游戏</button>" : "<p>未解锁</p>"}
       `;
       if (unlocked) {
         let started = false;
@@ -82,15 +102,14 @@ export function setupUI({
           game.run();
           menuScreen.hidden = true;
         };
-        card.addEventListener("click", startSelectedMap);
-        card.addEventListener("pointerup", (event) => {
-          if (event.pointerType === "mouse" && event.button !== 0) return;
-          startSelectedMap();
-        });
+        const startBtn = card.querySelector(".map-start-btn");
+        bindTap(startBtn, startSelectedMap);
+        bindTap(card, startSelectedMap);
       } else {
-        card.addEventListener("pointerup", () => {
+        const handleLocked = () => {
           showToast("该地图未解锁。");
-        });
+        };
+        bindTap(card, handleLocked);
       }
       mapList.appendChild(card);
     });
@@ -130,34 +149,53 @@ export function setupUI({
   };
 
   buildCards.forEach((card) => {
-    card.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) return;
+    const beginPress = (clientX, clientY, pointerId, type) => {
       audio.unlock();
-      const type = card.dataset.tower;
       cardPress = {
         type,
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
+        pointerId,
+        startX: clientX,
+        startY: clientY,
         longPressed: false,
         timerId: setTimeout(() => {
-          if (!cardPress || cardPress.pointerId !== event.pointerId) return;
+          if (!cardPress || cardPress.pointerId !== pointerId) return;
           cardPress.longPressed = true;
           showTowerDetail(type);
           showToast("已显示详细属性。");
         }, LONG_PRESS_MS)
       };
+    };
+
+    card.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      beginPress(event.clientX, event.clientY, event.pointerId, card.dataset.tower);
     });
 
-    card.addEventListener("pointermove", (event) => {
-      if (!cardPress || cardPress.pointerId !== event.pointerId || cardPress.longPressed) return;
-      if (Math.hypot(event.clientX - cardPress.startX, event.clientY - cardPress.startY) > 8) {
+    card.addEventListener("touchstart", (event) => {
+      if (!event.changedTouches || event.changedTouches.length !== 1) return;
+      const touch = event.changedTouches[0];
+      beginPress(touch.clientX, touch.clientY, "touch", card.dataset.tower);
+    }, { passive: true });
+
+    const movePress = (clientX, clientY, pointerId) => {
+      if (!cardPress || cardPress.pointerId !== pointerId || cardPress.longPressed) return;
+      if (Math.hypot(clientX - cardPress.startX, clientY - cardPress.startY) > 8) {
         clearCardPress();
       }
+    };
+
+    card.addEventListener("pointermove", (event) => {
+      movePress(event.clientX, event.clientY, event.pointerId);
     });
 
-    card.addEventListener("pointerup", (event) => {
-      if (!cardPress || cardPress.pointerId !== event.pointerId) return;
+    card.addEventListener("touchmove", (event) => {
+      if (!event.changedTouches || event.changedTouches.length !== 1) return;
+      const touch = event.changedTouches[0];
+      movePress(touch.clientX, touch.clientY, "touch");
+    }, { passive: true });
+
+    const endPress = (pointerId) => {
+      if (!cardPress || cardPress.pointerId !== pointerId) return;
       const { type, longPressed } = cardPress;
       clearCardPress();
       if (longPressed) return;
@@ -174,7 +212,13 @@ export function setupUI({
       updateBuildCardSelection();
     });
 
+    card.addEventListener("pointerup", (event) => {
+      endPress(event.pointerId);
+    });
+    card.addEventListener("touchend", () => endPress("touch"), { passive: true });
+
     card.addEventListener("pointercancel", clearCardPress);
+    card.addEventListener("touchcancel", clearCardPress);
     card.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
@@ -200,7 +244,36 @@ export function setupUI({
   });
 
   canvas.addEventListener("pointerup", (event) => {
-    const tile = game.getTileFromScreen(event.clientX, event.clientY);
+    const handleCanvasRelease = (clientX, clientY) => {
+      const tile = game.getTileFromScreen(clientX, clientY);
+      const state = game.getUIState();
+      const towerAt = game.getTowerAt(tile);
+      if (towerAt) {
+        game.clearBuildMode();
+        updateBuildCardSelection();
+        game.selectTowerAt(tile);
+        showToast("已选择防御塔。");
+        return;
+      }
+      if (state.buildMode) {
+        const result = game.placeTower(tile);
+        if (!result.ok) showToast(result.reason);
+        else showToast("防御塔已建造！");
+        game.clearBuildMode();
+        updateBuildCardSelection();
+        return;
+      }
+      game.selectTowerAt(null);
+    };
+
+    handleCanvasRelease(event.clientX, event.clientY);
+  });
+
+  canvas.addEventListener("touchend", (event) => {
+    if (!event.changedTouches || event.changedTouches.length !== 1) return;
+    const touch = event.changedTouches[0];
+    event.preventDefault();
+    const tile = game.getTileFromScreen(touch.clientX, touch.clientY);
     const state = game.getUIState();
     const towerAt = game.getTowerAt(tile);
     if (towerAt) {
@@ -219,11 +292,11 @@ export function setupUI({
       return;
     }
     game.selectTowerAt(null);
-  });
+  }, { passive: false });
 
-  towerDetailClose.addEventListener("click", hideTowerDetail);
+  bindTap(towerDetailClose, hideTowerDetail);
 
-  startWaveBtn.addEventListener("click", () => {
+  bindTap(startWaveBtn, () => {
     audio.unlock();
     if (!game.startWave()) {
       showToast("当前无法开始。");
@@ -232,39 +305,39 @@ export function setupUI({
     showToast("开始！");
   });
 
-  pauseBtn.addEventListener("click", () => {
+  bindTap(pauseBtn, () => {
     const paused = game.togglePause();
     pauseBtn.textContent = paused ? "继续" : "暂停";
   });
 
-  speedBtn.addEventListener("click", () => {
+  bindTap(speedBtn, () => {
     const next = game.getUIState().speed === 1 ? 2 : 1;
     game.setSpeed(next);
     speedBtn.textContent = `${next}x`;
   });
 
-  soundBtn.addEventListener("click", () => {
+  bindTap(soundBtn, () => {
     const enabled = audio.toggle();
     game.state.soundOn = enabled;
     soundBtn.textContent = enabled ? "音效:开" : "音效:关";
   });
 
-  menuBtn.addEventListener("click", () => {
+  bindTap(menuBtn, () => {
     updateMapList();
     menuScreen.hidden = false;
   });
 
-  closeMenuBtn.addEventListener("click", () => {
+  bindTap(closeMenuBtn, () => {
     menuScreen.hidden = true;
   });
 
-  upgradeBtn.addEventListener("click", () => {
+  bindTap(upgradeBtn, () => {
     const result = game.upgradeSelected();
     if (!result.ok) showToast(result.reason);
     else showToast("已升级！");
   });
 
-  sellBtn.addEventListener("click", () => {
+  bindTap(sellBtn, () => {
     const result = game.sellSelected();
     if (!result.ok) showToast(result.reason);
     else showToast("已出售。");

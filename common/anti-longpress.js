@@ -7,9 +7,8 @@
  * 原理：
  *   1. 阻止 contextmenu/selectstart/dragstart/copy/cut/paste 默认行为
  *   2. 阻止 gesture 系列事件（iOS 捏合缩放）
- *   3. 全局 touchstart preventDefault — 彻底禁用微信"搜一搜/翻译"浮层
- *      按钮的 onclick / touchend 不受影响
- *   4. 为 .home-btn 链接添加 touchend 导航（因 touchstart 被拦截，click 可能不触发）
+ *   3. 非交互区域的 touchstart preventDefault — 禁用微信"搜一搜/翻译"浮层
+ *      交互元素（button/a/input 等）不受影响，onclick/click 正常工作
  */
 (function () {
     'use strict';
@@ -24,17 +23,10 @@
         document.addEventListener(evt, function (e) { e.preventDefault(); }, { passive: false });
     });
 
-    // 3. 全局阻止 touchstart 默认行为（禁用微信搜一搜/翻译浮层）
+    // 3. 非交互区域阻止 touchstart 默认行为（禁用微信搜一搜/翻译浮层）
+    //    交互元素（按钮、链接、输入框等）跳过，保证 onclick/click 正常触发
     document.addEventListener('touchstart', function (e) {
+        if (e.target.closest('button, a, input, select, textarea, label, [onclick]')) return;
         e.preventDefault();
     }, { passive: false });
-
-    // 4. 首页按钮：touchstart 被全局拦截后 click 可能失效，改用 touchend 导航
-    var homeBtn = document.querySelector('.home-btn');
-    if (homeBtn) {
-        homeBtn.addEventListener('touchend', function (e) {
-            e.preventDefault();
-            window.location.href = homeBtn.getAttribute('href') || '/';
-        }, { passive: false });
-    }
 })();
