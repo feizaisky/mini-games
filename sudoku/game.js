@@ -11,6 +11,13 @@ const difficultyStorageKey = 'sudokuDifficulty';
 let hintsRemaining = 3;
 let notesMode = false;
 let notes = []; // 9x9 array of Sets for candidate numbers
+const GAME_ID = 'sudoku';
+const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+const STORAGE_KEYS = {
+    best: `${STORAGE_PREFIX}.best`,
+    stats: `${STORAGE_PREFIX}.stats`,
+    progress: `${STORAGE_PREFIX}.progress`
+};
 
 // 难度配置（移除的数字数量）
 const difficultyConfig = {
@@ -104,6 +111,12 @@ function newGame() {
 
     renderBoard();
     updateTimer();
+    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+        difficulty: currentDifficulty,
+        hintsRemaining,
+        notesMode,
+        updatedAt: Date.now()
+    }));
 }
 
 // 生成已解开的数独
@@ -409,6 +422,7 @@ function gameWon() {
     const bestTime = localStorage.getItem('sudokuBestTime');
     if (!bestTime || seconds < parseInt(bestTime)) {
         localStorage.setItem('sudokuBestTime', seconds);
+        localStorage.setItem(STORAGE_KEYS.best, String(seconds));
         updateBestScore();
     }
 
@@ -416,6 +430,14 @@ function gameWon() {
     let gamesWon = parseInt(localStorage.getItem('sudokuGamesWon') || 0);
     gamesWon++;
     localStorage.setItem('sudokuGamesWon', gamesWon);
+    localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+        difficulty: currentDifficulty,
+        seconds,
+        gamesWon,
+        hintsRemaining,
+        notesMode,
+        updatedAt: Date.now()
+    }));
     updateGamesWon();
 
     // 显示模态框
@@ -543,4 +565,27 @@ function updateNotesButton() {
 }
 
 // 页面加载时初始化
+window.render_game_to_text = () => JSON.stringify({
+    coordinateSystem: 'row/col 9x9, origin top-left',
+    mode: gameStarted ? 'playing' : 'idle',
+    difficulty: currentDifficulty,
+    seconds,
+    hintsRemaining,
+    notesMode,
+    selectedCell,
+    board
+});
+
+window.advanceTime = (ms) => {
+    const ticks = Math.max(1, Math.floor(ms / 1000));
+    seconds += ticks;
+    updateTimer();
+};
+
+window.get_game_meta = () => JSON.stringify({
+    gameId: GAME_ID,
+    version: 'v1',
+    mode: notesMode ? 'notes' : 'classic'
+});
+
 initGame();

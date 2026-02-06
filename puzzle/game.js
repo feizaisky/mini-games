@@ -33,6 +33,13 @@ var winModal = document.getElementById('winModal');
 var winDetail = document.getElementById('winDetail');
 var closeWinBtn = document.getElementById('closeWinBtn');
 var nextLevelBtn = document.getElementById('nextLevelBtn');
+var GAME_ID = 'puzzle';
+var STORAGE_PREFIX = 'miniGames.v1.' + GAME_ID;
+var STORAGE_KEYS = {
+    best: STORAGE_PREFIX + '.best',
+    stats: STORAGE_PREFIX + '.stats',
+    progress: STORAGE_PREFIX + '.progress'
+};
 
 var unlockKey = 'puzzleV2Unlock';
 var panelKey = 'puzzleV2ImagePanel';
@@ -47,6 +54,8 @@ var secondsElapsed = 0;
 var timerId = null;
 var hasStarted = false;
 var selectedIndex = null;
+var raceMode = false;
+var raceTimeLeft = 0;
 
 var imageCache = {};
 
@@ -77,6 +86,7 @@ function bindEvents() {
     resetBtn.addEventListener('click', resetProgress);
     closeWinBtn.addEventListener('click', hideWinModal);
     nextLevelBtn.addEventListener('click', goNextLevel);
+    ensureRaceButton();
 }
 
 function setupImagePanel() {
@@ -184,6 +194,7 @@ function shuffleBoard() {
     }
     stopTimer();
     secondsElapsed = 0;
+    raceTimeLeft = raceMode ? (currentSize * currentSize * 8) : 0;
     moves = 0;
     selectedIndex = null;
 
@@ -203,6 +214,12 @@ function shuffleBoard() {
     renderBoard();
     updateStats();
     setMessage('开始！点击两块进行交换。');
+    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+        size: currentSize,
+        image: currentImage,
+        raceMode: raceMode,
+        updatedAt: Date.now()
+    }));
 }
 
 function renderBoard() {
@@ -333,6 +350,19 @@ function saveBest() {
     } catch (error) {
         localStorage.setItem(key, JSON.stringify(current));
     }
+    localStorage.setItem(STORAGE_KEYS.best, JSON.stringify({
+        size: currentSize,
+        moves: current.moves,
+        time: current.time
+    }));
+    localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+        size: currentSize,
+        raceMode: raceMode,
+        raceTimeLeft: raceTimeLeft,
+        moves: current.moves,
+        time: current.time,
+        updatedAt: Date.now()
+    }));
     updateBest();
 }
 
@@ -371,15 +401,44 @@ function updateStats() {
     movesValue.textContent = String(moves);
     var minutes = Math.floor(secondsElapsed / 60);
     var secs = secondsElapsed % 60;
-    timeValue.textContent = minutes + ':' + String(secs).padStart(2, '0');
+    if (raceMode) {
+        var raceMin = Math.floor(Math.max(0, raceTimeLeft) / 60);
+        var raceSec = Math.max(0, raceTimeLeft) % 60;
+        timeValue.textContent = minutes + ':' + String(secs).padStart(2, '0') + ' / ⏳ ' + raceMin + ':' + String(raceSec).padStart(2, '0');
+    } else {
+        timeValue.textContent = minutes + ':' + String(secs).padStart(2, '0');
+    }
 }
 
 function startTimer() {
     stopTimer();
     timerId = setInterval(function() {
         secondsElapsed += 1;
+        if (raceMode) {
+            raceTimeLeft -= 1;
+            if (raceTimeLeft <= 0) {
+                stopTimer();
+                hasStarted = false;
+                setMessage('⏱️ 时间到！点击开始重试竞速模式。');
+                return;
+            }
+        }
         updateStats();
     }, 1000);
+}
+
+function ensureRaceButton() {
+    if (document.getElementById('raceBtn')) return;
+    var btn = document.createElement('button');
+    btn.id = 'raceBtn';
+    btn.className = startBtn.className || 'btn';
+    btn.textContent = '竞速:关';
+    btn.addEventListener('click', function() {
+        raceMode = !raceMode;
+        btn.textContent = '竞速:' + (raceMode ? '开' : '关');
+        buildBoard();
+    });
+    startBtn.parentNode.appendChild(btn);
 }
 
 function stopTimer() {
@@ -618,3 +677,32 @@ function getSizeLabel(size) {
 }
 
 init();
+
+window.render_game_to_text = function() {
+    return JSON.stringify({
+        coordinateSystem: 'tile index in board array',
+        mode: hasStarted ? 'playing' : 'idle',
+        size: currentSize,
+        moves: moves,
+        secondsElapsed: secondsElapsed,
+        raceMode: raceMode,
+        raceTimeLeft: raceTimeLeft
+    });
+};
+
+window.advanceTime = function(ms) {
+    var ticks = Math.max(1, Math.floor(ms / 1000));
+    for (var i = 0; i < ticks; i++) {
+        secondsElapsed += 1;
+        if (raceMode) raceTimeLeft = Math.max(0, raceTimeLeft - 1);
+    }
+    updateStats();
+};
+
+window.get_game_meta = function() {
+    return JSON.stringify({
+        gameId: GAME_ID,
+        version: 'v1',
+        mode: raceMode ? 'race' : 'classic'
+    });
+};

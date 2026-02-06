@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" translate="no" class="notranslate">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
@@ -10,6 +10,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
+    <meta name="google" content="notranslate">
+    <meta name="translator" content="no">
     <style>
         * {
             box-sizing: border-box;
@@ -17,6 +19,11 @@
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
+            -webkit-text-size-adjust: 100%;
+        }
+        img, svg, canvas {
+            -webkit-user-drag: none;
+            user-drag: none;
         }
         html, body {
             -webkit-overflow-scrolling: touch;
@@ -30,7 +37,7 @@
             justify-content: center;
             align-items: center;
             margin: 0;
-            padding: env(safe-area-inset-top) 5px env(safe-area-inset-bottom) 5px;
+            padding: env(safe-area-inset-top) 2px env(safe-area-inset-bottom) 2px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Arial', sans-serif;
             touch-action: manipulation;
@@ -51,6 +58,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            pointer-events: none;
         }
         .logo-icon {
             width: 28px;
@@ -61,7 +69,7 @@
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            gap: 4px;
+            gap: 3px;
             margin-bottom: 6px;
         }
         #gameCanvas {
@@ -77,6 +85,7 @@
             flex-direction: column;
             gap: 3px;
             flex-shrink: 0;
+            width: 68px;
         }
         .info-box {
             background: #f8f9fa;
@@ -97,7 +106,7 @@
         }
         .next-box {
             background: #f8f9fa;
-            padding: 4px;
+            padding: 3px;
             border-radius: 8px;
             text-align: center;
         }
@@ -125,8 +134,10 @@
             transform: scale(0.95);
         }
         #startBtn {
-            width: auto;
-            min-width: 50px;
+            width: 100%;
+            min-width: 0;
+            padding: 6px 0;
+            font-size: 12px;
         }
         @media (max-width: 360px) {
             .logo-icon {
@@ -184,6 +195,7 @@
         }
         .swipe-hint p {
             margin: 0;
+            pointer-events: none;
         }
         .controls {
             display: flex;
@@ -235,30 +247,58 @@
         }
         @media (max-width: 768px) {
             body {
-                padding: env(safe-area-inset-top) 4px 4px 4px;
+                padding: env(safe-area-inset-top) 1px 1px 1px;
                 align-items: flex-start;
             }
             .game-container {
-                padding: 8px 6px;
+                padding: 6px 3px;
                 margin-top: env(safe-area-inset-top, 4px);
+                max-width: none;
             }
             h1 {
-                font-size: 16px;
-                margin-bottom: 6px;
+                font-size: 15px;
+                margin-bottom: 4px;
             }
             .game-wrapper {
-                gap: 3px;
-                margin-bottom: 6px;
+                gap: 2px;
+                margin-bottom: 4px;
+                flex-direction: row;
+                align-items: flex-start;
+            }
+            .side-panel {
+                width: 64px;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                margin-top: 0;
+                align-items: stretch;
             }
             .info-box {
-                min-width: 45px;
-                padding: 3px 4px;
+                min-width: 0;
+                padding: 2px 1px;
+                border-radius: 6px;
             }
             .info-box .label {
                 font-size: 8px;
             }
             .info-box .value {
+                font-size: 10px;
+            }
+            .next-box {
+                padding: 2px 1px;
+                border-radius: 6px;
+            }
+            .next-box .label {
+                font-size: 8px;
+                margin-bottom: 1px;
+            }
+            #nextCanvas, #holdCanvas {
+                border-width: 1px;
+            }
+            #startBtn {
                 font-size: 11px;
+                border-radius: 12px;
+                padding: 5px 0;
             }
             .swipe-hint {
                 font-size: 9px;
@@ -273,6 +313,15 @@
                 width: 48px;
                 height: 48px;
                 font-size: 16px;
+            }
+            .home-btn {
+                width: 40px;
+                height: 40px;
+                left: 6px;
+            }
+            .home-btn svg {
+                width: 20px;
+                height: 20px;
             }
         }
         @media (max-width: 400px) {
@@ -369,6 +418,30 @@
             } else if (action === 'hold') {
                 tetris.holdPiece();
             }
+        }
+
+        // 微信/移动端：避免长按触发“搜一搜/翻译”浮层
+        ['contextmenu', 'selectstart', 'dragstart', 'copy', 'cut', 'paste'].forEach(function(eventName) {
+            document.addEventListener(eventName, function(e) { e.preventDefault(); }, { passive: false });
+        });
+        ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(eventName) {
+            document.addEventListener(eventName, function(e) { e.preventDefault(); }, { passive: false });
+        });
+
+        // 全局阻止所有 touchstart 默认行为，彻底禁用微信“搜一搜/翻译”浮层
+        // 按钮点击通过 onclick / touchend 处理，不受影响
+        document.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        // 首页按钮：手动处理触摸导航，规避长按菜单
+        var homeBtn = document.querySelector('.home-btn');
+        if (homeBtn) {
+            homeBtn.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                var href = homeBtn.getAttribute('href') || '/';
+                window.location.href = href;
+            }, { passive: false });
         }
     </script>
     <script src="/common/audio.js"></script>

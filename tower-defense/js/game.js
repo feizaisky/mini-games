@@ -277,18 +277,27 @@ export class Game {
   spawnEnemy() {
     const wave = waves[this.state.activeWave - 1];
     const start = this.pathPixels[0];
+    const eliteRoll = this.state.activeWave >= 5 ? Math.random() : 1;
+    let elite = null;
+    if (eliteRoll < 0.12) elite = "armor";
+    else if (eliteRoll < 0.2) elite = "haste";
+    else if (eliteRoll < 0.27) elite = "regen";
+    const hpFactor = elite === "armor" ? 1.8 : 1;
+    const speedFactor = elite === "haste" ? 1.35 : 1;
+    const rewardFactor = elite ? 1.5 : 1;
     this.state.enemies.push({
       id: this.enemyId += 1,
       x: start.x,
       y: start.y,
       pathIndex: 0,
-      hp: wave.hp,
-      maxHp: wave.hp,
-      speed: wave.speed * this.dimensions.tileSize,
-      reward: wave.reward,
+      hp: wave.hp * hpFactor,
+      maxHp: wave.hp * hpFactor,
+      speed: wave.speed * this.dimensions.tileSize * speedFactor,
+      reward: Math.round(wave.reward * rewardFactor),
       slowTimer: 0,
       slowFactor: 1,
-      damage: 1
+      damage: 1,
+      elite
     });
   }
 
@@ -308,6 +317,9 @@ export class Game {
         enemy.poisonTimer = 0;
         enemy.poisonDamage = 0;
       }
+    }
+    if (enemy.elite === "regen" && enemy.hp > 0) {
+      enemy.hp = Math.min(enemy.maxHp, enemy.hp + 0.8 * dt);
     }
     let speed = enemy.speed * enemy.slowFactor;
     let remaining = speed * dt;
@@ -856,7 +868,8 @@ export function attachDebugHooks(game) {
         id: enemy.id,
         x: Math.round(enemy.x),
         y: Math.round(enemy.y),
-        hp: Math.round(enemy.hp)
+        hp: Math.round(enemy.hp),
+        elite: enemy.elite || null
       })),
       projectiles: state.projectiles.map((proj) => ({
         id: proj.id,
@@ -874,4 +887,10 @@ export function attachDebugHooks(game) {
     }
     game.render();
   };
+
+  window.get_game_meta = () => JSON.stringify({
+    gameId: "tower-defense",
+    version: "v1",
+    mode: game.state.mode
+  });
 }

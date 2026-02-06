@@ -512,6 +512,13 @@ const answerList = document.getElementById('answerList');
 const restartBtn = document.getElementById('restartBtn');
 const startBtn = document.getElementById('startBtn');
 const subtitle = document.getElementById('subtitle');
+const GAME_ID = 'mbti-test';
+const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+const STORAGE_KEYS = {
+    best: `${STORAGE_PREFIX}.best`,
+    stats: `${STORAGE_PREFIX}.stats`,
+    progress: `${STORAGE_PREFIX}.progress`
+};
 
 // 题目数量选择
 document.querySelectorAll('.count-btn').forEach(btn => {
@@ -631,6 +638,12 @@ function showResult() {
 
     // 保存结果到历史记录
     saveToHistory(type);
+    localStorage.setItem(STORAGE_KEYS.best, type);
+    localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+        type,
+        selectedCount,
+        finishedAt: Date.now()
+    }));
 
     // 显示历次结果
     displayHistory();
@@ -650,9 +663,117 @@ function saveToHistory(type) {
         // 最多保留 20 条记录
         if (history.length > 20) history = history.slice(-20);
         localStorage.setItem('mbtiHistory', JSON.stringify(history));
+        localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+            historyCount: history.length,
+            lastType: type,
+            updatedAt: Date.now()
+        }));
     } catch (e) {
         // 忽略存储错误
     }
+}
+
+function getDimensionBalance(type) {
+    return {
+        E: type.includes('E') ? 1 : 0,
+        I: type.includes('I') ? 1 : 0,
+        S: type.includes('S') ? 1 : 0,
+        N: type.includes('N') ? 1 : 0,
+        T: type.includes('T') ? 1 : 0,
+        F: type.includes('F') ? 1 : 0,
+        J: type.includes('J') ? 1 : 0,
+        P: type.includes('P') ? 1 : 0
+    };
+}
+
+function drawRadar(container, currentType, previousType) {
+    const oldCanvas = document.getElementById('mbtiRadar');
+    if (oldCanvas) oldCanvas.remove();
+    if (!currentType) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'mbtiRadar';
+    canvas.width = 220;
+    canvas.height = 220;
+    canvas.style.display = 'block';
+    canvas.style.margin = '10px auto';
+    container.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    const center = 110;
+    const radius = 82;
+    const axes = ['E/I', 'S/N', 'T/F', 'J/P'];
+    const current = getDimensionBalance(currentType);
+    const previous = previousType ? getDimensionBalance(previousType) : null;
+    const values = [
+        current.E ? 1 : 0.55,
+        current.S ? 1 : 0.55,
+        current.T ? 1 : 0.55,
+        current.J ? 1 : 0.55
+    ];
+
+    ctx.strokeStyle = '#d0d7ff';
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 4; i++) {
+        const r = (radius / 4) * i;
+        ctx.beginPath();
+        for (let j = 0; j < 4; j++) {
+            const a = -Math.PI / 2 + (Math.PI * 2 * j / 4);
+            const x = center + Math.cos(a) * r;
+            const y = center + Math.sin(a) * r;
+            if (j === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+    }
+
+    axes.forEach((axis, i) => {
+        const a = -Math.PI / 2 + (Math.PI * 2 * i / 4);
+        const x = center + Math.cos(a) * (radius + 20);
+        const y = center + Math.sin(a) * (radius + 20);
+        ctx.fillStyle = '#666';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(axis, x, y);
+    });
+
+    if (previous) {
+        const prevVals = [
+            previous.E ? 1 : 0.55,
+            previous.S ? 1 : 0.55,
+            previous.T ? 1 : 0.55,
+            previous.J ? 1 : 0.55
+        ];
+        ctx.fillStyle = 'rgba(180,180,180,0.25)';
+        ctx.strokeStyle = 'rgba(120,120,120,0.6)';
+        ctx.beginPath();
+        prevVals.forEach((v, i) => {
+            const a = -Math.PI / 2 + (Math.PI * 2 * i / 4);
+            const x = center + Math.cos(a) * radius * v;
+            const y = center + Math.sin(a) * radius * v;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    ctx.fillStyle = 'rgba(102,126,234,0.25)';
+    ctx.strokeStyle = '#667eea';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    values.forEach((v, i) => {
+        const a = -Math.PI / 2 + (Math.PI * 2 * i / 4);
+        const x = center + Math.cos(a) * radius * v;
+        const y = center + Math.sin(a) * radius * v;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
 }
 
 // 显示历次结果
@@ -687,6 +808,10 @@ function displayHistory() {
         } else {
             resultCard.appendChild(section);
         }
+
+        const current = history[history.length - 1]?.type;
+        const previous = history.length > 1 ? history[history.length - 2]?.type : '';
+        drawRadar(section, current, previous);
     } catch (e) {
         // 忽略解析错误
     }
@@ -720,4 +845,22 @@ restartBtn.addEventListener('click', () => {
 
     // 重置副标题
     subtitle.textContent = '选择题目数量，探索你的性格类型';
+});
+
+window.render_game_to_text = () => JSON.stringify({
+    mode: resultCard.style.display === 'block' ? 'result' : (questionCard.style.display === 'flex' ? 'question' : 'setup'),
+    selectedCount,
+    currentQuestion,
+    totalQuestions: selectedQuestions.length,
+    scores
+});
+
+window.advanceTime = () => {
+    // MBTI 是离散交互流程，无连续时间推进
+};
+
+window.get_game_meta = () => JSON.stringify({
+    gameId: GAME_ID,
+    version: 'v1',
+    mode: 'quiz'
 });

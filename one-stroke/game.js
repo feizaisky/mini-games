@@ -24,6 +24,13 @@ const levelGrid = document.getElementById('levelGrid');
 const levelPanel = document.getElementById('levelPanel');
 const levelToggle = document.getElementById('levelToggle');
 const currentLevelLabel = document.getElementById('currentLevelLabel');
+const GAME_ID = 'one-stroke';
+const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+const STORAGE_KEYS = {
+    best: `${STORAGE_PREFIX}.best`,
+    stats: `${STORAGE_PREFIX}.stats`,
+    progress: `${STORAGE_PREFIX}.progress`
+};
 
 let currentLevelIndex = 0;
 let nodes = [];
@@ -88,6 +95,11 @@ function setupLevel(levelIndex) {
     updateLevelSelection();
     const level = levels[currentLevelIndex];
     setMessage(`起点为蓝色，终点为绿色，避开障碍完成 ${level.name}。`);
+    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+        level: level.name,
+        unlockedLevel,
+        updatedAt: Date.now()
+    }));
 }
 
 function createNodes() {
@@ -374,6 +386,8 @@ function saveBestScore() {
 
     if (!bestRaw) {
         localStorage.setItem(key, JSON.stringify(current));
+        localStorage.setItem(STORAGE_KEYS.best, JSON.stringify(current));
+        localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({ ...current, updatedAt: Date.now() }));
         return;
     }
 
@@ -386,10 +400,13 @@ function saveBestScore() {
 
         if (betterLevel || (sameLevel && (betterTime || betterMoves))) {
             localStorage.setItem(key, JSON.stringify(current));
+            localStorage.setItem(STORAGE_KEYS.best, JSON.stringify(current));
         }
     } catch (error) {
         localStorage.setItem(key, JSON.stringify(current));
+        localStorage.setItem(STORAGE_KEYS.best, JSON.stringify(current));
     }
+    localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({ ...current, updatedAt: Date.now() }));
 }
 
 function unlockNextLevel() {
@@ -503,5 +520,29 @@ function nodeFromCoord(coord) {
     }
     return null;
 }
+
+window.render_game_to_text = () => JSON.stringify({
+    coordinateSystem: 'row/col on grid, origin top-left',
+    mode: isDrawing ? 'drawing' : 'idle',
+    level: levels[currentLevelIndex]?.name,
+    currentLevelIndex,
+    unlockedLevel,
+    pathLength: path.length,
+    moves: Math.max(0, path.length - 1),
+    secondsElapsed
+});
+
+window.advanceTime = (ms) => {
+    if (isDrawing) {
+        secondsElapsed += Math.max(1, Math.floor(ms / 1000));
+        updateTime();
+    }
+};
+
+window.get_game_meta = () => JSON.stringify({
+    gameId: GAME_ID,
+    version: 'v1',
+    mode: 'levels'
+});
 
 init();

@@ -8,11 +8,18 @@ const normalBtn = document.getElementById('normalBtn');
 const advancedBtn = document.getElementById('advancedBtn');
 const undoBtn = document.getElementById('undoBtn');
 const undoCountElement = document.getElementById('undoCount');
+const GAME_ID = '2048';
+const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+const STORAGE_KEYS = {
+    best: `${STORAGE_PREFIX}.best`,
+    stats: `${STORAGE_PREFIX}.stats`,
+    progress: `${STORAGE_PREFIX}.progress`
+};
 
 const SIZE = 4;
 let grid = [];
 let score = 0;
-let bestScore = localStorage.getItem('bestScore2048') || 0;
+let bestScore = localStorage.getItem(STORAGE_KEYS.best) || localStorage.getItem('bestScore2048') || 0;
 let gameOver = false;
 let gameWon = false;
 let continueAfterWin = false;
@@ -25,6 +32,7 @@ let history = []; // 存放 {grid, score} 快照
 let mergedCells = []; // 本次操作中合并的格子
 let newTilePos = null; // 本次新增方块的位置
 let recordShown = false; // 是否已显示过新纪录提示
+let reviveUsed = false;
 
 bestScoreElement.textContent = bestScore;
 
@@ -42,6 +50,7 @@ undoBtn.addEventListener('click', function() {
 function setGameMode(mode) {
     gameMode = mode;
     localStorage.setItem('gameMode2048', mode);
+    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({ mode, updatedAt: Date.now() }));
 
     if (mode === 'normal') {
         normalBtn.classList.add('selected');
@@ -72,6 +81,8 @@ function init() {
         gridElement.appendChild(cell);
     }
     initModeButtons();
+    ensureReviveButton();
+    migrateLegacyStorage();
     newGame();
 }
 
@@ -84,6 +95,7 @@ function newGame() {
     undosLeft = MAX_UNDOS;
     history = [];
     recordShown = false;
+    reviveUsed = false;
     scoreElement.textContent = score;
     gameOverElement.style.display = 'none';
     gameWonElement.style.display = 'none';
@@ -93,6 +105,66 @@ function newGame() {
     addRandomTile();
     addRandomTile();
     updateDisplay();
+    saveStats();
+}
+
+function migrateLegacyStorage() {
+    if (!localStorage.getItem(STORAGE_KEYS.best)) {
+        const legacyBest = localStorage.getItem('bestScore2048');
+        if (legacyBest !== null) {
+            localStorage.setItem(STORAGE_KEYS.best, legacyBest);
+        }
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.progress)) {
+        localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({ mode: gameMode, updatedAt: Date.now() }));
+    }
+}
+
+function saveStats() {
+    localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+        score,
+        undosLeft,
+        mode: gameMode,
+        reviveUsed,
+        gameOver,
+        updatedAt: Date.now()
+    }));
+}
+
+function persistBestScore(value) {
+    localStorage.setItem('bestScore2048', value);
+    localStorage.setItem(STORAGE_KEYS.best, String(value));
+}
+
+function ensureReviveButton() {
+    if (document.getElementById('reviveBtn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'reviveBtn';
+    btn.className = 'btn';
+    btn.textContent = '🛟 保底复活(1次)';
+    btn.style.marginLeft = '8px';
+    btn.addEventListener('click', reviveOnce);
+    newGameBtn.parentNode.insertBefore(btn, newGameBtn.nextSibling);
+}
+
+function reviveOnce() {
+    if (!gameOver || reviveUsed) return;
+    const empties = [];
+    for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+            if (grid[r][c] === 0) empties.push([r, c]);
+        }
+    }
+    if (empties.length === 0) {
+        return;
+    }
+    const [r, c] = empties[Math.floor(Math.random() * empties.length)];
+    grid[r][c] = 2;
+    gameOver = false;
+    reviveUsed = true;
+    gameOverElement.style.display = 'none';
+    updateDisplay();
+    saveStats();
 }
 
 function saveState() {
@@ -309,7 +381,7 @@ function move(direction) {
         if (score > bestScore) {
             bestScore = score;
             bestScoreElement.textContent = bestScore;
-            localStorage.setItem('bestScore2048', bestScore);
+            persistBestScore(bestScore);
 
             // 新纪录提示（仅第一次超越时）
             if (prevBest > 0 && score > prevBest) {
@@ -322,6 +394,7 @@ function move(direction) {
             gameOverElement.style.display = 'block';
             if (typeof GameAudio !== 'undefined') GameAudio.play('lose');
         }
+        saveStats();
     } else {
         // 没有变化，移除刚保存的状态
         history.pop();
@@ -357,6 +430,9 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         undoMove();
     }
+    if (e.key === 'r' || e.key === 'R') {
+        reviveOnce();
+    }
 });
 
 // 触摸控制
@@ -389,5 +465,27 @@ gameContainer.addEventListener('touchend', (e) => {
         }
     }
 }, {passive: true});
+
+window.render_game_to_text = () => JSON.stringify({
+    coordinateSystem: 'row/col origin=(0,0) top-left; row+ downward; col+ rightward',
+    mode: gameMode,
+    score,
+    bestScore: Number(bestScore),
+    gameOver,
+    reviveUsed,
+    undosLeft,
+    board: grid
+});
+
+window.advanceTime = () => {
+    updateDisplay();
+    saveStats();
+};
+
+window.get_game_meta = () => JSON.stringify({
+    gameId: GAME_ID,
+    version: 'v1',
+    mode: gameMode
+});
 
 init();

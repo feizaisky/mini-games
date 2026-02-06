@@ -8,6 +8,15 @@ let currentMole = null;
 let currentMoleType = 'normal'; // 'normal', 'golden', 'bomb'
 let moleSpeed = 1500;
 let holes = [];
+let comboStreak = 0;
+let feverTime = 0;
+const GAME_ID = 'whack-a-mole';
+const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+const STORAGE_KEYS = {
+    best: `${STORAGE_PREFIX}.best`,
+    stats: `${STORAGE_PREFIX}.stats`,
+    progress: `${STORAGE_PREFIX}.progress`
+};
 
 // 初始化游戏
 function initGame() {
@@ -15,6 +24,8 @@ function initGame() {
     timeLeft = 60;
     moleSpeed = 1500;
     gameRunning = false;
+    comboStreak = 0;
+    feverTime = 0;
 
     if (moleTimer) {
         clearTimeout(moleTimer);
@@ -68,6 +79,8 @@ function startGame() {
     score = 0;
     timeLeft = 60;
     moleSpeed = 1500;
+    comboStreak = 0;
+    feverTime = 0;
 
     document.getElementById('startBtn').disabled = true;
     document.getElementById('startBtn').textContent = '游戏进行中...';
@@ -75,6 +88,10 @@ function startGame() {
     updateDisplay();
     showMole();
     startTimer();
+    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+        mode: 'playing',
+        updatedAt: Date.now()
+    }));
 }
 
 // 显示地鼠
@@ -140,12 +157,18 @@ function whackMole(index) {
     }
 
     // 根据地鼠类型计分
+    comboStreak++;
+    if (comboStreak >= 6) {
+        feverTime = 8;
+    }
+    const feverMultiplier = feverTime > 0 ? 2 : 1;
     if (currentMoleType === 'golden') {
-        score += 3;
+        score += 3 * feverMultiplier;
     } else if (currentMoleType === 'bomb') {
         score = Math.max(0, score - 2);
+        comboStreak = 0;
     } else {
-        score++;
+        score += feverMultiplier;
     }
 
     if (typeof GameAudio !== 'undefined') GameAudio.play('hit');
@@ -159,14 +182,23 @@ function whackMole(index) {
     const highScore = localStorage.getItem('whackMoleHighScore') || 0;
     if (score > parseInt(highScore)) {
         localStorage.setItem('whackMoleHighScore', score);
+        localStorage.setItem(STORAGE_KEYS.best, String(score));
         updateBestScore();
     }
+    localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+        score,
+        timeLeft,
+        comboStreak,
+        feverTime,
+        updatedAt: Date.now()
+    }));
 }
 
 // 更新显示
 function updateDisplay() {
     document.getElementById('score').textContent = score;
-    document.getElementById('timer').textContent = timeLeft;
+    const feverText = feverTime > 0 ? ` ⚡x2(${feverTime})` : '';
+    document.getElementById('timer').textContent = `${timeLeft}${feverText}`;
 }
 
 // 更新最高分显示
@@ -185,6 +217,7 @@ function updateBestScore() {
 function startTimer() {
     countdownTimer = setInterval(() => {
         timeLeft--;
+        if (feverTime > 0) feverTime--;
         updateDisplay();
 
         if (timeLeft <= 0) {
@@ -219,6 +252,7 @@ function endGame() {
     const isNewRecord = score > parseInt(highScore);
     if (isNewRecord) {
         localStorage.setItem('whackMoleHighScore', score);
+        localStorage.setItem(STORAGE_KEYS.best, String(score));
         updateBestScore();
     }
 
@@ -247,6 +281,12 @@ function endGame() {
 
     finalScore.textContent = `你打中了 ${score} 只地鼠！`;
     modal.classList.add('show');
+    localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+        score,
+        comboStreak,
+        feverTime,
+        finishedAt: Date.now()
+    }));
 }
 
 // 关闭模态框
@@ -255,4 +295,31 @@ function closeModal() {
 }
 
 // 页面加载时初始化
+window.render_game_to_text = () => JSON.stringify({
+    mode: gameRunning ? 'playing' : 'idle',
+    score,
+    timeLeft,
+    currentMole,
+    currentMoleType,
+    comboStreak,
+    feverTime
+});
+
+window.advanceTime = (ms) => {
+    const ticks = Math.max(1, Math.floor(ms / 1000));
+    for (let i = 0; i < ticks; i++) {
+        if (gameRunning) {
+            timeLeft = Math.max(0, timeLeft - 1);
+            if (feverTime > 0) feverTime--;
+        }
+    }
+    updateDisplay();
+};
+
+window.get_game_meta = () => JSON.stringify({
+    gameId: GAME_ID,
+    version: 'v1',
+    mode: 'arcade'
+});
+
 initGame();

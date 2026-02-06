@@ -20,6 +20,13 @@
 
     const sizeButtons = Array.from(document.querySelectorAll('[data-size]'));
     const diffButtons = Array.from(document.querySelectorAll('[data-diff]'));
+    const GAME_ID = 'lights-out';
+    const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+    const STORAGE_KEYS = {
+        best: `${STORAGE_PREFIX}.best`,
+        stats: `${STORAGE_PREFIX}.stats`,
+        progress: `${STORAGE_PREFIX}.progress`
+    };
 
     const state = {
         mode: 'menu',
@@ -29,6 +36,7 @@
         moves: 0,
         time: 0,
         history: [],
+        dailyMode: false,
         layout: {
             boardX: 0,
             boardY: 0,
@@ -118,9 +126,10 @@
     function shuffleGrid() {
         state.grid = createGrid(state.size, false);
         const moves = getShuffleMoves(state.size, state.difficulty);
+        const rng = state.dailyMode ? makeSeededRng(getDailySeed()) : Math.random;
         for (let i = 0; i < moves; i += 1) {
-            const row = Math.floor(Math.random() * state.size);
-            const col = Math.floor(Math.random() * state.size);
+            const row = Math.floor(rng() * state.size);
+            const col = Math.floor(rng() * state.size);
             toggleAt(row, col, state.grid);
             toggleAt(row - 1, col, state.grid);
             toggleAt(row + 1, col, state.grid);
@@ -141,6 +150,32 @@
         state.history = [];
         state.mode = 'playing';
         updateStats();
+        localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+            size: state.size,
+            difficulty: state.difficulty,
+            dailyMode: state.dailyMode,
+            seed: state.dailyMode ? getDailySeed() : null,
+            updatedAt: Date.now()
+        }));
+    }
+
+    function getDailySeed() {
+        const now = new Date();
+        return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    }
+
+    function makeSeededRng(seedText) {
+        let h = 2166136261;
+        for (let i = 0; i < seedText.length; i += 1) {
+            h ^= seedText.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        return () => {
+            h += 0x6D2B79F5;
+            let t = Math.imul(h ^ (h >>> 15), 1 | h);
+            t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
     }
 
     function startGame() {
@@ -214,6 +249,7 @@
         if (shouldUpdateOverall) {
             localStorage.setItem(overallKey, JSON.stringify(overallRecord));
         }
+        localStorage.setItem(STORAGE_KEYS.best, JSON.stringify(overallRecord));
     }
 
     function getBestLabel() {
@@ -250,6 +286,14 @@
         if (shouldSave) {
             saveBest(record);
         }
+        localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+            size: state.size,
+            difficulty: state.difficulty,
+            moves: state.moves,
+            time: Math.floor(state.time),
+            dailyMode: state.dailyMode,
+            updatedAt: Date.now()
+        }));
         updateStats();
     }
 
@@ -461,6 +505,20 @@
         startGame();
     });
 
+    function ensureDailyButton() {
+        if (document.getElementById('dailyBtn')) return;
+        const btn = document.createElement('button');
+        btn.id = 'dailyBtn';
+        btn.className = startBtn.className || 'btn';
+        btn.textContent = '每日挑战:关';
+        btn.addEventListener('click', () => {
+            state.dailyMode = !state.dailyMode;
+            btn.textContent = `每日挑战:${state.dailyMode ? '开' : '关'}`;
+            startGame();
+        });
+        startBtn.parentNode.appendChild(btn);
+    }
+
     sizeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const size = parseInt(btn.dataset.size, 10);
@@ -533,6 +591,7 @@
             mode: state.mode,
             size: state.size,
             difficulty: state.difficulty,
+            dailyMode: state.dailyMode,
             moves: state.moves,
             time: Math.floor(state.time),
             grid: state.grid.map(row => row.map(cell => (cell ? 1 : 0))),
@@ -542,5 +601,12 @@
         return JSON.stringify(payload);
     };
 
+    window.get_game_meta = () => JSON.stringify({
+        gameId: GAME_ID,
+        version: 'v1',
+        mode: state.dailyMode ? 'daily' : 'classic'
+    });
+
+    ensureDailyButton();
     init();
 })();

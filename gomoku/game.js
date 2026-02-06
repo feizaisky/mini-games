@@ -4,6 +4,13 @@ const statusElement = document.getElementById('currentPlayer');
 const gameOverElement = document.getElementById('gameOver');
 const undoBtn = document.getElementById('undoBtn');
 const restartBtn = document.getElementById('restartBtn');
+const GAME_ID = 'gomoku';
+const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+const STORAGE_KEYS = {
+    best: `${STORAGE_PREFIX}.best`,
+    stats: `${STORAGE_PREFIX}.stats`,
+    progress: `${STORAGE_PREFIX}.progress`
+};
 
 // 游戏配置
 const BOARD_SIZE = 13;
@@ -16,6 +23,8 @@ let currentPlayer = 1; // 1: 黑棋(玩家), 2: 白棋(电脑)
 let gameOver = false;
 let moveHistory = [];
 let currentDifficulty = 'easy';
+let forbiddenRuleEnabled = false;
+let replayTimer = null;
 
 // 难度配置
 const difficultyConfig = {
@@ -169,6 +178,13 @@ canvas.addEventListener('click', function(e) {
 
 // 下棋
 function makeMove(x, y, player) {
+    if (board[x][y] !== 0 || gameOver) return;
+    if (player === 1 && forbiddenRuleEnabled && isForbiddenOverline(x, y, player)) {
+        statusElement.textContent = '⚠️ 禁手：黑棋长连（>5）';
+        setTimeout(updateStatus, 900);
+        return;
+    }
+
     board[x][y] = player;
     moveHistory.push({x, y, player});
     if (player === 1) {
@@ -211,6 +227,7 @@ function makeMove(x, y, player) {
     if (currentPlayer === 2 && !gameOver) {
         setTimeout(computerMove, 300);
     }
+    saveProgress();
 }
 
 // 更新状态显示
@@ -262,6 +279,35 @@ function checkWin(x, y, player) {
     }
 
     return false;
+}
+
+function isForbiddenOverline(x, y, player) {
+    board[x][y] = player;
+    const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
+    let forbidden = false;
+
+    for (let [dx, dy] of directions) {
+        let count = 1;
+        for (let i = 1; i < BOARD_SIZE; i++) {
+            const nx = x + dx * i;
+            const ny = y + dy * i;
+            if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE && board[nx][ny] === player) count++;
+            else break;
+        }
+        for (let i = 1; i < BOARD_SIZE; i++) {
+            const nx = x - dx * i;
+            const ny = y - dy * i;
+            if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE && board[nx][ny] === player) count++;
+            else break;
+        }
+        if (count > 5) {
+            forbidden = true;
+            break;
+        }
+    }
+
+    board[x][y] = 0;
+    return forbidden;
 }
 
 // 电脑下棋
@@ -440,6 +486,10 @@ function undo() {
 
 // 重新开始
 function restart() {
+    if (replayTimer) {
+        clearInterval(replayTimer);
+        replayTimer = null;
+    }
     initBoard();
     currentPlayer = 1;
     gameOver = false;
@@ -447,6 +497,69 @@ function restart() {
     gameOverElement.style.display = 'none';
     updateStatus();
     drawBoard();
+    saveProgress();
+}
+
+function injectFeatureControls() {
+    if (document.getElementById('forbiddenToggle')) return;
+    const controlBar = restartBtn.parentElement;
+    if (!controlBar) return;
+
+    const forbiddenBtn = document.createElement('button');
+    forbiddenBtn.id = 'forbiddenToggle';
+    forbiddenBtn.className = restartBtn.className || 'btn';
+    forbiddenBtn.textContent = '禁手:关';
+    forbiddenBtn.addEventListener('click', () => {
+        forbiddenRuleEnabled = !forbiddenRuleEnabled;
+        forbiddenBtn.textContent = `禁手:${forbiddenRuleEnabled ? '开' : '关'}`;
+        saveProgress();
+    });
+
+    const replayBtn = document.createElement('button');
+    replayBtn.id = 'replayBtn';
+    replayBtn.className = restartBtn.className || 'btn';
+    replayBtn.textContent = '复盘';
+    replayBtn.addEventListener('click', playReplay);
+
+    controlBar.appendChild(forbiddenBtn);
+    controlBar.appendChild(replayBtn);
+}
+
+function playReplay() {
+    if (moveHistory.length === 0) return;
+    if (replayTimer) clearInterval(replayTimer);
+
+    const snapshot = moveHistory.slice();
+    initBoard();
+    gameOver = false;
+    gameOverElement.style.display = 'none';
+    drawBoard();
+    let i = 0;
+    replayTimer = setInterval(() => {
+        if (i >= snapshot.length) {
+            clearInterval(replayTimer);
+            replayTimer = null;
+            updateStatus();
+            return;
+        }
+        const move = snapshot[i++];
+        board[move.x][move.y] = move.player;
+        drawBoard();
+    }, 280);
+}
+
+function saveProgress() {
+    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+        difficulty: currentDifficulty,
+        forbiddenRuleEnabled,
+        moveCount: moveHistory.length,
+        updatedAt: Date.now()
+    }));
+    localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+        gameOver,
+        currentPlayer,
+        moveCount: moveHistory.length
+    }));
 }
 
 // 难度选择
@@ -493,5 +606,29 @@ canvas.addEventListener('touchend', function(e) {
 
 // 初始化
 initBoard();
+injectFeatureControls();
 updateStatus();
 drawBoard();
+
+window.render_game_to_text = () => JSON.stringify({
+    coordinateSystem: 'board[x][y], origin=(0,0) top-left',
+    mode: 'pve',
+    gameOver,
+    currentPlayer,
+    difficulty: currentDifficulty,
+    forbiddenRuleEnabled,
+    moveCount: moveHistory.length,
+    board
+});
+
+window.advanceTime = (ms) => {
+    if (currentPlayer === 2 && !gameOver && ms >= 250) {
+        computerMove();
+    }
+};
+
+window.get_game_meta = () => JSON.stringify({
+    gameId: GAME_ID,
+    version: 'v1',
+    mode: 'pve'
+});

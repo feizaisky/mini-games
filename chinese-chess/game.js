@@ -6,6 +6,13 @@ const resetBtn = document.getElementById('resetBtn');
 const undoBtn = document.getElementById('undoBtn');
 const modeBtns = document.getElementById('modeBtns');
 const difficultyBtns = document.getElementById('difficultyBtns');
+const GAME_ID = 'chinese-chess';
+const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+const STORAGE_KEYS = {
+    best: `${STORAGE_PREFIX}.best`,
+    stats: `${STORAGE_PREFIX}.stats`,
+    progress: `${STORAGE_PREFIX}.progress`
+};
 
 const COLS = 9;
 const ROWS = 10;
@@ -55,6 +62,8 @@ const humanColor = 'red';
 const aiColor = 'black';
 let moveHistory = [];
 let aiTimeoutId = null;
+let challengeMode = false;
+let challengeName = '';
 
 // 走子动画
 let animating = false;
@@ -173,6 +182,8 @@ function resetGame(keepMode = true) {
     winner = null;
     aiThinking = false;
     moveHistory = [];
+    challengeMode = false;
+    challengeName = '';
     if (gameMode === 'ai' && currentPlayer === aiColor) {
         aiThinking = true;
     }
@@ -186,6 +197,62 @@ function resetGame(keepMode = true) {
     if (gameMode === 'ai' && currentPlayer === aiColor) {
         triggerAIMove();
     }
+    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+        mode: gameMode,
+        difficulty,
+        challengeMode,
+        updatedAt: Date.now()
+    }));
+}
+
+function setupChallengeBoard(name) {
+    const newBoard = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => null));
+    if (name === 'rookMate') {
+        newBoard[0][4] = { type: 'G', color: 'black' };
+        newBoard[1][4] = { type: 'A', color: 'black' };
+        newBoard[9][4] = { type: 'G', color: 'red' };
+        newBoard[7][4] = { type: 'R', color: 'red' };
+        newBoard[8][3] = { type: 'A', color: 'red' };
+    } else {
+        newBoard[0][4] = { type: 'G', color: 'black' };
+        newBoard[2][4] = { type: 'R', color: 'black' };
+        newBoard[9][4] = { type: 'G', color: 'red' };
+        newBoard[7][1] = { type: 'C', color: 'red' };
+        newBoard[6][4] = { type: 'S', color: 'red' };
+    }
+    board = newBoard;
+    currentPlayer = 'red';
+    selected = null;
+    legalMoves = [];
+    gameOver = false;
+    winner = null;
+    aiThinking = false;
+    moveHistory = [];
+    gameRunning = true;
+    challengeMode = true;
+    challengeName = name;
+    updateStatus('（残局挑战）');
+    draw();
+    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+        mode: gameMode,
+        difficulty,
+        challengeMode,
+        challengeName,
+        updatedAt: Date.now()
+    }));
+}
+
+function injectChallengeButton() {
+    if (document.getElementById('challengeBtn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'challengeBtn';
+    btn.className = startBtn.className || 'btn';
+    btn.textContent = '残局挑战';
+    btn.addEventListener('click', () => {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+        setupChallengeBoard(Math.random() < 0.5 ? 'rookMate' : 'cannonMate');
+    });
+    startBtn.parentNode.appendChild(btn);
 }
 
 function updateStatus(extra = '') {
@@ -773,6 +840,25 @@ function handleMove(fromX, fromY, toX, toY) {
 
         updateNotation();
         draw();
+        localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+            mode: gameMode,
+            difficulty,
+            gameOver,
+            winner,
+            challengeMode,
+            challengeName,
+            moveCount: moveHistory.length,
+            updatedAt: Date.now()
+        }));
+        if (gameOver && winner) {
+            localStorage.setItem(STORAGE_KEYS.best, JSON.stringify({
+                winner,
+                challengeMode,
+                challengeName,
+                moveCount: moveHistory.length,
+                finishedAt: Date.now()
+            }));
+        }
 
         if (!gameOver && gameMode === 'ai' && currentPlayer === aiColor) {
             triggerAIMove();
@@ -1012,4 +1098,11 @@ window.advanceTime = () => {
     draw();
 };
 
+window.get_game_meta = () => JSON.stringify({
+    gameId: GAME_ID,
+    version: 'v1',
+    mode: challengeMode ? 'challenge' : gameMode
+});
+
+injectChallengeButton();
 resetGame();

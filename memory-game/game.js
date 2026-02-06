@@ -1,5 +1,12 @@
 // 游戏卡片图标（最多12种用于困难模式）
 const allEmojis = ['🐶', '🐱', '🐼', '🐨', '🦁', '🐯', '🐸', '🐙', '🦊', '🐰', '🐵', '🦄'];
+const GAME_ID = 'memory-game';
+const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+const STORAGE_KEYS = {
+    best: `${STORAGE_PREFIX}.best`,
+    stats: `${STORAGE_PREFIX}.stats`,
+    progress: `${STORAGE_PREFIX}.progress`
+};
 
 // 难度配置
 const difficultyConfig = {
@@ -19,6 +26,8 @@ let gameTimer = null;
 let seconds = 0;
 let isProcessing = false;
 let gameStarted = false;
+let specialMode = false;
+let freezeSeconds = 0;
 
 // 初始化游戏
 function initGame() {
@@ -39,8 +48,15 @@ function initGame() {
         id: index,
         emoji: emoji,
         isFlipped: false,
-        isMatched: false
+        isMatched: false,
+        special: null
     }));
+
+    if (specialMode && cards.length >= 4) {
+        const pool = cards.filter(c => c.emoji === cardEmojis[0] || c.emoji === cardEmojis[1]);
+        pool.slice(0, 2).forEach(card => { card.special = 'freeze'; });
+        pool.slice(2, 4).forEach(card => { card.special = 'double'; });
+    }
 
     // 重置状态
     flippedCards = [];
@@ -49,6 +65,7 @@ function initGame() {
     seconds = 0;
     isProcessing = false;
     gameStarted = false;
+    freezeSeconds = 0;
 
     // 停止计时器
     if (gameTimer) {
@@ -92,7 +109,7 @@ function renderBoard() {
         // 卡片正面（emoji）
         const front = document.createElement('div');
         front.className = 'card-front';
-        front.textContent = card.emoji;
+        front.textContent = card.special === 'freeze' ? '❄️' : (card.special === 'double' ? '✨' : card.emoji);
 
         cardElement.appendChild(back);
         cardElement.appendChild(front);
@@ -150,6 +167,12 @@ function checkMatch() {
             card1.isMatched = true;
             card2.isMatched = true;
             matchedPairs++;
+            if (specialMode && (card1.special === 'double' || card2.special === 'double')) {
+                matchedPairs = Math.min(totalPairs, matchedPairs + 1);
+            }
+            if (specialMode && (card1.special === 'freeze' || card2.special === 'freeze')) {
+                freezeSeconds += 3;
+            }
 
             const element1 = document.querySelector(`[data-id="${card1.id}"]`);
             const element2 = document.querySelector(`[data-id="${card2.id}"]`);
@@ -207,6 +230,10 @@ function updateBestScore() {
 // 开始计时
 function startTimer() {
     gameTimer = setInterval(() => {
+        if (freezeSeconds > 0) {
+            freezeSeconds--;
+            return;
+        }
         seconds++;
         const minutes = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -243,6 +270,14 @@ function gameWon() {
     if (!bestTime || seconds < parseInt(bestTime)) {
         localStorage.setItem('memoryBestTime', seconds);
     }
+    localStorage.setItem(STORAGE_KEYS.best, JSON.stringify({ moves, seconds, difficulty: currentDifficulty }));
+    localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+        moves,
+        seconds,
+        difficulty: currentDifficulty,
+        specialMode,
+        updatedAt: Date.now()
+    }));
 
     // 显示模态框
     const modal = document.getElementById('winModal');
@@ -282,6 +317,22 @@ function setDifficulty(difficulty) {
     initGame();
 }
 
+function ensureSpecialModeToggle() {
+    if (document.getElementById('specialModeBtn')) return;
+    const panel = document.querySelector('.controls') || document.querySelector('.buttons') || document.body;
+    const btn = document.createElement('button');
+    btn.id = 'specialModeBtn';
+    btn.className = 'btn';
+    btn.textContent = '特殊牌:关';
+    btn.addEventListener('click', () => {
+        specialMode = !specialMode;
+        btn.textContent = `特殊牌:${specialMode ? '开' : '关'}`;
+        localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({ specialMode, updatedAt: Date.now() }));
+        initGame();
+    });
+    panel.appendChild(btn);
+}
+
 // 初始化难度按钮事件
 document.querySelectorAll('.difficulty-btn').forEach(btn => {
     btn.addEventListener('click', function() {
@@ -290,4 +341,38 @@ document.querySelectorAll('.difficulty-btn').forEach(btn => {
 });
 
 // 页面加载时初始化游戏
+ensureSpecialModeToggle();
 initGame();
+
+window.render_game_to_text = () => JSON.stringify({
+    coordinateSystem: 'card index in array',
+    mode: gameStarted ? 'playing' : 'idle',
+    difficulty: currentDifficulty,
+    moves,
+    matchedPairs,
+    totalPairs,
+    seconds,
+    freezeSeconds,
+    specialMode,
+    flipped: flippedCards.map(c => c.id)
+});
+
+window.advanceTime = (ms) => {
+    const ticks = Math.max(1, Math.floor(ms / 1000));
+    for (let i = 0; i < ticks; i++) {
+        if (gameStarted && !isProcessing) {
+            if (freezeSeconds > 0) freezeSeconds--;
+            else seconds++;
+        }
+    }
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    const timeEl = document.getElementById('time');
+    if (timeEl) timeEl.textContent = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+window.get_game_meta = () => JSON.stringify({
+    gameId: GAME_ID,
+    version: 'v1',
+    mode: specialMode ? 'special' : 'classic'
+});

@@ -36,17 +36,21 @@
         html, body {
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: none;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
         }
         body {
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
             margin: 0;
             padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Arial', sans-serif;
             overflow-x: hidden;
+            touch-action: pan-y;
         }
         .container {
             text-align: center;
@@ -55,6 +59,8 @@
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             max-width: 700px;
+            width: min(700px, calc(100vw - 20px));
+            margin: 12px 10px 24px;
         }
         h1 {
             color: #333;
@@ -70,6 +76,8 @@
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 12px;
             margin-bottom: 15px;
+            align-content: start;
+            min-height: 220px;
         }
         .game-card {
             background: #f8f9fa;
@@ -124,9 +132,18 @@
         .category-tabs {
             display: flex;
             gap: 8px;
-            justify-content: center;
-            flex-wrap: wrap;
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
             margin-bottom: 12px;
+            padding-bottom: 4px;
+            touch-action: pan-x;
+        }
+        .category-tabs::-webkit-scrollbar {
+            display: none;
         }
         .category-tab {
             background: #f0f0f0;
@@ -137,6 +154,8 @@
             border-radius: 18px;
             cursor: pointer;
             transition: all 0.3s;
+            white-space: nowrap;
+            flex: 0 0 auto;
         }
         .category-tab.active {
             background: #667eea;
@@ -222,6 +241,7 @@
             .games-grid {
                 grid-template-columns: repeat(3, 1fr);
                 gap: 10px;
+                min-height: 300px;
             }
             .game-card {
                 padding: 15px 10px;
@@ -256,6 +276,13 @@
             }
             .score-item .score-value {
                 font-size: 18px;
+            }
+            .category-tabs {
+                gap: 6px;
+            }
+            .category-tab {
+                padding: 5px 12px;
+                font-size: 13px;
             }
         }
         @media (max-width: 480px) {
@@ -331,7 +358,7 @@
 
             <a href="./tower-defense/" class="game-card" data-category="action">
                 <div class="game-icon" aria-hidden="true">
-                    <img src="/tower-defense/icon.svg" alt="塔防">
+                    <img src="./tower-defense/icon.svg" alt="塔防">
                 </div>
                 <div class="game-title">王国塔防</div>
                 <div class="game-desc">策略塔防守卫王国</div>
@@ -468,6 +495,22 @@
         (function() {
             var tabs = document.querySelectorAll('.category-tab');
             var cards = document.querySelectorAll('.game-card');
+            var grid = document.getElementById('gamesGrid');
+
+            function lockGridHeight() {
+                if (!grid) return;
+                var prev = grid.style.minHeight;
+                grid.style.minHeight = '0px';
+                var h = grid.offsetHeight;
+                grid.style.minHeight = Math.max(h, 220) + 'px';
+                if (prev && parseInt(prev, 10) > h) {
+                    grid.style.minHeight = prev;
+                }
+            }
+
+            lockGridHeight();
+            window.addEventListener('resize', lockGridHeight);
+
             tabs.forEach(function(tab) {
                 tab.addEventListener('click', function() {
                     tabs.forEach(function(t) { t.classList.remove('active'); });
@@ -480,6 +523,7 @@
                             card.style.display = 'none';
                         }
                     });
+                    tab.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
                 });
             });
         })();
@@ -494,7 +538,7 @@
             });
         });
 
-        // 加载各游戏的最高分
+        // 加载各游戏的成绩（统一适配层）
         function addScoreItem(grid, icon, name, value, href) {
             var item = document.createElement('a');
             item.className = 'score-item';
@@ -512,78 +556,70 @@
             return m + ':' + s.toString().padStart(2, '0');
         }
 
+        function migrateLegacyScores() {
+            function setIfMissing(newKey, legacyKey, transform) {
+                if (!localStorage.getItem(newKey)) {
+                    var raw = localStorage.getItem(legacyKey);
+                    if (raw !== null) {
+                        localStorage.setItem(newKey, transform ? transform(raw) : raw);
+                    }
+                }
+            }
+            setIfMissing('miniGames.v1.snake-game.best', 'snakeHighScore');
+            setIfMissing('miniGames.v1.2048.best', 'bestScore2048');
+            setIfMissing('miniGames.v1.tetris.best', 'tetrisHighScore');
+            setIfMissing('miniGames.v1.whack-a-mole.best', 'whackMoleHighScore');
+            setIfMissing('miniGames.v1.memory-game.best', 'memoryBestMoves', function(moves) {
+                var t = localStorage.getItem('memoryBestTime') || 0;
+                return JSON.stringify({ moves: parseInt(moves, 10) || 0, seconds: parseInt(t, 10) || 0 });
+            });
+            setIfMissing('miniGames.v1.sudoku.best', 'sudokuBestTime');
+            setIfMissing('miniGames.v1.tic-tac-toe.best', 'tictactoeWins', function(wins) {
+                var losses = localStorage.getItem('tictactoeLosses') || 0;
+                var draws = localStorage.getItem('tictactoeDraws') || 0;
+                return JSON.stringify({ wins: parseInt(wins, 10) || 0, losses: parseInt(losses, 10) || 0, draws: parseInt(draws, 10) || 0 });
+            });
+            setIfMissing('miniGames.v1.puzzle.best', 'puzzleV2Best_3');
+            setIfMissing('miniGames.v1.lights-out.best', 'lightsOutBest');
+            setIfMissing('miniGames.v1.one-stroke.best', 'oneStrokeBest');
+            setIfMissing('miniGames.v1.mbti-test.best', 'mbtiHistory', function(raw) {
+                try {
+                    var arr = JSON.parse(raw);
+                    return arr.length ? arr[arr.length - 1].type : '';
+                } catch (e) {
+                    return '';
+                }
+            });
+        }
+
         function loadScores() {
+            migrateLegacyScores();
             var grid = document.getElementById('scoresGrid');
             grid.innerHTML = '';
             var hasScores = false;
-
-            // 简单分数类
-            var simpleGames = [
-                { key: 'snakeHighScore', name: '贪吃蛇', icon: '🐍', href: './snake-game/', suffix: '分' },
-                { key: 'bestScore2048', name: '2048', icon: '🃏', href: './2048/', suffix: '分' },
-                { key: 'tetrisHighScore', name: '俄罗斯方块', icon: '🎯', href: './tetris/', suffix: '分' },
-                { key: 'whackMoleHighScore', name: '打地鼠', icon: '🔨', href: './whack-a-mole/', suffix: '分' }
+            var scoreAdapters = [
+                { icon: '🐍', name: '贪吃蛇', href: './snake-game/', read: function() { var v = localStorage.getItem('miniGames.v1.snake-game.best'); return v ? v + '分' : ''; } },
+                { icon: '🃏', name: '2048', href: './2048/', read: function() { var v = localStorage.getItem('miniGames.v1.2048.best'); return v ? v + '分' : ''; } },
+                { icon: '🎯', name: '俄罗斯方块', href: './tetris/', read: function() { var v = localStorage.getItem('miniGames.v1.tetris.best'); return v ? v + '分' : ''; } },
+                { icon: '💡', name: '熄灯', href: './lights-out/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.lights-out.best') || '{}'); return v.moves !== undefined ? (v.moves + '步 / ' + formatTime(v.time || 0)) : ''; } catch (e) { return ''; } } },
+                { icon: '🏰', name: '王国塔防', href: './tower-defense/', read: function() { try { var p = JSON.parse(localStorage.getItem('td_progress_v1') || '{}'); var m = Math.max.apply(null, p.bestWaves || [0]); return m > 0 ? ('最高' + m + '波') : ''; } catch (e) { return ''; } } },
+                { icon: '⚫', name: '五子棋', href: './gomoku/', read: function() { try { var s = JSON.parse(localStorage.getItem('miniGames.v1.gomoku.stats') || '{}'); return s.moveCount ? ('最近' + s.moveCount + '手') : ''; } catch (e) { return ''; } } },
+                { icon: '♟️', name: '中国象棋', href: './chinese-chess/', read: function() { try { var s = JSON.parse(localStorage.getItem('miniGames.v1.chinese-chess.stats') || '{}'); return s.moveCount ? ((s.challengeMode ? '残局 ' : '') + s.moveCount + '步') : ''; } catch (e) { return ''; } } },
+                { icon: '🧠', name: '记忆翻牌', href: './memory-game/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.memory-game.best') || '{}'); return v.moves ? (v.moves + '步 / ' + formatTime(v.seconds || 0)) : ''; } catch (e) { return ''; } } },
+                { icon: '🧭', name: 'MBTI', href: './mbti-test/', read: function() { var v = localStorage.getItem('miniGames.v1.mbti-test.best'); return v ? ('最近 ' + v) : ''; } },
+                { icon: '🔨', name: '打地鼠', href: './whack-a-mole/', read: function() { var v = localStorage.getItem('miniGames.v1.whack-a-mole.best'); return v ? v + '分' : ''; } },
+                { icon: '🔢', name: '数独', href: './sudoku/', read: function() { var v = localStorage.getItem('miniGames.v1.sudoku.best'); return v ? formatTime(v) : ''; } },
+                { icon: '⭕', name: '井字棋', href: './tic-tac-toe/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.tic-tac-toe.best') || '{}'); return v.wins ? (v.wins + '胜') : ''; } catch (e) { return ''; } } },
+                { icon: '🧩', name: '拼图', href: './puzzle/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.puzzle.best') || '{}'); return v.moves ? (v.moves + '步 / ' + formatTime(v.time || 0)) : ''; } catch (e) { return ''; } } },
+                { icon: '✍️', name: '一笔画', href: './one-stroke/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.one-stroke.best') || '{}'); return v.level ? (v.level + ' ' + formatTime(v.time || 0)) : ''; } catch (e) { return ''; } } }
             ];
 
-            simpleGames.forEach(function(g) {
-                var val = localStorage.getItem(g.key);
-                if (val) { hasScores = addScoreItem(grid, g.icon, g.name, val + (g.suffix || ''), g.href); }
+            scoreAdapters.forEach(function(adapter) {
+                var value = adapter.read();
+                if (value) {
+                    hasScores = addScoreItem(grid, adapter.icon, adapter.name, value, adapter.href);
+                }
             });
-
-            // 记忆翻牌
-            var mm = localStorage.getItem('memoryBestMoves');
-            var mt = localStorage.getItem('memoryBestTime');
-            if (mm && mt) { hasScores = addScoreItem(grid, '🧠', '记忆翻牌', mm + '步 / ' + formatTime(mt), './memory-game/'); }
-
-            // 数独
-            var st = localStorage.getItem('sudokuBestTime');
-            if (st) { hasScores = addScoreItem(grid, '🔢', '数独', formatTime(st), './sudoku/'); }
-
-            // 井字棋
-            var tw = localStorage.getItem('tictactoeWins');
-            if (tw && parseInt(tw) > 0) { hasScores = addScoreItem(grid, '⭕', '井字棋', tw + '胜', './tic-tac-toe/'); }
-
-            // 拼图
-            try {
-                var pr = localStorage.getItem('puzzleV2Best_3');
-                if (pr) {
-                    var pb = JSON.parse(pr);
-                    hasScores = addScoreItem(grid, '🧩', '拼图', (pb.moves || 0) + '步 / ' + formatTime(pb.time || 0), './puzzle/');
-                }
-            } catch(e) {}
-
-            // 熄灯
-            try {
-                var lr = localStorage.getItem('lightsOutBest');
-                if (lr) {
-                    var lb = JSON.parse(lr);
-                    if (lb && lb.moves !== undefined) {
-                        var dlm = { easy: '轻松', normal: '经典', hard: '进阶' };
-                        hasScores = addScoreItem(grid, '💡', '熄灯', lb.moves + '步 / ' + formatTime(lb.time || 0), './lights-out/');
-                    }
-                }
-            } catch(e) {}
-
-            // 一笔画
-            try {
-                var or = localStorage.getItem('oneStrokeBest');
-                if (or) {
-                    var ob = JSON.parse(or);
-                    if (ob && ob.moves !== undefined) {
-                        hasScores = addScoreItem(grid, '✍️', '一笔画', (ob.level || '') + ' ' + formatTime(ob.time || 0), './one-stroke/');
-                    }
-                }
-            } catch(e) {}
-
-            // 塔防
-            try {
-                var td = localStorage.getItem('td_progress_v1');
-                if (td) {
-                    var tp = JSON.parse(td);
-                    var maxWave = Math.max.apply(null, tp.bestWaves || [0]);
-                    if (maxWave > 0) { hasScores = addScoreItem(grid, '🏰', '塔防', '最高' + maxWave + '波', './tower-defense/'); }
-                }
-            } catch(e) {}
 
             if (!hasScores) {
                 grid.innerHTML = '<p style="color: #999; grid-column: 1 / -1;">暂无游戏记录，快去玩游戏吧！</p>';
@@ -610,6 +646,7 @@
                 var key = localStorage.key(i);
                 if (key && key.startsWith('lightsOutBest_')) localStorage.removeItem(key);
                 if (key && key.startsWith('lastPlayed_')) localStorage.removeItem(key);
+                if (key && key.startsWith('miniGames.v1.')) localStorage.removeItem(key);
             }
             loadScores();
         }

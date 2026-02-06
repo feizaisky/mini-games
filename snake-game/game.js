@@ -6,6 +6,13 @@ const gameOverElement = document.getElementById('gameOver');
 const restartBtn = document.getElementById('restartBtn');
 const startBtn = document.getElementById('startBtn');
 const pauseBtn = document.getElementById('pauseBtn');
+const GAME_ID = 'snake-game';
+const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+const STORAGE_KEYS = {
+    best: `${STORAGE_PREFIX}.best`,
+    stats: `${STORAGE_PREFIX}.stats`,
+    progress: `${STORAGE_PREFIX}.progress`
+};
 
 // 难度配置
 const difficultyConfig = {
@@ -50,6 +57,16 @@ let gameLoopId = null;
 let highScore = 0;
 let isBoosting = false;
 const boostFactor = 0.5;
+let mapMode = 'classic';
+let obstacles = [];
+const obstacleMaps = {
+    classic: [],
+    canyon: Array.from({ length: 12 }, (_, i) => ({ x: 4, y: i + 3 }))
+        .concat(Array.from({ length: 12 }, (_, i) => ({ x: 13, y: i + 3 }))),
+    cross: Array.from({ length: 20 }, (_, i) => ({ x: i, y: 10 }))
+        .concat(Array.from({ length: 20 }, (_, i) => ({ x: 10, y: i })))
+        .filter(p => !(p.x === 9 && p.y === 9))
+};
 
 // 道具系统
 let powerUp = null;       // 当前地图上的道具
@@ -93,6 +110,39 @@ difficultyBtns.forEach(btn => {
         resetGame();
     });
 });
+
+function setMapMode(mode) {
+    mapMode = mode;
+    obstacles = (obstacleMaps[mode] || []).slice();
+    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+        difficulty: currentDifficulty,
+        mapMode,
+        updatedAt: Date.now()
+    }));
+    if (gameRunning) {
+        resetGame();
+    } else {
+        draw();
+    }
+}
+
+function ensureMapButtons() {
+    if (document.getElementById('map-classic')) return;
+    const wrap = document.querySelector('.difficulty-selector') || document.querySelector('.controls') || document.body;
+    const modes = [
+        { id: 'classic', label: '经典图' },
+        { id: 'canyon', label: '峡谷图' },
+        { id: 'cross', label: '十字图' }
+    ];
+    modes.forEach(item => {
+        const btn = document.createElement('button');
+        btn.id = `map-${item.id}`;
+        btn.className = 'difficulty-btn';
+        btn.textContent = item.label;
+        btn.addEventListener('click', () => setMapMode(item.id));
+        wrap.appendChild(btn);
+    });
+}
 
 document.addEventListener('keydown', changeDirection);
 restartBtn.addEventListener('click', resetGame);
@@ -313,6 +363,12 @@ function update() {
             return;
         }
     }
+    for (let i = 0; i < obstacles.length; i++) {
+        if (head.x === obstacles[i].x && head.y === obstacles[i].y) {
+            endGame();
+            return;
+        }
+    }
 
     snake.unshift(head);
 
@@ -330,6 +386,7 @@ function update() {
             highScore = score;
             highScoreElement.textContent = highScore;
             localStorage.setItem('snakeHighScore', highScore);
+            localStorage.setItem(STORAGE_KEYS.best, String(highScore));
             isNewRecord = true;
         }
 
@@ -376,7 +433,8 @@ function spawnPowerUp() {
         y = Math.floor(Math.random() * tileCount);
     } while (
         snake.some(s => s.x === x && s.y === y) ||
-        (food.x === x && food.y === y)
+        (food.x === x && food.y === y) ||
+        obstacles.some(o => o.x === x && o.y === y)
     );
     powerUp = { x, y, type };
 }
@@ -403,6 +461,13 @@ function deactivatePowerUp() {
 function draw() {
     ctx.fillStyle = '#f0f0f0';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (obstacles.length > 0) {
+        ctx.fillStyle = '#7f8c8d';
+        obstacles.forEach((o) => {
+            ctx.fillRect(o.x * gridSize + 2, o.y * gridSize + 2, gridSize - 4, gridSize - 4);
+        });
+    }
 
     // 绘制蛇
     snake.forEach((segment, index) => {
@@ -663,7 +728,9 @@ function renderGameToText() {
         score,
         highScore,
         speed: gameSpeed,
-        boosting: isBoosting
+        boosting: isBoosting,
+        mapMode,
+        obstacles: obstacles.map(o => ({ x: o.x, y: o.y }))
     };
     return JSON.stringify(payload);
 }
@@ -691,6 +758,9 @@ function generateFood() {
             generateFood();
             return;
         }
+    }
+    if (obstacles.some(o => o.x === food.x && o.y === food.y)) {
+        generateFood();
     }
 }
 
@@ -751,6 +821,7 @@ function resetGame() {
     powerUpTimer = 0;
     baseSpeed = difficultyConfig[currentDifficulty].speed;
     isBoosting = false;
+    obstacles = (obstacleMaps[mapMode] || []).slice();
     gamePaused = false;
     applySpeed();
     scoreElement.textContent = score;
@@ -765,7 +836,21 @@ function resetGame() {
     dy = 0;
 
     if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+    localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+        score,
+        highScore,
+        difficulty: currentDifficulty,
+        mapMode,
+        updatedAt: Date.now()
+    }));
     gameLoop();
 }
 
+window.get_game_meta = () => JSON.stringify({
+    gameId: GAME_ID,
+    version: 'v1',
+    mode: mapMode
+});
+
+ensureMapButtons();
 draw();

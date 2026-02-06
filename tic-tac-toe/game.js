@@ -7,6 +7,13 @@ let gameMode = 'ai'; // 'ai' or 'pvp'
 let aiDifficulty = 'easy';
 let gameActive = true;
 let moveHistory = [];
+const GAME_ID = 'tic-tac-toe';
+const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+const STORAGE_KEYS = {
+    best: `${STORAGE_PREFIX}.best`,
+    stats: `${STORAGE_PREFIX}.stats`,
+    progress: `${STORAGE_PREFIX}.progress`
+};
 
 // 统计
 let wins = 0;
@@ -60,8 +67,8 @@ function setupButtons() {
             document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
             this.classList.add('selected');
             boardSize = parseInt(this.dataset.size);
-            // 4x4 和 3x3 都是连3，5x5 是连4
-            winLength = boardSize === 5 ? 4 : 3;
+            // 4x4 与 5x5 采用连4模式
+            winLength = boardSize >= 4 ? 4 : 3;
             newGame();
         });
     });
@@ -89,6 +96,13 @@ function newGame() {
     renderBoard();
     updateStatus();
     updateUndoButton();
+    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+        boardSize,
+        winLength,
+        gameMode,
+        aiDifficulty,
+        updatedAt: Date.now()
+    }));
 }
 
 // 渲染棋盘
@@ -289,6 +303,19 @@ function updateStats() {
     document.getElementById('wins').textContent = wins;
     document.getElementById('losses').textContent = losses;
     document.getElementById('draws').textContent = draws;
+    localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+        wins,
+        losses,
+        draws,
+        boardSize,
+        winLength,
+        updatedAt: Date.now()
+    }));
+    localStorage.setItem(STORAGE_KEYS.best, JSON.stringify({
+        wins,
+        losses,
+        draws
+    }));
 }
 
 // 更新悔棋按钮
@@ -441,4 +468,28 @@ function loadStats() {
 }
 
 // 页面加载时初始化
+window.render_game_to_text = () => JSON.stringify({
+    coordinateSystem: '1d board index; row=i/boardSize, col=i%boardSize',
+    mode: gameMode,
+    boardSize,
+    winLength,
+    currentPlayer,
+    gameActive,
+    aiDifficulty,
+    board,
+    moveCount: moveHistory.length
+});
+
+window.advanceTime = (ms) => {
+    if (gameMode === 'ai' && currentPlayer === 'O' && gameActive && ms >= 200) {
+        aiMove();
+    }
+};
+
+window.get_game_meta = () => JSON.stringify({
+    gameId: GAME_ID,
+    version: 'v1',
+    mode: gameMode
+});
+
 initGame();

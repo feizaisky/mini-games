@@ -9,25 +9,50 @@ const highScoreElement = document.getElementById('highScore');
 const levelElement = document.getElementById('level');
 const gameOverElement = document.getElementById('gameOver');
 const startBtn = document.getElementById('startBtn');
+const GAME_ID = 'tetris';
+const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
+const STORAGE_KEYS = {
+    best: `${STORAGE_PREFIX}.best`,
+    stats: `${STORAGE_PREFIX}.stats`,
+    progress: `${STORAGE_PREFIX}.progress`
+};
 
 const COLS = 10;
 const ROWS = 20;
 let BLOCK_SIZE = 20;
 let NEXT_BLOCK_SIZE = 15;
+let persistStatsTimer = null;
+
+function persistStatsAsync() {
+    if (persistStatsTimer) return;
+    persistStatsTimer = setTimeout(() => {
+        persistStatsTimer = null;
+        localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
+            score,
+            lines,
+            level,
+            combo,
+            backToBack,
+            updatedAt: Date.now()
+        }));
+    }, 80);
+}
 
 // 响应式画布大小
 function resizeCanvas() {
     const container = document.querySelector('.game-container');
     const containerWidth = container.clientWidth;
-    const sidePanelWidth = 60;
+    const isMobile = window.innerWidth <= 768;
+    const sidePanelWidth = isMobile ? 66 : 74;
 
-    const availableWidth = containerWidth - sidePanelWidth - 20;
+    const availableWidth = containerWidth - sidePanelWidth - (isMobile ? 6 : 20);
 
     const headerHeight = 40;
-    const controlsHeight = 70;
-    const hintHeight = 40;
-    const padding = 35;
-    const availableHeight = window.innerHeight - headerHeight - controlsHeight - hintHeight - padding;
+    const controlsHeight = isMobile ? 62 : 70;
+    const hintHeight = isMobile ? 34 : 40;
+    const sidePanelHeight = 0;
+    const padding = isMobile ? 20 : 35;
+    const availableHeight = window.innerHeight - headerHeight - controlsHeight - hintHeight - sidePanelHeight - padding;
 
     const maxBlockWidth = Math.floor(availableWidth / COLS);
     const maxBlockHeight = Math.floor(availableHeight / ROWS);
@@ -39,7 +64,7 @@ function resizeCanvas() {
     canvas.style.width = canvas.width + 'px';
     canvas.style.height = canvas.height + 'px';
 
-    NEXT_BLOCK_SIZE = Math.floor(BLOCK_SIZE * 0.75);
+    NEXT_BLOCK_SIZE = Math.floor(BLOCK_SIZE * (isMobile ? 0.48 : 0.75));
     nextCanvas.width = 4 * NEXT_BLOCK_SIZE;
     nextCanvas.height = 4 * NEXT_BLOCK_SIZE;
     holdCanvas.width = 4 * NEXT_BLOCK_SIZE;
@@ -64,12 +89,13 @@ let level = 1;
 let lines = 0;
 let gameRunning = false;
 let gameLoopId = null;
+let lastFrameTs = 0;
+let dropAccumulator = 0;
 let dropInterval = 1000;
 
 // 连击系统
 let combo = 0;
-let lineClearFlashRows = [];
-let flashTimer = 0;
+let backToBack = 0;
 
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -145,13 +171,7 @@ function drawBoard() {
     for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < COLS; col++) {
             if (board[row][col]) {
-                // 消行闪光效果
-                if (lineClearFlashRows.includes(row)) {
-                    ctx.fillStyle = 'rgba(255, 255, 255, ' + (0.5 + Math.sin(flashTimer * 0.3) * 0.5) + ')';
-                    ctx.fillRect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                } else {
-                    drawBlock(ctx, col, row, board[row][col], BLOCK_SIZE);
-                }
+                drawBlock(ctx, col, row, board[row][col], BLOCK_SIZE);
             }
         }
     }
@@ -176,12 +196,22 @@ function drawPiece(context, shape, pieceX, pieceY, color, blockSize, isShadow) {
         row.forEach((value, dx) => {
             if (value) {
                 if (isShadow) {
-                    context.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                    context.fillStyle = 'rgba(255, 255, 255, 0.18)';
                     context.fillRect(
                         (pieceX + dx) * blockSize + 1,
                         (pieceY + dy) * blockSize + 1,
                         blockSize - 2, blockSize - 2
                     );
+                    // 虚线边框增强可见度
+                    context.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+                    context.lineWidth = 1;
+                    context.setLineDash([3, 2]);
+                    context.strokeRect(
+                        (pieceX + dx) * blockSize + 1.5,
+                        (pieceY + dy) * blockSize + 1.5,
+                        blockSize - 3, blockSize - 3
+                    );
+                    context.setLineDash([]);
                 } else {
                     drawBlock(context, pieceX + dx, pieceY + dy, color, blockSize);
                 }
@@ -246,27 +276,6 @@ function lockPiece() {
     // 如果没有需要消除的行，clearLines 会直接调用 spawnPiece
 }
 
-// 消行闪光动画
-function flashClearLines(rows, callback) {
-    lineClearFlashRows = rows;
-    flashTimer = 0;
-    var flashCount = 0;
-    var maxFlashes = 8;
-
-    function animateFlash() {
-        flashTimer++;
-        flashCount++;
-        drawBoard();
-        if (flashCount < maxFlashes) {
-            requestAnimationFrame(animateFlash);
-        } else {
-            lineClearFlashRows = [];
-            callback();
-        }
-    }
-    requestAnimationFrame(animateFlash);
-}
-
 function clearLines() {
     var rowsToClear = [];
 
@@ -278,12 +287,6 @@ function clearLines() {
 
     if (rowsToClear.length > 0) {
         combo++;
-
-        // 暂停游戏循环，防止动画期间生成新方块或移动
-        if (gameLoopId) {
-            clearTimeout(gameLoopId);
-            gameLoopId = null;
-        }
 
         // 播放消行音效
         if (typeof GameAudio !== 'undefined') {
@@ -303,8 +306,14 @@ function clearLines() {
         // 先计分（立即更新，不等动画）
         var linesCleared = rowsToClear.length;
         var points = [0, 100, 300, 500, 1200];
+        if (linesCleared >= 4) {
+            backToBack += 1;
+        } else {
+            backToBack = 0;
+        }
         var comboBonus = combo > 1 ? combo * 50 : 0;
-        score += points[linesCleared] * level + comboBonus;
+        var b2bBonus = backToBack >= 2 ? 200 * (backToBack - 1) : 0;
+        score += points[linesCleared] * level + comboBonus + b2bBonus;
         lines += linesCleared;
 
         var newLevel = Math.floor(lines / 10) + 1;
@@ -321,27 +330,17 @@ function clearLines() {
             highScore = score;
             highScoreElement.textContent = highScore;
             localStorage.setItem('tetrisHighScore', highScore);
+            localStorage.setItem(STORAGE_KEYS.best, String(highScore));
         }
+        persistStatsAsync();
 
-        // 闪光效果后删除行并生成新方块
-        flashClearLines(rowsToClear, function() {
-            // 按倒序删除行
-            rowsToClear.sort((a, b) => b - a);
-            for (var i = 0; i < rowsToClear.length; i++) {
-                board.splice(rowsToClear[i], 1);
-                board.unshift(Array(COLS).fill(0));
-            }
-
-            drawBoard();
-
-            // 行删除完毕后再生成新方块
-            spawnPiece();
-
-            // 恢复游戏循环
-            if (gameRunning) {
-                gameLoopId = setTimeout(gameLoop, dropInterval);
-            }
-        });
+        // 同步清行：不做异步动画，避免连击时调度抖动
+        rowsToClear.sort((a, b) => b - a);
+        for (var i = 0; i < rowsToClear.length; i++) {
+            board.splice(rowsToClear[i], 1);
+            board.unshift(Array(COLS).fill(0));
+        }
+        spawnPiece();
     } else {
         combo = 0;
         // 没有消行时直接生成新方块
@@ -375,7 +374,7 @@ function spawnPiece() {
 
 // Hold 功能
 function holdPieceFn() {
-    if (!gameRunning || !currentPiece || !canHold || lineClearFlashRows.length > 0) return;
+    if (!gameRunning || !currentPiece || !canHold) return;
 
     if (typeof GameAudio !== 'undefined') GameAudio.play('select');
 
@@ -400,7 +399,7 @@ function holdPieceFn() {
 }
 
 function moveLeftFn() {
-    if (!gameRunning || !currentPiece || lineClearFlashRows.length > 0) return;
+    if (!gameRunning || !currentPiece) return;
     if (!collision(currentPiece.shape, currentPiece.x - 1, currentPiece.y)) {
         currentPiece.x--;
         if (typeof GameAudio !== 'undefined') GameAudio.play('move');
@@ -409,7 +408,7 @@ function moveLeftFn() {
 }
 
 function moveRightFn() {
-    if (!gameRunning || !currentPiece || lineClearFlashRows.length > 0) return;
+    if (!gameRunning || !currentPiece) return;
     if (!collision(currentPiece.shape, currentPiece.x + 1, currentPiece.y)) {
         currentPiece.x++;
         if (typeof GameAudio !== 'undefined') GameAudio.play('move');
@@ -419,8 +418,6 @@ function moveRightFn() {
 
 function moveDownFn(isManual) {
     if (!gameRunning || !currentPiece) return;
-    // 消行动画进行中时不操作
-    if (lineClearFlashRows.length > 0) return;
     if (!collision(currentPiece.shape, currentPiece.x, currentPiece.y + 1)) {
         currentPiece.y++;
         // 软降（玩家主动按下）每格 +1 分
@@ -436,7 +433,7 @@ function moveDownFn(isManual) {
 }
 
 function hardDropFn() {
-    if (!gameRunning || !currentPiece || lineClearFlashRows.length > 0) return;
+    if (!gameRunning || !currentPiece) return;
     while (!collision(currentPiece.shape, currentPiece.x, currentPiece.y + 1)) {
         currentPiece.y++;
         score += 2;
@@ -447,7 +444,7 @@ function hardDropFn() {
 }
 
 function rotateFn() {
-    if (!gameRunning || !currentPiece || lineClearFlashRows.length > 0) return;
+    if (!gameRunning || !currentPiece) return;
 
     const rotated = currentPiece.shape[0].map((_, i) =>
         currentPiece.shape.map(row => row[i]).reverse()
@@ -472,13 +469,26 @@ function gameOverHandler() {
     gameOverElement.className = 'game-over show';
     gameOverElement.textContent = '游戏结束！得分: ' + score;
     if (typeof GameAudio !== 'undefined') GameAudio.play('lose');
-    if (gameLoopId) clearTimeout(gameLoopId);
+    if (gameLoopId) {
+        cancelAnimationFrame(gameLoopId);
+        gameLoopId = null;
+    }
 }
 
-function gameLoop() {
+function gameLoop(timestamp) {
     if (!gameRunning) return;
-    moveDownFn(false);
-    gameLoopId = setTimeout(gameLoop, dropInterval);
+    if (!lastFrameTs) lastFrameTs = timestamp;
+    const frameDelta = Math.min(50, timestamp - lastFrameTs);
+    lastFrameTs = timestamp;
+    dropAccumulator += frameDelta;
+
+    while (dropAccumulator >= dropInterval) {
+        moveDownFn(false);
+        dropAccumulator -= dropInterval;
+        if (!gameRunning) return;
+    }
+
+    gameLoopId = requestAnimationFrame(gameLoop);
 }
 
 function startGame() {
@@ -487,6 +497,7 @@ function startGame() {
     level = 1;
     lines = 0;
     combo = 0;
+    backToBack = 0;
     heldPiece = null;
     canHold = true;
     dropInterval = 1000;
@@ -502,8 +513,18 @@ function startGame() {
     drawHoldPiece();
 
     gameRunning = true;
+    lastFrameTs = 0;
+    dropAccumulator = 0;
     if (typeof GameAudio !== 'undefined') GameAudio.play('click');
-    gameLoop();
+    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
+        mode: 'playing',
+        updatedAt: Date.now()
+    }));
+    if (gameLoopId) {
+        cancelAnimationFrame(gameLoopId);
+        gameLoopId = null;
+    }
+    gameLoopId = requestAnimationFrame(gameLoop);
 }
 
 // 键盘控制
@@ -608,6 +629,33 @@ const tetris = {
     rotate: rotateFn,
     holdPiece: holdPieceFn
 };
+
+window.render_game_to_text = () => JSON.stringify({
+    coordinateSystem: 'board[row][col], origin top-left',
+    mode: gameRunning ? 'playing' : 'idle',
+    score,
+    highScore,
+    level,
+    lines,
+    combo,
+    backToBack,
+    currentPiece: currentPiece ? { x: currentPiece.x, y: currentPiece.y, shapeIndex: currentPiece.shapeIndex } : null
+});
+
+window.advanceTime = (ms) => {
+    const steps = Math.max(1, Math.floor(ms / Math.max(100, dropInterval)));
+    for (let i = 0; i < steps; i++) {
+        if (gameRunning) {
+            moveDownFn(false);
+        }
+    }
+};
+
+window.get_game_meta = () => JSON.stringify({
+    gameId: GAME_ID,
+    version: 'v1',
+    mode: 'classic'
+});
 
 initBoard();
 drawBoard();
