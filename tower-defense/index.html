@@ -59,51 +59,58 @@
           <div id="build-bar" class="build-bar">
             <div class="build-card" data-tower="gun" role="button" tabindex="0">
               <div class="card-icon gun"></div>
-              <div class="card-info">
-                <div class="card-line">
-                  <span class="card-name">弩炮塔</span>
-                  <span class="card-meta" data-info="gun"></span>
-                </div>
+              <div class="card-mini">
+                <span class="card-name">弩炮塔</span>
+                <span class="card-cost" data-cost="gun"></span>
+                <span class="card-effect" data-effect-text="gun"></span>
               </div>
+              <span class="effect-icon" data-effect="gun"></span>
             </div>
             <div class="build-card" data-tower="slow" role="button" tabindex="0">
               <div class="card-icon slow"></div>
-              <div class="card-info">
-                <div class="card-line">
-                  <span class="card-name">寒霜塔</span>
-                  <span class="card-meta" data-info="slow"></span>
-                </div>
+              <div class="card-mini">
+                <span class="card-name">寒霜塔</span>
+                <span class="card-cost" data-cost="slow"></span>
+                <span class="card-effect" data-effect-text="slow"></span>
               </div>
+              <span class="effect-icon" data-effect="slow"></span>
             </div>
             <div class="build-card" data-tower="blast" role="button" tabindex="0">
               <div class="card-icon blast"></div>
-              <div class="card-info">
-                <div class="card-line">
-                  <span class="card-name">爆裂塔</span>
-                  <span class="card-meta" data-info="blast"></span>
-                </div>
+              <div class="card-mini">
+                <span class="card-name">爆裂塔</span>
+                <span class="card-cost" data-cost="blast"></span>
+                <span class="card-effect" data-effect-text="blast"></span>
               </div>
+              <span class="effect-icon" data-effect="blast"></span>
             </div>
             <div class="build-card" data-tower="lightning" role="button" tabindex="0">
               <div class="card-icon lightning"></div>
-              <div class="card-info">
-                <div class="card-line">
-                  <span class="card-name">闪电塔</span>
-                  <span class="card-meta" data-info="lightning"></span>
-                </div>
+              <div class="card-mini">
+                <span class="card-name">闪电塔</span>
+                <span class="card-cost" data-cost="lightning"></span>
+                <span class="card-effect" data-effect-text="lightning"></span>
               </div>
+              <span class="effect-icon" data-effect="lightning"></span>
             </div>
             <div class="build-card" data-tower="poison" role="button" tabindex="0">
               <div class="card-icon poison"></div>
-              <div class="card-info">
-                <div class="card-line">
-                  <span class="card-name">瘴毒塔</span>
-                  <span class="card-meta" data-info="poison"></span>
-                </div>
+              <div class="card-mini">
+                <span class="card-name">瘴毒塔</span>
+                <span class="card-cost" data-cost="poison"></span>
+                <span class="card-effect" data-effect-text="poison"></span>
               </div>
+              <span class="effect-icon" data-effect="poison"></span>
             </div>
           </div>
-          <div class="hint">点选卡牌后点格子建造，或拖拽到地图上放置。</div>
+          <div class="hint">短按选择建造，长按查看详细属性。</div>
+          <div id="tower-detail-card" class="tower-detail-card" hidden>
+            <div class="tower-detail-head">
+              <span id="tower-detail-name"></span>
+              <button id="tower-detail-close" class="pill detail-close-btn">关闭</button>
+            </div>
+            <div id="tower-detail-body" class="tower-detail-body"></div>
+          </div>
         </div>
       </div>
     </main>
@@ -124,6 +131,7 @@
   <script src="/common/celebration.js"></script>
   <script src="/common/share.js"></script>
   <script type="module" src="js/main.js"></script>
+  <script src="/common/anti-longpress.js"></script>
   <script src="/common/loader.js"></script>
 </body>
 </html>

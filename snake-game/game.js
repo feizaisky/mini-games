@@ -195,28 +195,6 @@ let touchStartX = 0;
 let touchStartY = 0;
 const minSwipeDistance = 30;
 
-document.addEventListener('contextmenu', function(e) {
-    if (e.target.tagName === 'CANVAS' || e.target.tagName === 'BUTTON' || e.target.closest('button') ||
-        e.target.tagName === 'A' || e.target.closest('a')) {
-        return;
-    }
-    e.preventDefault();
-    return false;
-});
-
-let lastTouchEnd = 0;
-document.addEventListener('touchend', function(e) {
-    if (e.target.tagName === 'BUTTON' || e.target.closest('button') ||
-        e.target.tagName === 'A' || e.target.closest('a')) {
-        return;
-    }
-    const now = Date.now();
-    if (now - lastTouchEnd <= 300) {
-        e.preventDefault();
-    }
-    lastTouchEnd = now;
-}, false);
-
 canvas.addEventListener('touchstart', function(e) {
     e.preventDefault();
     touchStartX = e.touches[0].clientX;
@@ -305,23 +283,6 @@ canvas.addEventListener('click', function(e) {
 canvas.addEventListener('mousedown', function() { setBoosting(true); });
 document.addEventListener('mouseup', function() { setBoosting(false); });
 document.addEventListener('mouseleave', function() { setBoosting(false); });
-
-document.addEventListener('copy', function(e) { e.preventDefault(); });
-document.addEventListener('cut', function(e) { e.preventDefault(); });
-document.addEventListener('paste', function(e) { e.preventDefault(); });
-
-document.addEventListener('wheel', function(e) {
-    if (e.ctrlKey) e.preventDefault();
-}, { passive: false });
-
-document.addEventListener('keydown', function(e) {
-    if (!e.ctrlKey) return;
-    if (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0') e.preventDefault();
-});
-
-document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
-document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
-document.addEventListener('gestureend', function(e) { e.preventDefault(); });
 
 function startGame() {
     gameStarted = true;

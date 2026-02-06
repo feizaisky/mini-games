@@ -111,3 +111,23 @@
 
 更新：
 - 顶部第二行“开始/暂停”按钮整体靠右（在开始按钮上设置 margin-left:auto）。
+
+更新：
+- 炮塔建造栏改为紧凑小卡：仅展示图标、名称、费用、效果图标。
+- 交互改为“短按选中建造 / 再次短按取消”，并新增“长按（420ms）显示详细属性”面板。
+- 详细属性面板包含：费用、攻击力、攻速、射程、效果类型、描述；支持关闭按钮。
+- 通过本地 http + Playwright 动作脚本完成一次验证：可完成选塔建造并保持主流程可玩。
+
+测试：
+- `node --check /opt/code/mini-games/tower-defense/js/main.js`
+- `node --check /opt/code/mini-games/tower-defense/js/ui.js`
+- Playwright 截图输出：`/opt/code/mini-games/output/tower-defense-ui/shot-0.png`
+
+更新：
+- 修复“点击地图后无法继续操作”问题：地图卡片从仅 click 改为 click + pointerup 双通道触发，避免移动端触摸未触发 click 导致界面卡在遮罩态。
+- 修复“进入地图后无法滑动”问题：`#game-canvas` 的 `touch-action` 从 `none` 调整为 `pan-y`，允许纵向滚动。
+
+测试：
+- `node --check /opt/code/mini-games/tower-defense/js/ui.js`
+- `node --check /opt/code/mini-games/tower-defense/js/main.js`
+- Playwright 验证截图：`/opt/code/mini-games/output/tower-defense-map-fix/shot-0.png`

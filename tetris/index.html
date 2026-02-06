@@ -420,33 +420,11 @@
             }
         }
 
-        // 微信/移动端：避免长按触发“搜一搜/翻译”浮层
-        ['contextmenu', 'selectstart', 'dragstart', 'copy', 'cut', 'paste'].forEach(function(eventName) {
-            document.addEventListener(eventName, function(e) { e.preventDefault(); }, { passive: false });
-        });
-        ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(eventName) {
-            document.addEventListener(eventName, function(e) { e.preventDefault(); }, { passive: false });
-        });
-
-        // 全局阻止所有 touchstart 默认行为，彻底禁用微信“搜一搜/翻译”浮层
-        // 按钮点击通过 onclick / touchend 处理，不受影响
-        document.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-        }, { passive: false });
-
-        // 首页按钮：手动处理触摸导航，规避长按菜单
-        var homeBtn = document.querySelector('.home-btn');
-        if (homeBtn) {
-            homeBtn.addEventListener('touchend', function(e) {
-                e.preventDefault();
-                var href = homeBtn.getAttribute('href') || '/';
-                window.location.href = href;
-            }, { passive: false });
-        }
     </script>
     <script src="/common/audio.js"></script>
     <script src="/common/celebration.js"></script>
     <script src="/common/share.js"></script>
+    <script src="/common/anti-longpress.js"></script>
     <script src="/common/loader.js"></script>
 </body>
 </html>

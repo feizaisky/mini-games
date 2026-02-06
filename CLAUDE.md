@@ -58,6 +58,7 @@ python3 -m http.server 8000
 3. 若有最高分，需加入主站的分数读取脚本
 4. 添加统一加载动画（见下方说明）
 5. 接入公共音效、庆祝动画、分享组件
+6. 引入防长按/防微信浮层脚本
 
 示例卡片：
 ```html
@@ -173,6 +174,22 @@ GameShare.hide();
 GameShare.toDataURL(opts); // 获取卡片图 dataURL
 ```
 
+### 防长按/防微信浮层
+
+禁用微信"搜一搜/翻译"浮层、长按选中、复制粘贴、手势缩放。
+
+```html
+<script src="/common/anti-longpress.js"></script>
+```
+
+功能说明：
+- 阻止 `contextmenu`、`selectstart`、`dragstart`、`copy`、`cut`、`paste` 默认行为
+- 阻止 iOS `gesture` 系列事件（捏合缩放）
+- 全局 `touchstart` `preventDefault` — 彻底禁用微信长按弹出"搜一搜/翻译"
+- 自动为 `.home-btn` 链接添加 `touchend` 导航（因全局 `touchstart` 被拦截，`click` 可能不触发）
+
+注意：按钮的 `onclick` / `touchend` 不受影响，正常工作。
+
 ### 脚本加载顺序
 
 在 `</body>` 前按以下顺序引入：
@@ -181,6 +198,7 @@ GameShare.toDataURL(opts); // 获取卡片图 dataURL
 <script src="/common/audio.js"></script>
 <script src="/common/celebration.js"></script>
 <script src="/common/share.js"></script>
+<script src="/common/anti-longpress.js"></script>
 <script src="/common/loader.js"></script>
 ```
 
@@ -205,6 +223,8 @@ GameShare.toDataURL(opts); // 获取卡片图 dataURL
 
 - 所有游戏页面禁止复制/选择文本（`-webkit-user-select: none; user-select: none`）
 - 所有游戏页面禁止缩放（`meta viewport` 加 `maximum-scale=1.0, user-scalable=no`）
+- 所有游戏页面禁止长按弹出菜单 — 通过 `common/anti-longpress.js` 统一处理
+- 微信浏览器"搜一搜/翻译"浮层 — 通过全局 `touchstart` `preventDefault` 禁用
 
 ## LocalStorage 键
 

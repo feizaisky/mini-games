@@ -24,11 +24,33 @@ export function setupUI({
     menuScreen,
     mapList,
     closeMenuBtn,
-    toast
+    toast,
+    towerDetailCard,
+    towerDetailName,
+    towerDetailBody,
+    towerDetailClose
   } = elements;
 
-  let dragging = null;
-  let dragGhost = null;
+  const LONG_PRESS_MS = 420;
+  let cardPress = null;
+
+  const getEffectLabel = (tower) => {
+    if (tower.slowFactor) return "减速";
+    if (tower.splashRadius) return "溅射";
+    if (tower.chainCount) return "连锁";
+    if (tower.poisonDamage) return "中毒";
+    return "单体";
+  };
+
+  const getEffectDetail = (tower) => {
+    if (tower.slowFactor) return `减速至 ${(tower.slowFactor * 100).toFixed(0)}%，持续 ${tower.slowDuration}s`;
+    if (tower.splashRadius) return `溅射半径 ${tower.splashRadius}`;
+    if (tower.chainCount) return `连锁 ${tower.chainCount} 目标，链距 ${tower.chainRange}`;
+    if (tower.poisonDamage) return `每秒 ${tower.poisonDamage} 点，持续 ${tower.poisonDuration}s`;
+    return "无特殊效果";
+  };
+
+  const formatRate = (rate) => (1 / rate).toFixed(1);
 
   const showToast = (message, duration = 1600) => {
     toast.textContent = message;
@@ -52,10 +74,22 @@ export function setupUI({
         ${unlocked ? "" : "<p>未解锁</p>"}
       `;
       if (unlocked) {
-        card.addEventListener("click", () => {
+        let started = false;
+        const startSelectedMap = () => {
+          if (started) return;
+          started = true;
           game.start(index);
           game.run();
           menuScreen.hidden = true;
+        };
+        card.addEventListener("click", startSelectedMap);
+        card.addEventListener("pointerup", (event) => {
+          if (event.pointerType === "mouse" && event.button !== 0) return;
+          startSelectedMap();
+        });
+      } else {
+        card.addEventListener("pointerup", () => {
+          showToast("该地图未解锁。");
         });
       }
       mapList.appendChild(card);
@@ -70,93 +104,102 @@ export function setupUI({
     });
   };
 
-  const clearDrag = () => {
-    dragging = null;
-    if (dragGhost) {
-      dragGhost.remove();
-      dragGhost = null;
-    }
-    game.setHoverTile(null);
+  const showTowerDetail = (type) => {
+    const tower = towerTypes[type];
+    if (!tower) return;
+    towerDetailName.textContent = tower.name;
+    towerDetailBody.innerHTML = `
+      费用：${tower.cost}<br>
+      攻击力：${tower.damage}<br>
+      攻速：${formatRate(tower.fireRate)} 次/秒<br>
+      射程：${tower.range}<br>
+      效果：${getEffectLabel(tower)}（${getEffectDetail(tower)}）<br>
+      说明：${tower.desc}
+    `;
+    towerDetailCard.hidden = false;
   };
 
-  const startDrag = (event, type) => {
-    const rect = canvas.getBoundingClientRect();
-    dragging = {
-      type,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      moved: false
-    };
-    dragGhost = document.createElement("div");
-    dragGhost.className = "drag-ghost";
-    dragGhost.textContent = towerTypes[type].name;
-    document.body.appendChild(dragGhost);
-    updateGhostPosition(event.clientX, event.clientY);
-    game.setBuildMode(type);
-    updateBuildCardSelection();
-    audio.unlock();
-
-    const onMove = (moveEvent) => {
-      if (!dragging || moveEvent.pointerId !== dragging.pointerId) return;
-      const dx = moveEvent.clientX - dragging.startX;
-      const dy = moveEvent.clientY - dragging.startY;
-      if (!dragging.moved && Math.hypot(dx, dy) > 8) {
-        dragging.moved = true;
-      }
-      updateGhostPosition(moveEvent.clientX, moveEvent.clientY);
-      const tile = game.getTileFromScreen(moveEvent.clientX, moveEvent.clientY);
-      game.setHoverTile(tile);
-    };
-
-    const onUp = (upEvent) => {
-      if (!dragging || upEvent.pointerId !== dragging.pointerId) return;
-      const tile = game.getTileFromScreen(upEvent.clientX, upEvent.clientY);
-      if (dragging.moved) {
-        const result = game.placeTower(tile, dragging.type);
-        if (!result.ok) showToast(result.reason);
-        else showToast("防御塔已建造！");
-        game.clearBuildMode();
-      } else {
-        showToast("点选格子即可放置。");
-      }
-      updateBuildCardSelection();
-      clearDrag();
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
-    };
-
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
+  const hideTowerDetail = () => {
+    towerDetailCard.hidden = true;
   };
 
-  const updateGhostPosition = (x, y) => {
-    if (!dragGhost) return;
-    dragGhost.style.transform = `translate(${x + 12}px, ${y + 12}px)`;
+  const clearCardPress = () => {
+    if (!cardPress) return;
+    if (cardPress.timerId) clearTimeout(cardPress.timerId);
+    cardPress = null;
   };
 
   buildCards.forEach((card) => {
     card.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      audio.unlock();
+      const type = card.dataset.tower;
+      cardPress = {
+        type,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        longPressed: false,
+        timerId: setTimeout(() => {
+          if (!cardPress || cardPress.pointerId !== event.pointerId) return;
+          cardPress.longPressed = true;
+          showTowerDetail(type);
+          showToast("已显示详细属性。");
+        }, LONG_PRESS_MS)
+      };
+    });
+
+    card.addEventListener("pointermove", (event) => {
+      if (!cardPress || cardPress.pointerId !== event.pointerId || cardPress.longPressed) return;
+      if (Math.hypot(event.clientX - cardPress.startX, event.clientY - cardPress.startY) > 8) {
+        clearCardPress();
+      }
+    });
+
+    card.addEventListener("pointerup", (event) => {
+      if (!cardPress || cardPress.pointerId !== event.pointerId) return;
+      const { type, longPressed } = cardPress;
+      clearCardPress();
+      if (longPressed) return;
+
+      const current = game.getUIState().buildMode;
+      if (current === type) {
+        game.clearBuildMode();
+        showToast("已取消建造选择。");
+      } else {
+        game.setBuildMode(type);
+        showToast(`已选择${towerTypes[type].name}，点击格子建造。`);
+      }
+      hideTowerDetail();
+      updateBuildCardSelection();
+    });
+
+    card.addEventListener("pointercancel", clearCardPress);
+    card.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
-      startDrag(event, card.dataset.tower);
+      const type = card.dataset.tower;
+      const current = game.getUIState().buildMode;
+      if (current === type) {
+        game.clearBuildMode();
+      } else {
+        game.setBuildMode(type);
+      }
+      updateBuildCardSelection();
     });
   });
 
   canvas.addEventListener("pointermove", (event) => {
-    if (dragging) return;
     if (!game.getUIState().buildMode) return;
     const tile = game.getTileFromScreen(event.clientX, event.clientY);
     game.setHoverTile(tile);
   });
 
   canvas.addEventListener("pointerleave", () => {
-    if (!dragging) game.setHoverTile(null);
+    game.setHoverTile(null);
   });
 
   canvas.addEventListener("pointerup", (event) => {
-    if (dragging && dragging.moved) return;
     const tile = game.getTileFromScreen(event.clientX, event.clientY);
     const state = game.getUIState();
     const towerAt = game.getTowerAt(tile);
@@ -178,6 +221,7 @@ export function setupUI({
     game.selectTowerAt(null);
   });
 
+  towerDetailClose.addEventListener("click", hideTowerDetail);
 
   startWaveBtn.addEventListener("click", () => {
     audio.unlock();

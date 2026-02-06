@@ -27,6 +27,7 @@
 - **音效系统** (`audio.js`)：基于 Web Audio API 的合成音效，支持静音开关
 - **庆祝动画** (`celebration.css` + `celebration.js`)：胜利时的彩带/粒子效果
 - **分享组件** (`share.js`)：生成成绩卡片图，支持保存图片和复制文本
+- **防长按组件** (`anti-longpress.js`)：禁用微信"搜一搜/翻译"浮层、长按选中、复制粘贴、手势缩放
 
 ## 快速开始
 
@@ -53,7 +54,8 @@ mini-games/
 │   ├── audio.js         # 音效系统
 │   ├── celebration.css  # 庆祝动画样式
 │   ├── celebration.js   # 庆祝动画逻辑
-│   └── share.js         # 分享组件
+│   ├── share.js         # 分享组件
+│   └── anti-longpress.js # 防长按/防微信浮层
 ├── 2048/                # 2048
 ├── chinese-chess/       # 中国象棋
 ├── gomoku/              # 五子棋
@@ -77,6 +79,6 @@ mini-games/
 - 新建一个游戏目录（如 `new-game/`）
 - 在该目录下放置 `index.html` 与相关资源
 - 在根目录 `index.html` 的游戏列表中增加入口
-- 接入公共组件（加载动画、音效、庆祝动画）
+- 接入公共组件（加载动画、音效、庆祝动画、防长按）
 
 玩得开心！

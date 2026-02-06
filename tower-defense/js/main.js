@@ -28,7 +28,11 @@ const elements = {
   menuScreen: document.getElementById("menu-screen"),
   mapList: document.getElementById("map-list"),
   closeMenuBtn: document.getElementById("close-menu"),
-  toast: document.getElementById("toast")
+  toast: document.getElementById("toast"),
+  towerDetailCard: document.getElementById("tower-detail-card"),
+  towerDetailName: document.getElementById("tower-detail-name"),
+  towerDetailBody: document.getElementById("tower-detail-body"),
+  towerDetailClose: document.getElementById("tower-detail-close")
 };
 
 const ui = setupUI({
@@ -39,13 +43,37 @@ const ui = setupUI({
   saveProgress
 });
 
-const formatRate = (rate) => (1 / rate).toFixed(1);
-
 for (const [type, data] of Object.entries(towerTypes)) {
-  const infoEl = document.querySelector(`[data-info="${type}"]`);
-  if (infoEl) {
-    const effect = data.slowFactor ? "减速" : data.splashRadius ? "溅射" : "无";
-    infoEl.textContent = `花费：${data.cost}，攻击力：${data.damage}，攻速：${formatRate(data.fireRate)}，效果：${effect}`;
+  const costEl = document.querySelector(`[data-cost="${type}"]`);
+  if (costEl) {
+    costEl.textContent = `${data.cost} 金币`;
+  }
+  const effectTextEl = document.querySelector(`[data-effect-text="${type}"]`);
+  if (effectTextEl) {
+    const effectText = data.slowFactor
+      ? "效果：减速"
+      : data.splashRadius
+        ? "效果：溅射"
+        : data.chainCount
+          ? "效果：连锁"
+          : data.poisonDamage
+            ? "效果：中毒"
+            : "效果：单体";
+    effectTextEl.textContent = effectText;
+  }
+  const effectEl = document.querySelector(`[data-effect="${type}"]`);
+  if (effectEl) {
+    const icon = data.slowFactor
+      ? "❄"
+      : data.splashRadius
+        ? "💥"
+        : data.chainCount
+          ? "⚡"
+          : data.poisonDamage
+            ? "☠"
+            : "🎯";
+    effectEl.textContent = icon;
+    effectEl.title = data.desc;
   }
 }
 
@@ -71,23 +99,6 @@ document.addEventListener("keydown", (event) => {
     document.exitFullscreen?.();
   }
 });
-
-document.addEventListener("contextmenu", (event) => {
-  event.preventDefault();
-});
-
-document.addEventListener("selectstart", (event) => {
-  event.preventDefault();
-});
-
-let lastTouchEnd = 0;
-document.addEventListener("touchend", (event) => {
-  const now = Date.now();
-  if (now - lastTouchEnd <= 300) {
-    event.preventDefault();
-  }
-  lastTouchEnd = now;
-}, { passive: false });
 
 const loopUI = () => {
   ui.updateUI();

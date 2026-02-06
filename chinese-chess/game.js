@@ -1052,25 +1052,6 @@ difficultyBtns.addEventListener('click', evt => {
     resetGame();
 });
 
-['copy', 'cut', 'paste'].forEach(eventName => {
-    document.addEventListener(eventName, evt => evt.preventDefault());
-});
-
-document.addEventListener('wheel', evt => {
-    if (evt.ctrlKey) evt.preventDefault();
-}, { passive: false });
-
-document.addEventListener('keydown', evt => {
-    if (!evt.ctrlKey) return;
-    if (evt.key === '+' || evt.key === '-' || evt.key === '=' || evt.key === '0') {
-        evt.preventDefault();
-    }
-});
-
-['gesturestart', 'gesturechange', 'gestureend'].forEach(eventName => {
-    document.addEventListener(eventName, evt => evt.preventDefault());
-});
-
 window.render_game_to_text = () => {
     const pieces = [];
     for (let y = 0; y < ROWS; y++) {
