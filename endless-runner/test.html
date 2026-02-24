@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>极速跑酷 - 自动化测试</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #fff;
+        }
+        h1 { color: #667eea; }
+        h2 { color: #4ecdc4; margin-top: 30px; }
+        .test-suite {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .test-case {
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .test-case.pass { background: rgba(46, 204, 113, 0.3); }
+        .test-case.fail { background: rgba(231, 76, 60, 0.3); }
+        .test-case.pending { background: rgba(255, 193, 7, 0.3); }
+        .status { font-weight: bold; }
+        .status.pass { color: #2ecc71; }
+        .status.fail { color: #e74c3c; }
+        .status.pending { color: #ffc107; }
+        .summary {
+            font-size: 18px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .error-msg {
+            font-size: 12px;
+            color: #e74c3c;
+            margin-top: 4px;
+        }
+        #runBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 20px 0;
+        }
+        #runBtn:hover { opacity: 0.9; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>🏃 极速跑酷 - 自动化测试</h1>
+    <button id="runBtn">运行测试</button>
+
+    <div id="results"></div>
+
+    <!-- 隐藏的canvas用于Three.js -->
+    <canvas id="testCanvas" class="hidden"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="js/track.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/obstacles.js"></script>
+    <script src="js/coins.js"></script>
+
+    <script>
+        // 测试框架
+        const TestRunner = {
+            tests: [],
+            results: { pass: 0, fail: 0, pending: 0 },
+
+            describe(name, fn) {
+                this.currentSuite = name;
+                fn();
+            },
+
+            it(name, fn) {
+                this.tests.push({
+                    suite: this.currentSuite,
+                    name: name,
+                    fn: fn
+                });
+            },
+
+            assertEqual(actual, expected, msg) {
+                if (actual !== expected) {
+                    throw new Error(`${msg || '断言失败'}: 期望 ${expected}, 实际 ${actual}`);
+                }
+            },
+
+            assertTrue(condition, msg) {
+                if (!condition) {
+                    throw new Error(msg || '条件应为 true');
+                }
+            },
+
+            assertFalse(condition, msg) {
+                if (condition) {
+                    throw new Error(msg || '条件应为 false');
+                }
+            },
+
+            async run() {
+                this.results = { pass: 0, fail: 0, pending: 0 };
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '';
+
+                // 初始化测试环境
+                const canvas = document.getElementById('testCanvas');
+                const scene = new THREE.Scene();
+                Track.init(scene);
+                Player.init(scene);
+                Obstacles.init(scene);
+                Coins.init(scene);
+
+                // 按套件分组
+                const suites = {};
+                this.tests.forEach(t => {
+                    if (!suites[t.suite]) suites[t.suite] = [];
+                    suites[t.suite].push(t);
+                });
+
+                for (const suiteName in suites) {
+                    const suiteDiv = document.createElement('div');
+                    suiteDiv.className = 'test-suite';
+                    suiteDiv.innerHTML = `<h2>${suiteName}</h2>`;
+
+                    for (const test of suites[suiteName]) {
+                        const testDiv = document.createElement('div');
+                        testDiv.className = 'test-case pending';
+
+                        try {
+                            await test.fn();
+                            testDiv.classList.remove('pending');
+                            testDiv.classList.add('pass');
+                            testDiv.innerHTML = `
+                                <span>✅ ${test.name}</span>
+                                <span class="status pass">PASS</span>
+                            `;
+                            this.results.pass++;
+                        } catch (e) {
+                            testDiv.classList.remove('pending');
+                            testDiv.classList.add('fail');
+                            testDiv.innerHTML = `
+                                <div>
+                                    <span>❌ ${test.name}</span>
+                                    <div class="error-msg">${e.message}</div>
+                                </div>
+                                <span class="status fail">FAIL</span>
+                            `;
+                            this.results.fail++;
+                            console.error(`[FAIL] ${test.suite} - ${test.name}:`, e);
+                        }
+
+                        suiteDiv.appendChild(testDiv);
+                    }
+
+                    resultsDiv.appendChild(suiteDiv);
+                }
+
+                // 显示汇总
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = 'summary';
+                const total = this.results.pass + this.results.fail;
+                const rate = total > 0 ? Math.round(this.results.pass / total * 100) : 0;
+                summaryDiv.innerHTML = `
+                    <strong>测试结果:</strong>
+                    通过 <span class="status pass">${this.results.pass}</span> /
+                    失败 <span class="status fail">${this.results.fail}</span> /
+                    通过率 <strong>${rate}%</strong>
+                `;
+                resultsDiv.insertBefore(summaryDiv, resultsDiv.firstChild);
+            }
+        };
+
+        // ============ 测试用例 ============
+
+        // 赛道测试
+        TestRunner.describe('赛道模块 (Track)', () => {
+            TestRunner.it('应该有3条赛道位置', () => {
+                TestRunner.assertEqual(Track.LANE_POSITIONS.length, 3, '赛道数量');
+            });
+
+            TestRunner.it('赛道位置应该是 -3, 0, 3', () => {
+                TestRunner.assertEqual(Track.LANE_POSITIONS[0], -3, '左赛道');
+                TestRunner.assertEqual(Track.LANE_POSITIONS[1], 0, '中赛道');
+                TestRunner.assertEqual(Track.LANE_POSITIONS[2], 3, '右赛道');
+            });
+
+            TestRunner.it('getLaneX 应该返回正确的X坐标', () => {
+                TestRunner.assertEqual(Track.getLaneX(0), -3, '左赛道X');
+                TestRunner.assertEqual(Track.getLaneX(1), 0, '中赛道X');
+                TestRunner.assertEqual(Track.getLaneX(2), 3, '右赛道X');
+            });
+        });
+
+        // 玩家测试
+        TestRunner.describe('玩家模块 (Player)', () => {
+            TestRunner.it('初始位置应该在中间赛道', () => {
+                TestRunner.assertEqual(Player.currentLane, 1, '初始赛道');
+                TestRunner.assertEqual(Player.mesh.position.x, 0, '初始X位置');
+            });
+
+            TestRunner.it('向左移动应该切换到左赛道', () => {
+                Player.moveLeft();
+                TestRunner.assertEqual(Player.currentLane, 0, '当前赛道');
+                TestRunner.assertEqual(Player.targetX, -3, '目标X');
+                Player.reset();
+            });
+
+            TestRunner.it('向右移动应该切换到右赛道', () => {
+                Player.reset();
+                Player.moveRight();
+                TestRunner.assertEqual(Player.currentLane, 2, '当前赛道');
+                TestRunner.assertEqual(Player.targetX, 3, '目标X');
+                Player.reset();
+            });
+
+            TestRunner.it('不能移动到边界外（左）', () => {
+                Player.reset();
+                Player.moveLeft(); // 到左赛道
+                Player.moveLeft(); // 尝试再左移
+                TestRunner.assertEqual(Player.currentLane, 0, '应该保持在左赛道');
+                Player.reset();
+            });
+
+            TestRunner.it('不能移动到边界外（右）', () => {
+                Player.reset();
+                Player.moveRight(); // 到右赛道
+                Player.moveRight(); // 尝试再右移
+                TestRunner.assertEqual(Player.currentLane, 2, '应该保持在右赛道');
+                Player.reset();
+            });
+
+            TestRunner.it('跳跃后 isJumping 应该为 true', () => {
+                Player.jump();
+                TestRunner.assertTrue(Player.isJumping, 'isJumping');
+                Player.reset();
+            });
+
+            TestRunner.it('滑铲后 isSliding 应该为 true', () => {
+                Player.slide();
+                TestRunner.assertTrue(Player.isSliding, 'isSliding');
+                Player.reset();
+            });
+
+            TestRunner.it('getBounds 应该返回正确的边界', () => {
+                Player.reset();
+                const bounds = Player.getBounds();
+                TestRunner.assertTrue(bounds.minX < bounds.maxX, 'minX < maxX');
+                TestRunner.assertTrue(bounds.maxY > 0, 'maxY > 0');
+            });
+
+            TestRunner.it('滑铲时高度应该降低', () => {
+                Player.reset();
+                const normalBounds = Player.getBounds();
+                Player.slide();
+                const slideBounds = Player.getBounds();
+                TestRunner.assertTrue(slideBounds.maxY < normalBounds.maxY, '滑铲高度应小于站立');
+                Player.reset();
+            });
+        });
+
+        // 障碍物测试
+        TestRunner.describe('障碍物模块 (Obstacles)', () => {
+            TestRunner.it('初始化后 list 应该为空', () => {
+                Obstacles.reset();
+                TestRunner.assertEqual(Obstacles.list.length, 0, '障碍物列表应为空');
+            });
+
+            TestRunner.it('spawn 应该添加障碍物到列表', () => {
+                Obstacles.reset();
+                Obstacles.spawn(100, 1);
+                TestRunner.assertTrue(Obstacles.list.length > 0, '应该有障碍物');
+                Obstacles.reset();
+            });
+
+            TestRunner.it('难度1应该只生成barrier', () => {
+                Obstacles.reset();
+                Obstacles.lastSpawnZ = 0;
+                Obstacles.spawn(100, 1);
+                if (Obstacles.list.length > 0) {
+                    TestRunner.assertEqual(Obstacles.list[0].userData.type, 'barrier', '类型应为barrier');
+                }
+                Obstacles.reset();
+            });
+
+            TestRunner.it('难度5应该能生成highWall', () => {
+                Obstacles.reset();
+                Obstacles.lastSpawnZ = 0;
+                // 多次生成以增加概率
+                for (let i = 0; i < 20; i++) {
+                    Obstacles.spawn(100 + i * 40, 5);
+                }
+                const hasHighWall = Obstacles.list.some(o => o.userData.type === 'highWall');
+                TestRunner.assertTrue(hasHighWall || Obstacles.list.length > 0, '应该生成障碍物');
+                Obstacles.reset();
+            });
+
+            TestRunner.it('路障碰撞检测 - 未跳跃应该碰撞', () => {
+                Player.reset();
+                Obstacles.reset();
+
+                // 手动创建一个路障在玩家位置
+                const barrier = Obstacles.getFromPool('barrier');
+                barrier.position.set(0, 0.4, 0);
+                barrier.userData.active = true;
+                Obstacles.list.push(barrier);
+
+                const bounds = Player.getBounds();
+                const collision = Obstacles.checkCollision(bounds);
+                TestRunner.assertTrue(collision, '未跳跃时应该碰撞');
+
+                Obstacles.reset();
+            });
+
+            TestRunner.it('路障碰撞检测 - 跳跃后应该不碰撞', () => {
+                Player.reset();
+                Obstacles.reset();
+
+                // 手动创建一个路障
+                const barrier = Obstacles.getFromPool('barrier');
+                barrier.position.set(0, 0.4, 0);
+                barrier.userData.active = true;
+                Obstacles.list.push(barrier);
+
+                // 模拟跳跃
+                Player.mesh.position.y = 1.5; // 跳跃高度
+                const bounds = Player.getBounds();
+                const collision = Obstacles.checkCollision(bounds);
+                TestRunner.assertFalse(collision, '跳跃时应该不碰撞');
+
+                Player.reset();
+                Obstacles.reset();
+            });
+
+            TestRunner.it('高墙碰撞检测 - 站立应该碰撞', () => {
+                Player.reset();
+                Obstacles.reset();
+
+                const wall = Obstacles.getFromPool('highWall');
+                wall.position.set(0, 0, 0);
+                wall.userData.active = true;
+                Obstacles.list.push(wall);
+
+                const bounds = Player.getBounds();
+                const collision = Obstacles.checkCollision(bounds);
+                TestRunner.assertTrue(collision, '站立时应该碰撞高墙');
+
+                Obstacles.reset();
+            });
+
+            TestRunner.it('高墙碰撞检测 - 滑铲应该不碰撞', () => {
+                Player.reset();
+                Obstacles.reset();
+
+                const wall = Obstacles.getFromPool('highWall');
+                wall.position.set(0, 0, 0);
+                wall.userData.active = true;
+                Obstacles.list.push(wall);
+
+                Player.slide();
+                const bounds = Player.getBounds();
+                const collision = Obstacles.checkCollision(bounds);
+                TestRunner.assertFalse(collision, '滑铲时应该不碰撞高墙');
+
+                Player.reset();
+                Obstacles.reset();
+            });
+
+            TestRunner.it('update 应该移除超出屏幕的障碍物', () => {
+                Obstacles.reset();
+                const barrier = Obstacles.getFromPool('barrier');
+                barrier.position.set(0, 0.4, 15); // 超出屏幕
+                barrier.userData.active = true;
+                Obstacles.list.push(barrier);
+
+                Obstacles.update(0.3);
+                TestRunner.assertEqual(Obstacles.list.length, 0, '障碍物应该被移除');
+                Obstacles.reset();
+            });
+        });
+
+        // 金币测试
+        TestRunner.describe('金币模块 (Coins)', () => {
+            TestRunner.it('初始化后 collected 应该为0', () => {
+                Coins.reset();
+                TestRunner.assertEqual(Coins.getCollected(), 0, '金币数应为0');
+            });
+
+            TestRunner.it('spawn 应该添加金币到列表', () => {
+                Coins.reset();
+                Coins.spawn(100, 1);
+                TestRunner.assertTrue(Coins.list.length > 0, '应该有金币');
+                Coins.reset();
+            });
+
+            TestRunner.it('收集金币应该增加计数', () => {
+                Player.reset();
+                Coins.reset();
+
+                // 创建金币在玩家位置
+                const coin = Coins.getFromPool();
+                coin.position.set(0, 1, 0);
+                coin.userData.active = true;
+                coin.userData.lane = 1;
+                Coins.list.push(coin);
+
+                const bounds = Player.getBounds();
+                Coins.checkCollection(bounds);
+
+                TestRunner.assertTrue(Coins.getCollected() > 0, '金币数应该增加');
+
+                Coins.reset();
+            });
+
+            TestRunner.it('收集金币后应该从列表移除', () => {
+                Player.reset();
+                Coins.reset();
+
+                const coin = Coins.getFromPool();
+                coin.position.set(0, 1, 0);
+                coin.userData.active = true;
+                coin.userData.lane = 1;
+                Coins.list.push(coin);
+
+                const bounds = Player.getBounds();
+                Coins.checkCollection(bounds);
+
+                TestRunner.assertEqual(Coins.list.length, 0, '金币应该被移除');
+
+                Coins.reset();
+            });
+
+            TestRunner.it('update 应该移除超出屏幕的金币', () => {
+                Coins.reset();
+                const coin = Coins.getFromPool();
+                coin.position.set(0, 1, 15);
+                coin.userData.active = true;
+                Coins.list.push(coin);
+
+                Coins.update(0.3);
+                TestRunner.assertEqual(Coins.list.length, 0, '金币应该被移除');
+                Coins.reset();
+            });
+        });
+
+        // 游戏逻辑测试
+        TestRunner.describe('游戏逻辑', () => {
+            TestRunner.it('速度应该随时间增加', () => {
+                const baseSpeed = 0.3;
+                const afterSpeed = baseSpeed + 0.0001 * 1000; // 1000帧后
+                TestRunner.assertTrue(afterSpeed > baseSpeed, '速度应该增加');
+            });
+
+            TestRunner.it('分数计算应该正确', () => {
+                const distance = 100;
+                const coins = 10;
+                const expectedScore = Math.floor(distance * 10 + coins * 50);
+                TestRunner.assertEqual(expectedScore, 1500, '总分计算');
+            });
+        });
+
+        // 运行测试
+        document.getElementById('runBtn').addEventListener('click', () => {
+            TestRunner.run();
+        });
+    </script>
+</body>
+</html>

@@ -25,3 +25,8 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: 小游戏中心二次巡检后迭�
   - `node --check gomoku/game.js`
   - Playwright 客户端：`/chinese-chess/` 与 `/gomoku/` 均可进入残局模式并输出 challenge 状态；截图位于 `output/web-game/chinese-chess/` 与 `output/web-game/gomoku/`。
 - TODO: 为中国象棋残局第2/3章补充更稳定的“必胜步数”验证样例，避免个别 AI 分支导致体感难度波动。
+
+- 2026-02-24: 用户要求检查并修复 `endless-runner`。已完成首轮代码阅读，准备通过 Playwright 复现实际问题。
+- 2026-02-24: 已修复 `endless-runner` 的可测性与时间步进问题：新增 `render_game_to_text`/`advanceTime`/`get_game_meta`，将玩家滑铲与金币连击从 `setTimeout` 改为基于 delta 的更新，并支持 `F` 全屏切换与暂停状态键盘恢复。
+- 2026-02-24: 回归验证完成：`output/endless-runner-check-3/` 已生成 `state-0/1/2.json` 与 `shot-0/1/2.png`，未出现新的 `errors-*.json`；此前一次 `ReferenceError: ts is not defined` 已修复。
+- 2026-02-24: 根据反馈移除路径新增图标（障碍/金币的 Sprite 标识），仅保留地面环形提示；并修复低墙/路障碰撞判定（改为基于角色底部高度），现在站立会碰撞结束、跳跃可越过。

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>极速跑酷 - 3D无尽跑酷</title>
+
+    <!-- 微信浏览器适配 -->
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="x5-page-mode" content="app">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link rel="stylesheet" href="/common/loader.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-loader" class="game-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">加载中</div>
+    </div>
+
+    <div class="game-container">
+        <div class="hud">
+            <div class="hud-left">
+                <div class="score-label">距离</div>
+                <div class="score-value" id="distance">0</div>
+            </div>
+            <div class="hud-center">
+                <div class="coin-count">
+                    <span class="coin-icon">🪙</span>
+                    <span id="coins">0</span>
+                </div>
+            </div>
+            <div class="hud-right">
+                <button class="btn-icon" id="soundBtn" aria-label="音效开关">🔊</button>
+                <button class="btn-icon" id="pauseBtn" aria-label="暂停">⏸️</button>
+            </div>
+        </div>
+
+        <div class="game-wrap">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <div class="controls-hint">
+            <div class="hint-item">⬅️ 左滑</div>
+            <div class="hint-item">➡️ 右滑</div>
+            <div class="hint-item">⬆️ 跳跃</div>
+        </div>
+    </div>
+
+    <!-- 开始界面 -->
+    <div class="overlay" id="startScreen">
+        <div class="overlay-content">
+            <h1 class="game-title">极速跑酷</h1>
+            <p class="game-subtitle">3D无尽跑酷</p>
+            <div class="best-score" id="bestScoreDisplay"></div>
+            <button class="btn-primary" id="startBtn">开始游戏</button>
+            <div class="instructions">
+                <p>左右滑动切换赛道</p>
+                <p>上滑或点击跳跃</p>
+                <p>收集金币获得分数</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 暂停界面 -->
+    <div class="overlay hidden" id="pauseScreen">
+        <div class="overlay-content">
+            <h2>暂停</h2>
+            <button class="btn-primary" id="resumeBtn">继续</button>
+            <button class="btn-secondary" id="restartBtnPause">重新开始</button>
+        </div>
+    </div>
+
+    <!-- 结束界面 -->
+    <div class="overlay hidden" id="gameOverScreen">
+        <div class="overlay-content">
+            <h2>游戏结束</h2>
+            <div class="final-stats">
+                <div class="stat-item">
+                    <div class="stat-label">距离</div>
+                    <div class="stat-value" id="finalDistance">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">金币</div>
+                    <div class="stat-value" id="finalCoins">0</div>
+                </div>
+                <div class="stat-item highlight">
+                    <div class="stat-label">总分</div>
+                    <div class="stat-value" id="finalScore">0</div>
+                </div>
+            </div>
+            <div class="new-record hidden" id="newRecord">新纪录!</div>
+            <button class="btn-primary" id="restartBtn">再来一局</button>
+            <button class="btn-secondary" id="shareBtn">分享成绩</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="/common/audio.js"></script>
+    <script src="/common/celebration.js"></script>
+    <script src="/common/share.js"></script>
+    <script src="/common/anti-longpress.js"></script>
+    <script src="js/track.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/obstacles.js"></script>
+    <script src="js/coins.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+    <script src="/common/loader.js"></script>
+</body>
+</html>
