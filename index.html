@@ -556,6 +556,14 @@
                 <div class="game-title">三消</div>
                 <div class="game-desc">交换宝石，三连消除拿高分</div>
             </a>
+
+            <a href="./endless-runner/" class="game-card" data-category="action">
+                <div class="game-icon" aria-hidden="true">
+                    <img src="./common/icons/endless-runner.svg" alt="极速跑酷">
+                </div>
+                <div class="game-title">极速跑酷</div>
+                <div class="game-desc">3D无尽跑酷挑战</div>
+            </a>
         </div>
 
         <p class="coming-soon">更多精彩游戏，敬请期待...</p>
@@ -722,7 +730,8 @@
                 { fallbackIcon: '✍️', name: '一笔画', href: './one-stroke/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.one-stroke.best') || '{}'); return v.level ? (v.level + ' ' + formatTime(v.time || 0)) : ''; } catch (e) { return ''; } } },
                 { fallbackIcon: '🎱', name: '弹球台', href: './pinball/', read: function() { var v = localStorage.getItem('miniGames.v1.pinball.best'); return v ? v + '分' : ''; } },
                 { fallbackIcon: '🎯', name: '扫雷', href: './minesweeper/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.minesweeper.best') || '{}'); if (!v.easy && !v.medium && !v.hard) return ''; var best = Math.min(v.easy || 9999, v.medium || 9999, v.hard || 9999); if (best >= 9999) return ''; var m = Math.floor(best / 60), s = best % 60; return '最佳 ' + m + ':' + (s < 10 ? '0' : '') + s; } catch (e) { return ''; } } },
-                { fallbackIcon: '💎', name: '三消', href: './match3/', read: function() { var v = localStorage.getItem('miniGames.v1.match3.best'); return v ? v + '分' : ''; } }
+                { fallbackIcon: '💎', name: '三消', href: './match3/', read: function() { var v = localStorage.getItem('miniGames.v1.match3.best'); return v ? v + '分' : ''; } },
+                { fallbackIcon: '🏃', name: '极速跑酷', href: './endless-runner/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.endless-runner.best') || '{}'); return v.score ? (v.score + '分') : ''; } catch (e) { return ''; } } }
             ];
 
             scoreAdapters.forEach(function(adapter) {

@@ -21,9 +21,12 @@ const UI = {
             pauseScreen: document.getElementById('pauseScreen'),
             gameOverScreen: document.getElementById('gameOverScreen'),
             startBtn: document.getElementById('startBtn'),
+            backToMenuBtn: document.getElementById('backToMenuBtn'),
             resumeBtn: document.getElementById('resumeBtn'),
             restartBtn: document.getElementById('restartBtn'),
             restartBtnPause: document.getElementById('restartBtnPause'),
+            endGameBtnPause: document.getElementById('endGameBtnPause'),
+            backToRunnerHomeBtn: document.getElementById('backToRunnerHomeBtn'),
             shareBtn: document.getElementById('shareBtn'),
             bestScoreDisplay: document.getElementById('bestScoreDisplay'),
             finalDistance: document.getElementById('finalDistance'),
@@ -38,6 +41,11 @@ const UI = {
         // 开始按钮
         this.elements.startBtn.addEventListener('click', () => {
             if (window.Game) Game.start();
+        });
+
+        // 返回主菜单（站点首页）
+        this.elements.backToMenuBtn.addEventListener('click', () => {
+            window.location.href = '/index.html';
         });
 
         // 暂停按钮
@@ -55,9 +63,22 @@ const UI = {
             if (window.Game) Game.restart();
         });
 
+        // 暂停界面结束游戏并直接结算
+        this.elements.endGameBtnPause.addEventListener('click', () => {
+            if (window.Game) Game.gameOver();
+        });
+
         // 重新开始按钮（结束界面）
         this.elements.restartBtn.addEventListener('click', () => {
             if (window.Game) Game.restart();
+        });
+
+        // 结算页返回跑酷首页（开始界面）
+        this.elements.backToRunnerHomeBtn.addEventListener('click', () => {
+            if (window.Game) {
+                Game.state = 'idle';
+            }
+            this.showStartScreen();
         });
 
         // 分享按钮

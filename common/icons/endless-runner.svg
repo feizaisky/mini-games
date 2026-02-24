@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="极速跑酷图标">
+  <defs>
+    <linearGradient id="erBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#d9f2ff"/>
+      <stop offset="100%" stop-color="#9edcff"/>
+    </linearGradient>
+    <linearGradient id="erLane" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4cd8ff"/>
+      <stop offset="100%" stop-color="#22b4ff"/>
+    </linearGradient>
+    <linearGradient id="erPlayer" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8ba3ff"/>
+      <stop offset="100%" stop-color="#5d7af0"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#erBg)"/>
+  <path d="M16 50l10-26h12l10 26h-8.5l-7.5-19-7.5 19z" fill="#2663a3"/>
+  <rect x="21" y="25" width="2.8" height="26" rx="1.4" fill="url(#erLane)"/>
+  <rect x="40.2" y="25" width="2.8" height="26" rx="1.4" fill="url(#erLane)"/>
+  <rect x="29.4" y="33" width="5.2" height="9" rx="2.5" fill="url(#erPlayer)"/>
+  <circle cx="32" cy="30" r="3.2" fill="#ffd2a4"/>
+  <rect x="31.2" y="28.8" width="1.6" height="1.2" rx="0.6" fill="#4a3427"/>
+  <rect x="33.2" y="28.8" width="1.6" height="1.2" rx="0.6" fill="#4a3427"/>
+  <rect x="27.5" y="41.5" width="9" height="2.4" rx="1.2" fill="#ff9f4d"/>
+</svg>
