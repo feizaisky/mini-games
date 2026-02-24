@@ -103,23 +103,29 @@
         }
         .action-btns {
             display: flex;
-            gap: 8px;
+            flex-wrap: wrap;
+            gap: 6px;
             justify-content: center;
             margin-top: 4px;
         }
         .action-btns button {
             border: none;
             border-radius: 999px;
-            padding: 6px 16px;
+            padding: 5px 12px;
             font-size: 11px;
             cursor: pointer;
             background: var(--ink);
             color: #fff;
             box-shadow: 0 6px 16px rgba(39, 30, 22, 0.2);
             transition: transform 0.2s;
+            flex: 0 1 auto;
+            min-width: 52px;
         }
         .action-btns button:active {
             transform: scale(0.96);
+        }
+        .action-btns button.secondary {
+            background: var(--accent);
         }
         #gameCanvas {
             width: 100%;

@@ -11,7 +11,8 @@ const STORAGE_PREFIX = `miniGames.v1.${GAME_ID}`;
 const STORAGE_KEYS = {
     best: `${STORAGE_PREFIX}.best`,
     stats: `${STORAGE_PREFIX}.stats`,
-    progress: `${STORAGE_PREFIX}.progress`
+    progress: `${STORAGE_PREFIX}.progress`,
+    challenge: `${STORAGE_PREFIX}.challenge`
 };
 
 const COLS = 9;
@@ -48,6 +49,53 @@ const difficultyDepth = {
     hard: 3
 };
 
+const CHALLENGE_CHAPTERS = [
+    {
+        id: 'rookMate',
+        title: '第1章 车困将门',
+        hint: '红先，3回合内将死黑将。',
+        maxHalfMoves: 6,
+        aiDifficulty: 'easy',
+        pieces: [
+            { x: 4, y: 0, type: 'G', color: 'black' },
+            { x: 4, y: 1, type: 'A', color: 'black' },
+            { x: 3, y: 0, type: 'A', color: 'black' },
+            { x: 5, y: 9, type: 'G', color: 'red' },
+            { x: 4, y: 6, type: 'R', color: 'red' },
+            { x: 4, y: 8, type: 'A', color: 'red' }
+        ]
+    },
+    {
+        id: 'cannonMate',
+        title: '第2章 炮架点杀',
+        hint: '利用中兵做炮架，4回合内取胜。',
+        maxHalfMoves: 8,
+        aiDifficulty: 'medium',
+        pieces: [
+            { x: 4, y: 0, type: 'G', color: 'black' },
+            { x: 4, y: 2, type: 'R', color: 'black' },
+            { x: 4, y: 9, type: 'G', color: 'red' },
+            { x: 1, y: 7, type: 'C', color: 'red' },
+            { x: 4, y: 6, type: 'S', color: 'red' }
+        ]
+    },
+    {
+        id: 'doubleRook',
+        title: '第3章 双车逼宫',
+        hint: '红双车联动，4回合内将死。',
+        maxHalfMoves: 8,
+        aiDifficulty: 'hard',
+        pieces: [
+            { x: 4, y: 0, type: 'G', color: 'black' },
+            { x: 3, y: 1, type: 'A', color: 'black' },
+            { x: 5, y: 1, type: 'A', color: 'black' },
+            { x: 4, y: 9, type: 'G', color: 'red' },
+            { x: 3, y: 6, type: 'R', color: 'red' },
+            { x: 5, y: 7, type: 'R', color: 'red' }
+        ]
+    }
+];
+
 let board = [];
 let currentPlayer = 'red';
 let selected = null;
@@ -64,6 +112,11 @@ let moveHistory = [];
 let aiTimeoutId = null;
 let challengeMode = false;
 let challengeName = '';
+let challengeChapterIndex = 0;
+let challengeUnlocked = 1;
+let challengeHalfMoveLimit = 0;
+let challengeCycleBtn = null;
+let challengeToggleBtn = null;
 
 // 走子动画
 let animating = false;
@@ -184,6 +237,7 @@ function resetGame(keepMode = true) {
     moveHistory = [];
     challengeMode = false;
     challengeName = '';
+    challengeHalfMoveLimit = 0;
     if (gameMode === 'ai' && currentPlayer === aiColor) {
         aiThinking = true;
     }
@@ -201,26 +255,52 @@ function resetGame(keepMode = true) {
         mode: gameMode,
         difficulty,
         challengeMode,
+        challengeChapterIndex,
+        challengeUnlocked,
+        updatedAt: Date.now()
+    }));
+    syncChallengeButtons();
+}
+
+function buildChallengeBoard(chapter) {
+    const newBoard = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => null));
+    chapter.pieces.forEach(piece => {
+        newBoard[piece.y][piece.x] = { type: piece.type, color: piece.color };
+    });
+    return newBoard;
+}
+
+function loadChallengeState() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.challenge);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (Number.isInteger(data.unlocked)) {
+            challengeUnlocked = Math.max(1, Math.min(CHALLENGE_CHAPTERS.length, data.unlocked));
+        }
+        if (Number.isInteger(data.chapterIndex)) {
+            challengeChapterIndex = Math.max(0, Math.min(challengeUnlocked - 1, data.chapterIndex));
+        }
+    } catch (e) {}
+}
+
+function saveChallengeState() {
+    localStorage.setItem(STORAGE_KEYS.challenge, JSON.stringify({
+        unlocked: challengeUnlocked,
+        chapterIndex: challengeChapterIndex,
         updatedAt: Date.now()
     }));
 }
 
-function setupChallengeBoard(name) {
-    const newBoard = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => null));
-    if (name === 'rookMate') {
-        newBoard[0][4] = { type: 'G', color: 'black' };
-        newBoard[1][4] = { type: 'A', color: 'black' };
-        newBoard[9][4] = { type: 'G', color: 'red' };
-        newBoard[7][4] = { type: 'R', color: 'red' };
-        newBoard[8][3] = { type: 'A', color: 'red' };
-    } else {
-        newBoard[0][4] = { type: 'G', color: 'black' };
-        newBoard[2][4] = { type: 'R', color: 'black' };
-        newBoard[9][4] = { type: 'G', color: 'red' };
-        newBoard[7][1] = { type: 'C', color: 'red' };
-        newBoard[6][4] = { type: 'S', color: 'red' };
-    }
-    board = newBoard;
+function setupChallengeBoardByIndex(index) {
+    const safeIndex = Math.max(0, Math.min(index, CHALLENGE_CHAPTERS.length - 1));
+    const chapter = CHALLENGE_CHAPTERS[safeIndex];
+    challengeChapterIndex = safeIndex;
+    challengeName = chapter.id;
+    challengeHalfMoveLimit = chapter.maxHalfMoves;
+    setMode('ai');
+    setDifficulty(chapter.aiDifficulty || 'medium');
+    board = buildChallengeBoard(chapter);
     currentPlayer = 'red';
     selected = null;
     legalMoves = [];
@@ -230,29 +310,69 @@ function setupChallengeBoard(name) {
     moveHistory = [];
     gameRunning = true;
     challengeMode = true;
-    challengeName = name;
-    updateStatus('（残局挑战）');
+    updateStatus();
     draw();
     localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
         mode: gameMode,
         difficulty,
         challengeMode,
         challengeName,
+        challengeChapterIndex,
+        challengeHalfMoveLimit,
         updatedAt: Date.now()
     }));
+    saveChallengeState();
+    syncChallengeButtons();
 }
 
-function injectChallengeButton() {
-    if (document.getElementById('challengeBtn')) return;
-    const btn = document.createElement('button');
-    btn.id = 'challengeBtn';
-    btn.className = startBtn.className || 'btn';
-    btn.textContent = '残局挑战';
-    btn.addEventListener('click', () => {
+function getChallengeInfoText() {
+    if (!challengeMode) return '';
+    const chapter = CHALLENGE_CHAPTERS[challengeChapterIndex];
+    if (!chapter) return '（残局）';
+    const remaining = Math.max(0, challengeHalfMoveLimit - moveHistory.length);
+    return `（${chapter.title} 剩余${remaining}手）`;
+}
+
+function syncChallengeButtons() {
+    if (!challengeCycleBtn || !challengeToggleBtn) return;
+    const chapter = CHALLENGE_CHAPTERS[challengeChapterIndex];
+    challengeCycleBtn.textContent = chapter ? chapter.title : '残局章节';
+    challengeToggleBtn.textContent = challengeMode ? '退出残局' : '挑战章节';
+}
+
+function cycleChallengeChapter() {
+    if (challengeMode) return;
+    const maxIndex = Math.max(0, challengeUnlocked - 1);
+    challengeChapterIndex = challengeChapterIndex >= maxIndex ? 0 : challengeChapterIndex + 1;
+    saveChallengeState();
+    syncChallengeButtons();
+}
+
+function injectChallengeControls() {
+    if (document.getElementById('challengeCycleBtn')) return;
+    challengeCycleBtn = document.createElement('button');
+    challengeCycleBtn.id = 'challengeCycleBtn';
+    challengeCycleBtn.className = (startBtn.className || 'btn') + ' secondary';
+    challengeCycleBtn.addEventListener('click', () => {
         if (typeof GameAudio !== 'undefined') GameAudio.play('click');
-        setupChallengeBoard(Math.random() < 0.5 ? 'rookMate' : 'cannonMate');
+        cycleChallengeChapter();
     });
-    startBtn.parentNode.appendChild(btn);
+
+    challengeToggleBtn = document.createElement('button');
+    challengeToggleBtn.id = 'challengeToggleBtn';
+    challengeToggleBtn.className = (startBtn.className || 'btn') + ' secondary';
+    challengeToggleBtn.addEventListener('click', () => {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+        if (challengeMode) {
+            resetGame();
+        } else {
+            setupChallengeBoardByIndex(challengeChapterIndex);
+        }
+    });
+
+    startBtn.parentNode.appendChild(challengeCycleBtn);
+    startBtn.parentNode.appendChild(challengeToggleBtn);
+    syncChallengeButtons();
 }
 
 function updateStatus(extra = '') {
@@ -261,7 +381,13 @@ function updateStatus(extra = '') {
         return;
     }
     if (gameOver) {
-        statusEl.textContent = winner === 'red' ? '红方胜！' : '黑方胜！';
+        if (challengeMode && winner === 'red') {
+            statusEl.textContent = '红方胜！残局挑战完成';
+        } else if (challengeMode && winner === 'black') {
+            statusEl.textContent = '挑战失败，本章未在步数内完成';
+        } else {
+            statusEl.textContent = winner === 'red' ? '红方胜！' : '黑方胜！';
+        }
         return;
     }
     if (aiThinking) {
@@ -269,7 +395,7 @@ function updateStatus(extra = '') {
         return;
     }
     const turnLabel = currentPlayer === 'red' ? '红方回合' : '黑方回合';
-    statusEl.textContent = `${turnLabel}${extra}`;
+    statusEl.textContent = `${turnLabel}${getChallengeInfoText()}${extra}`;
 }
 
 function setMode(mode) {
@@ -838,6 +964,19 @@ function handleMove(fromX, fromY, toX, toY) {
             }
         }
 
+        if (challengeMode && !gameOver && moveHistory.length >= challengeHalfMoveLimit) {
+            gameOver = true;
+            winner = 'black';
+            if (typeof GameAudio !== 'undefined') GameAudio.play('lose');
+            updateStatus();
+        }
+
+        if (challengeMode && gameOver && winner === 'red') {
+            challengeUnlocked = Math.max(challengeUnlocked, Math.min(CHALLENGE_CHAPTERS.length, challengeChapterIndex + 2));
+            saveChallengeState();
+            syncChallengeButtons();
+        }
+
         updateNotation();
         draw();
         localStorage.setItem(STORAGE_KEYS.stats, JSON.stringify({
@@ -847,6 +986,8 @@ function handleMove(fromX, fromY, toX, toY) {
             winner,
             challengeMode,
             challengeName,
+            challengeChapterIndex,
+            challengeHalfMoveLimit,
             moveCount: moveHistory.length,
             updatedAt: Date.now()
         }));
@@ -855,6 +996,7 @@ function handleMove(fromX, fromY, toX, toY) {
                 winner,
                 challengeMode,
                 challengeName,
+                challengeChapterIndex,
                 moveCount: moveHistory.length,
                 finishedAt: Date.now()
             }));
@@ -1031,7 +1173,11 @@ startBtn.addEventListener('click', () => {
 
 resetBtn.addEventListener('click', () => {
     if (typeof GameAudio !== 'undefined') GameAudio.play('click');
-    resetGame();
+    if (challengeMode) {
+        setupChallengeBoardByIndex(challengeChapterIndex);
+    } else {
+        resetGame();
+    }
 });
 
 undoBtn.addEventListener('click', () => {
@@ -1068,6 +1214,10 @@ window.render_game_to_text = () => {
         currentPlayer,
         gameOver,
         winner,
+        challengeMode,
+        challengeChapterIndex,
+        challengeUnlocked,
+        challengeHalfMoveLimit,
         selected,
         legalMoves,
         pieces,
@@ -1085,5 +1235,6 @@ window.get_game_meta = () => JSON.stringify({
     mode: challengeMode ? 'challenge' : gameMode
 });
 
-injectChallengeButton();
+loadChallengeState();
+injectChallengeControls();
 resetGame();

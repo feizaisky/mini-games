@@ -11,6 +11,42 @@ const STORAGE_KEYS = {
     stats: `${STORAGE_PREFIX}.stats`,
     progress: `${STORAGE_PREFIX}.progress`
 };
+const CHALLENGE_STORAGE_KEY = `${STORAGE_PREFIX}.challenge`;
+const CHALLENGE_CHAPTERS = [
+    {
+        id: 'line-seal',
+        title: '第1章 一步封喉',
+        hint: '黑棋一步成五。',
+        maxPlayerMoves: 1,
+        pieces: [
+            { x: 4, y: 6, player: 1 }, { x: 5, y: 6, player: 1 },
+            { x: 6, y: 6, player: 1 }, { x: 7, y: 6, player: 1 },
+            { x: 3, y: 6, player: 2 }, { x: 8, y: 5, player: 2 }
+        ]
+    },
+    {
+        id: 'diag-kill',
+        title: '第2章 斜线点杀',
+        hint: '找出唯一成五点。',
+        maxPlayerMoves: 1,
+        pieces: [
+            { x: 3, y: 3, player: 1 }, { x: 4, y: 4, player: 1 },
+            { x: 5, y: 5, player: 1 }, { x: 6, y: 6, player: 1 },
+            { x: 2, y: 2, player: 2 }, { x: 8, y: 7, player: 2 }
+        ]
+    },
+    {
+        id: 'cross-fork',
+        title: '第3章 十字强攻',
+        hint: '黑棋两手内取胜。',
+        maxPlayerMoves: 2,
+        pieces: [
+            { x: 6, y: 5, player: 1 }, { x: 5, y: 6, player: 1 },
+            { x: 7, y: 6, player: 1 }, { x: 6, y: 7, player: 1 },
+            { x: 4, y: 6, player: 2 }, { x: 8, y: 6, player: 2 }
+        ]
+    }
+];
 
 // 游戏配置
 const BOARD_SIZE = 13;
@@ -25,6 +61,12 @@ let moveHistory = [];
 let currentDifficulty = 'easy';
 let forbiddenRuleEnabled = false;
 let replayTimer = null;
+let challengeMode = false;
+let challengeChapterIndex = 0;
+let challengeUnlocked = 1;
+let challengeMovesLeft = 0;
+let challengeCycleBtn = null;
+let challengeToggleBtn = null;
 
 // 难度配置
 const difficultyConfig = {
@@ -197,10 +239,15 @@ function makeMove(x, y, player) {
     if (winner) {
         gameOver = true;
         if (player === 1) {
-            gameOverElement.textContent = '🎉 你赢了！';
+            gameOverElement.textContent = challengeMode ? '🎯 挑战成功！' : '🎉 你赢了！';
             gameOverElement.className = 'game-over win';
             if (typeof GameAudio !== 'undefined') GameAudio.play('win');
             if (typeof GameCelebration !== 'undefined') GameCelebration.show();
+            if (challengeMode) {
+                challengeUnlocked = Math.max(challengeUnlocked, Math.min(CHALLENGE_CHAPTERS.length, challengeChapterIndex + 2));
+                saveChallengeState();
+                syncChallengeButtons();
+            }
         } else {
             gameOverElement.textContent = '😢 电脑赢了！';
             gameOverElement.className = 'game-over lose';
@@ -219,6 +266,22 @@ function makeMove(x, y, player) {
         return;
     }
 
+    if (challengeMode && player === 1) {
+        challengeMovesLeft = Math.max(0, challengeMovesLeft - 1);
+        if (challengeMovesLeft <= 0) {
+            gameOver = true;
+            gameOverElement.textContent = '❌ 挑战失败：步数用尽';
+            gameOverElement.className = 'game-over lose';
+            gameOverElement.style.display = 'block';
+            if (typeof GameAudio !== 'undefined') GameAudio.play('lose');
+            saveProgress();
+            return;
+        }
+        updateStatus();
+        saveProgress();
+        return;
+    }
+
     // 切换玩家
     currentPlayer = player === 1 ? 2 : 1;
     updateStatus();
@@ -232,6 +295,12 @@ function makeMove(x, y, player) {
 
 // 更新状态显示
 function updateStatus() {
+    if (challengeMode) {
+        const chapter = CHALLENGE_CHAPTERS[challengeChapterIndex];
+        statusElement.textContent = `残局 ${chapter.title}（剩${challengeMovesLeft}手）`;
+        statusElement.className = 'black-turn';
+        return;
+    }
     if (currentPlayer === 1) {
         statusElement.textContent = '黑棋（你）';
         statusElement.className = 'black-turn';
@@ -312,6 +381,7 @@ function isForbiddenOverline(x, y, player) {
 
 // 电脑下棋
 function computerMove() {
+    if (challengeMode) return;
     const config = difficultyConfig[currentDifficulty];
     const move = findBestMove(config);
     makeMove(move.x, move.y, 2);
@@ -490,6 +560,10 @@ function restart() {
         clearInterval(replayTimer);
         replayTimer = null;
     }
+    if (challengeMode) {
+        startChallengeChapter(challengeChapterIndex);
+        return;
+    }
     initBoard();
     currentPlayer = 1;
     gameOver = false;
@@ -498,6 +572,71 @@ function restart() {
     updateStatus();
     drawBoard();
     saveProgress();
+}
+
+function loadChallengeState() {
+    try {
+        const raw = localStorage.getItem(CHALLENGE_STORAGE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (Number.isInteger(data.unlocked)) {
+            challengeUnlocked = Math.max(1, Math.min(CHALLENGE_CHAPTERS.length, data.unlocked));
+        }
+        if (Number.isInteger(data.chapterIndex)) {
+            challengeChapterIndex = Math.max(0, Math.min(challengeUnlocked - 1, data.chapterIndex));
+        }
+    } catch (e) {}
+}
+
+function saveChallengeState() {
+    localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify({
+        unlocked: challengeUnlocked,
+        chapterIndex: challengeChapterIndex,
+        updatedAt: Date.now()
+    }));
+}
+
+function syncChallengeButtons() {
+    if (!challengeCycleBtn || !challengeToggleBtn) return;
+    const chapter = CHALLENGE_CHAPTERS[challengeChapterIndex];
+    challengeCycleBtn.textContent = chapter ? chapter.title : '残局章节';
+    challengeToggleBtn.textContent = challengeMode ? '退出残局' : '挑战章节';
+}
+
+function cycleChallengeChapter() {
+    if (challengeMode) return;
+    const maxIndex = Math.max(0, challengeUnlocked - 1);
+    challengeChapterIndex = challengeChapterIndex >= maxIndex ? 0 : challengeChapterIndex + 1;
+    saveChallengeState();
+    syncChallengeButtons();
+}
+
+function startChallengeChapter(index) {
+    const safeIndex = Math.max(0, Math.min(index, CHALLENGE_CHAPTERS.length - 1));
+    const chapter = CHALLENGE_CHAPTERS[safeIndex];
+    challengeChapterIndex = safeIndex;
+    challengeMode = true;
+    challengeMovesLeft = chapter.maxPlayerMoves;
+    initBoard();
+    currentPlayer = 1;
+    gameOver = false;
+    moveHistory = [];
+    gameOverElement.style.display = 'none';
+    chapter.pieces.forEach(item => {
+        board[item.x][item.y] = item.player;
+    });
+    updateStatus();
+    drawBoard();
+    saveChallengeState();
+    saveProgress();
+    syncChallengeButtons();
+}
+
+function exitChallengeMode() {
+    challengeMode = false;
+    challengeMovesLeft = 0;
+    syncChallengeButtons();
+    restart();
 }
 
 function injectFeatureControls() {
@@ -523,6 +662,30 @@ function injectFeatureControls() {
 
     controlBar.appendChild(forbiddenBtn);
     controlBar.appendChild(replayBtn);
+
+    challengeCycleBtn = document.createElement('button');
+    challengeCycleBtn.id = 'challengeCycleBtn';
+    challengeCycleBtn.className = restartBtn.className || 'btn';
+    challengeCycleBtn.addEventListener('click', () => {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+        cycleChallengeChapter();
+    });
+
+    challengeToggleBtn = document.createElement('button');
+    challengeToggleBtn.id = 'challengeToggleBtn';
+    challengeToggleBtn.className = restartBtn.className || 'btn';
+    challengeToggleBtn.addEventListener('click', () => {
+        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+        if (challengeMode) {
+            exitChallengeMode();
+        } else {
+            startChallengeChapter(challengeChapterIndex);
+        }
+    });
+
+    controlBar.appendChild(challengeCycleBtn);
+    controlBar.appendChild(challengeToggleBtn);
+    syncChallengeButtons();
 }
 
 function playReplay() {
@@ -552,6 +715,10 @@ function saveProgress() {
     localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify({
         difficulty: currentDifficulty,
         forbiddenRuleEnabled,
+        challengeMode,
+        challengeChapterIndex,
+        challengeUnlocked,
+        challengeMovesLeft,
         moveCount: moveHistory.length,
         updatedAt: Date.now()
     }));
@@ -606,17 +773,22 @@ canvas.addEventListener('touchend', function(e) {
 
 // 初始化
 initBoard();
+loadChallengeState();
 injectFeatureControls();
 updateStatus();
 drawBoard();
 
 window.render_game_to_text = () => JSON.stringify({
     coordinateSystem: 'board[x][y], origin=(0,0) top-left',
-    mode: 'pve',
+    mode: challengeMode ? 'challenge' : 'pve',
     gameOver,
     currentPlayer,
     difficulty: currentDifficulty,
     forbiddenRuleEnabled,
+    challengeMode,
+    challengeChapterIndex,
+    challengeUnlocked,
+    challengeMovesLeft,
     moveCount: moveHistory.length,
     board
 });
@@ -630,5 +802,5 @@ window.advanceTime = (ms) => {
 window.get_game_meta = () => JSON.stringify({
     gameId: GAME_ID,
     version: 'v1',
-    mode: 'pve'
+    mode: challengeMode ? 'challenge' : 'pve'
 });
