@@ -115,6 +115,30 @@
         checkWin();
     }
 
+    // 电脑版扫雷“和弦展开”：数字格周围旗子数匹配时，展开剩余邻格
+    function chordReveal(r, c) {
+        if (state.gameOver || !state.revealed[r][c]) return false;
+        const target = countMines(r, c);
+        if (target <= 0) return false;
+
+        const neighbours = getNeighbours(r, c);
+        let flags = 0;
+        neighbours.forEach(function(rc) {
+            if (state.flagged[rc[0]][rc[1]]) flags++;
+        });
+        if (flags !== target) return false;
+
+        let opened = false;
+        neighbours.forEach(function(rc) {
+            const nr = rc[0], nc = rc[1];
+            if (!state.flagged[nr][nc] && !state.revealed[nr][nc]) {
+                opened = true;
+                reveal(nr, nc);
+            }
+        });
+        return opened;
+    }
+
     function checkWin() {
         let revealedCount = 0;
         for (let r = 0; r < state.rows; r++)
@@ -186,7 +210,27 @@
                 cell.setAttribute('aria-label', '格子 ' + (r + 1) + ' ' + (c + 1));
                 (function(rr, cc) {
                     let longPressTimer = null;
+                    let leftPressed = false;
+                    let rightPressed = false;
+                    let chordConsumed = false;
+                    let suppressClick = false;
+
+                    function tryChord(e) {
+                        if (chordConsumed) return;
+                        const opened = chordReveal(rr, cc);
+                        if (!opened) return;
+                        chordConsumed = true;
+                        suppressClick = true;
+                        if (e) e.preventDefault();
+                        if (typeof GameAudio !== 'undefined') GameAudio.play('click');
+                    }
+
                     cell.addEventListener('click', function(e) {
+                        if (suppressClick) {
+                            suppressClick = false;
+                            e.preventDefault();
+                            return;
+                        }
                         if (state.gameOver) return;
                         if (state.flagMode) {
                             e.preventDefault();
@@ -202,8 +246,34 @@
                         reveal(rr, cc);
                         if (typeof GameAudio !== 'undefined' && !state.grid[rr][cc]) GameAudio.play('click');
                     });
+                    cell.addEventListener('dblclick', function(e) {
+                        e.preventDefault();
+                        tryChord(e);
+                    });
+                    cell.addEventListener('mousedown', function(e) {
+                        if (e.button === 0) leftPressed = true;
+                        if (e.button === 2) rightPressed = true;
+                        // 识别“左右键同时按下”
+                        if (leftPressed && rightPressed) {
+                            tryChord(e);
+                        }
+                    });
+                    cell.addEventListener('mouseup', function(e) {
+                        if (e.button === 0) leftPressed = false;
+                        if (e.button === 2) rightPressed = false;
+                        if (!leftPressed || !rightPressed) chordConsumed = false;
+                    });
+                    cell.addEventListener('mouseleave', function() {
+                        leftPressed = false;
+                        rightPressed = false;
+                        chordConsumed = false;
+                    });
                     cell.addEventListener('contextmenu', function(e) {
                         e.preventDefault();
+                        if (suppressClick) {
+                            suppressClick = false;
+                            return;
+                        }
                         if (state.gameOver) return;
                         toggleFlag(rr, cc);
                     });

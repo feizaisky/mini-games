@@ -30,3 +30,8 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: 小游戏中心二次巡检后迭�
 - 2026-02-24: 已修复 `endless-runner` 的可测性与时间步进问题：新增 `render_game_to_text`/`advanceTime`/`get_game_meta`，将玩家滑铲与金币连击从 `setTimeout` 改为基于 delta 的更新，并支持 `F` 全屏切换与暂停状态键盘恢复。
 - 2026-02-24: 回归验证完成：`output/endless-runner-check-3/` 已生成 `state-0/1/2.json` 与 `shot-0/1/2.png`，未出现新的 `errors-*.json`；此前一次 `ReferenceError: ts is not defined` 已修复。
 - 2026-02-24: 根据反馈移除路径新增图标（障碍/金币的 Sprite 标识），仅保留地面环形提示；并修复低墙/路障碰撞判定（改为基于角色底部高度），现在站立会碰撞结束、跳跃可越过。
+- 2026-03-02: 扫雷输入迭代：`/minesweeper/game.js` 新增 `chordReveal`，支持数字格在“旗子数匹配”时展开周围未插旗邻格。
+- 2026-03-02: 已接入两种触发方式：`dblclick`（双击数字格）和“鼠标左右键同时按下” (`mousedown` 左右键组合)。
+- 2026-03-02: 为避免组合键后误触，新增 `suppressClick/chordConsumed` 逻辑，抑制后续 click/contextmenu 重入。
+- 2026-03-02: 语法检查通过：`node --check /opt/code/mini-games/minesweeper/game.js`。
+- 2026-03-02: Playwright 自动回归受环境限制阻塞：客户端访问 `http://127.0.0.1:<port>/minesweeper/` 持续返回 `ERR_CONNECTION_REFUSED`，需在可访问本地环回的环境补跑。

@@ -13,3 +13,6 @@ logs/
 
 # 输出文件
 output/
+
+# Playwright 测试产物
+.playwright-mcp/

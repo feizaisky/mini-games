@@ -410,6 +410,14 @@
                 <div class="game-desc">策略塔防守卫王国</div>
             </a>
 
+            <a href="./plants-vs-zombies/" class="game-card" data-category="action">
+                <div class="game-icon" aria-hidden="true">
+                    <img src="./common/icons/plants-vs-zombies.svg" alt="植物大战僵尸">
+                </div>
+                <div class="game-title">植物大战僵尸</div>
+                <div class="game-desc">种植物抵御僵尸进攻</div>
+            </a>
+
             <a href="./airplane-shooter/" class="game-card" data-category="action">
                 <div class="game-icon" aria-hidden="true">
                     <img src="./common/icons/airplane-shooter.svg" alt="飞机大战">
@@ -731,7 +739,8 @@
                 { fallbackIcon: '🎱', name: '弹球台', href: './pinball/', read: function() { var v = localStorage.getItem('miniGames.v1.pinball.best'); return v ? v + '分' : ''; } },
                 { fallbackIcon: '🎯', name: '扫雷', href: './minesweeper/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.minesweeper.best') || '{}'); if (!v.easy && !v.medium && !v.hard) return ''; var best = Math.min(v.easy || 9999, v.medium || 9999, v.hard || 9999); if (best >= 9999) return ''; var m = Math.floor(best / 60), s = best % 60; return '最佳 ' + m + ':' + (s < 10 ? '0' : '') + s; } catch (e) { return ''; } } },
                 { fallbackIcon: '💎', name: '三消', href: './match3/', read: function() { var v = localStorage.getItem('miniGames.v1.match3.best'); return v ? v + '分' : ''; } },
-                { fallbackIcon: '🏃', name: '极速跑酷', href: './endless-runner/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.endless-runner.best') || '{}'); return v.score ? (v.score + '分') : ''; } catch (e) { return ''; } } }
+                { fallbackIcon: '🏃', name: '极速跑酷', href: './endless-runner/', read: function() { try { var v = JSON.parse(localStorage.getItem('miniGames.v1.endless-runner.best') || '{}'); return v.score ? (v.score + '分') : ''; } catch (e) { return ''; } } },
+                { fallbackIcon: '🌻', name: '植物大战僵尸', href: './plants-vs-zombies/', read: function() { var v = localStorage.getItem('miniGames.v1.plants-vs-zombies.best'); return v ? ('最快 ' + v + '秒') : ''; } }
             ];
 
             scoreAdapters.forEach(function(adapter) {

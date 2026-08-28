@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="x5-orientation" content="portrait">
+<meta name="x5-fullscreen" content="true">
+<meta name="x5-page-mode" content="app">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>植物大战僵尸 · Canvas 版</title>
+<link rel="stylesheet" href="/common/loader.css?v=1.1">
+<link rel="stylesheet" href="/common/celebration.css?v=1.1">
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#14210f; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    overscroll-behavior:none; touch-action:none;
+    -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif; }
+  canvas { display:block; touch-action:none;
+    border-radius:10px; box-shadow:0 14px 50px rgba(0,0,0,.6); cursor:default; }
+  .home-btn {
+    position:fixed; top:max(10px, env(safe-area-inset-top)); left:10px;
+    width:44px; height:44px; border-radius:50%;
+    background:rgba(20,33,15,.85); border:1px solid rgba(255,255,255,.25);
+    box-shadow:0 2px 10px rgba(0,0,0,.4);
+    display:flex; align-items:center; justify-content:center;
+    text-decoration:none; z-index:10;
+  }
+  .home-btn svg { width:22px; height:22px; fill:#e8f5d0; }
+</style>
+</head>
+<body>
+<div id="game-loader" class="game-loader">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">加载中</div>
+</div>
+<canvas id="game" width="1040" height="650"></canvas>
+<a href="/" class="home-btn" aria-label="返回首页">
+    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+</a>
+<script src="/common/celebration.js?v=1.1"></script>
+<script src="game.js?v=1.1"></script>
+<script src="/common/anti-longpress.js?v=1.1"></script>
+<script src="/common/loader.js?v=1.1"></script>
+</body>
+</html>
